@@ -4,20 +4,11 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
-import { Badge } from '@/components/ui/badge';
 import { Product } from '@/types/product';
 import ProductCard from '@/components/product/ProductCard';
 import { ArrowRight, ShieldCheck, Truck, Clock, Award } from 'lucide-react';
-
-// Mock categories
-const categories = [
-  { id: '1', name: 'Circuit Breakers', slug: 'circuit-breakers', image: 'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&w=300&h=200' },
-  { id: '2', name: 'Switchboards', slug: 'switchboards', image: 'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&w=300&h=200' },
-  { id: '3', name: 'Distribution Panels', slug: 'distribution-panels', image: 'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&w=300&h=200' },
-  { id: '4', name: 'Contactors', slug: 'contactors', image: 'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&w=300&h=200' },
-  { id: '5', name: 'Relays', slug: 'relays', image: 'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&w=300&h=200' },
-  { id: '6', name: 'Motor Starters', slug: 'motor-starters', image: 'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&w=300&h=200' },
-];
+import { Category } from '@/types/category';
+import { fetchCategories } from '@/services/categoryService';
 
 // Carousel slides
 const slides = [
@@ -64,7 +55,11 @@ const mockFeaturedProducts: Product[] = Array.from({ length: 8 }, (_, i) => ({
   shortDescription: 'High-quality switchgear with advanced safety features.',
   featuredImage: `https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&w=400&h=300`,
   images: [`https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&w=400&h=300`],
-  categories: [categories[i % categories.length]],
+  categories: [{
+    id: '1',
+    name: 'Circuit Breakers',
+    slug: 'circuit-breakers',
+  }],
   specifications: [
     { name: 'Voltage', value: '240V' },
     { name: 'Current Rating', value: '100A' },
@@ -81,10 +76,27 @@ const mockFeaturedProducts: Product[] = Array.from({ length: 8 }, (_, i) => ({
 
 const Home: React.FC = () => {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
   
   useEffect(() => {
     // In a real app, fetch products from API
     setFeaturedProducts(mockFeaturedProducts);
+    
+    // Fetch categories from database
+    const loadCategories = async () => {
+      try {
+        setLoading(true);
+        const data = await fetchCategories();
+        setCategories(data);
+      } catch (error) {
+        console.error('Failed to load categories:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadCategories();
   }, []);
   
   return (
@@ -196,29 +208,44 @@ const Home: React.FC = () => {
           </div>
           
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            {categories.map(category => (
-              <Link 
-                key={category.id} 
-                to={`/categories/${category.slug}`}
-                className="group"
-              >
-                <Card className="overflow-hidden h-full card-hover">
-                  <div className="aspect-square relative">
-                    <img 
-                      src={category.image} 
-                      alt={category.name} 
-                      className="w-full h-full object-cover transition-transform group-hover:scale-105" 
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                    <div className="absolute bottom-0 left-0 right-0 p-4">
-                      <h3 className="text-white font-medium text-center">
-                        {category.name}
-                      </h3>
-                    </div>
-                  </div>
+            {loading ? (
+              // Show loading placeholders
+              Array(6).fill(0).map((_, index) => (
+                <Card key={`loading-${index}`} className="overflow-hidden h-full animate-pulse">
+                  <div className="aspect-square bg-gray-200"></div>
                 </Card>
-              </Link>
-            ))}
+              ))
+            ) : categories.length > 0 ? (
+              // Show actual categories
+              categories.map(category => (
+                <Link 
+                  key={category.id} 
+                  to={`/categories/${category.slug}`}
+                  className="group"
+                >
+                  <Card className="overflow-hidden h-full card-hover">
+                    <div className="aspect-square relative">
+                      <img 
+                        src={category.imageUrl || 'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&w=300&h=200'} 
+                        alt={category.name} 
+                        className="w-full h-full object-cover transition-transform group-hover:scale-105" 
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                      <div className="absolute bottom-0 left-0 right-0 p-4">
+                        <h3 className="text-white font-medium text-center">
+                          {category.name}
+                        </h3>
+                      </div>
+                    </div>
+                  </Card>
+                </Link>
+              ))
+            ) : (
+              // If no categories found
+              <div className="col-span-6 py-12 text-center text-gray-500">
+                <p>No categories found.</p>
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -235,7 +262,7 @@ const Home: React.FC = () => {
             </Link>
           </div>
           
-          <div className="product-grid">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {featuredProducts.slice(0, 8).map(product => (
               <ProductCard key={product.id} product={product} />
             ))}
