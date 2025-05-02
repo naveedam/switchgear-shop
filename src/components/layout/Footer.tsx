@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Facebook, Twitter, Instagram, Linkedin, Mail, Phone } from 'lucide-react';
@@ -9,7 +8,7 @@ const Footer: React.FC = () => {
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
-            <h3 className="text-xl font-bold mb-4">SwitchgearNexus</h3>
+            <h3 className="text-xl font-bold mb-4">SwitchgearShop</h3>
             <p className="text-gray-400 mb-4">
               Your trusted B2B marketplace for low voltage switchgear products.
             </p>
@@ -76,7 +75,7 @@ const Footer: React.FC = () => {
             <ul className="space-y-2">
               <li className="flex items-center">
                 <Mail size={18} className="mr-2 text-gray-400" />
-                <span className="text-gray-400">info@switchgearnexus.com</span>
+                <span className="text-gray-400">info@switchgearshop.com</span>
               </li>
               <li className="flex items-center">
                 <Phone size={18} className="mr-2 text-gray-400" />
@@ -100,7 +99,7 @@ const Footer: React.FC = () => {
         </div>
         
         <div className="border-t border-gray-800 mt-12 pt-6 text-center text-gray-500">
-          <p>&copy; {new Date().getFullYear()} SwitchgearNexus. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} SwitchgearShop. All rights reserved.</p>
         </div>
       </div>
     </footer>

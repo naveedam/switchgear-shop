@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -104,7 +103,7 @@ const NavBar: React.FC = () => {
             <div className="flex-shrink-0">
               <Link to="/" className="flex items-center">
                 <span className="text-xl font-bold text-brand-700">
-                  SwitchgearNexus
+                  SwitchgearShop
                 </span>
               </Link>
             </div>

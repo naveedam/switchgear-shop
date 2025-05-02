@@ -8,26 +8,20 @@ export interface User {
   role: UserRole;
   companyName?: string;
   phoneNumber?: string;
-  address?: {
-    street: string;
-    city: string;
-    state: string;
-    zipCode: string;
-    country: string;
-  };
   profileImage?: string;
-  createdAt: Date;
-}
-
-export interface LoginCredentials {
-  email: string;
-  password: string;
+  createdAt?: Date;
 }
 
 export interface RegisterData {
+  name: string;
   email: string;
   password: string;
-  name: string;
   role: UserRole;
   companyName?: string;
+  phoneNumber?: string;
+}
+
+export interface LoginData {
+  email: string;
+  password: string;
 }
