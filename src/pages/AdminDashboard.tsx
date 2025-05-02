@@ -7,7 +7,7 @@ import StatCard from '@/components/dashboard/StatCard';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { 
-  DollarSign, 
+  IndianRupee, 
   Users, 
   ShoppingBag, 
   Store, 
@@ -16,24 +16,26 @@ import {
   PieChart
 } from 'lucide-react';
 import SalesChart from '@/components/dashboard/SalesChart';
+import AdminQuickActions from '@/components/dashboard/AdminQuickActions';
+import Currency from '@/components/ui/currency';
 
 // Mock data for admin dashboard
 const mockSalesData = [
-  { date: 'Jan', revenue: 25000, orders: 85 },
-  { date: 'Feb', revenue: 32000, orders: 110 },
-  { date: 'Mar', revenue: 41000, orders: 135 },
-  { date: 'Apr', revenue: 38000, orders: 125 },
-  { date: 'May', revenue: 48000, orders: 160 },
-  { date: 'Jun', revenue: 52000, orders: 175 },
-  { date: 'Jul', revenue: 58000, orders: 195 },
+  { date: 'Jan', revenue: 2500000, orders: 85 },
+  { date: 'Feb', revenue: 3200000, orders: 110 },
+  { date: 'Mar', revenue: 4100000, orders: 135 },
+  { date: 'Apr', revenue: 3800000, orders: 125 },
+  { date: 'May', revenue: 4800000, orders: 160 },
+  { date: 'Jun', revenue: 5200000, orders: 175 },
+  { date: 'Jul', revenue: 5800000, orders: 195 },
 ];
 
 const mockSellerPerformance = [
-  { id: 1, name: 'ElectroTech Industries', revenue: 18500, products: 45, rating: 4.8 },
-  { id: 2, name: 'PowerGrid Solutions', revenue: 12300, products: 32, rating: 4.6 },
-  { id: 3, name: 'Circuit Systems Ltd', revenue: 9800, products: 28, rating: 4.7 },
-  { id: 4, name: 'VoltMax Industries', revenue: 7500, products: 21, rating: 4.5 },
-  { id: 5, name: 'SwitchPro Electronics', revenue: 6200, products: 18, rating: 4.3 },
+  { id: 1, name: 'ElectroTech Industries', revenue: 1850000, products: 45, rating: 4.8 },
+  { id: 2, name: 'PowerGrid Solutions', revenue: 1230000, products: 32, rating: 4.6 },
+  { id: 3, name: 'Circuit Systems Ltd', revenue: 980000, products: 28, rating: 4.7 },
+  { id: 4, name: 'VoltMax Industries', revenue: 750000, products: 21, rating: 4.5 },
+  { id: 5, name: 'SwitchPro Electronics', revenue: 620000, products: 18, rating: 4.3 },
 ];
 
 const AdminDashboard: React.FC = () => {
@@ -67,19 +69,24 @@ const AdminDashboard: React.FC = () => {
   }
   
   return (
-    <div className="dashboard-container">
+    <div className="dashboard-container p-6">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
         <p className="text-gray-600">Welcome back, {user?.name}</p>
+      </div>
+      
+      {/* Admin Quick Actions */}
+      <div className="mb-8">
+        <AdminQuickActions />
       </div>
       
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <StatCard 
           title="Total Revenue"
-          value="$285,420"
+          value="₹28,54,20,000"
           description="All time marketplace revenue"
-          icon={DollarSign}
+          icon={IndianRupee}
           colorClass="text-green-600"
           trend={{ value: 18.2, isPositive: true }}
         />
@@ -167,7 +174,9 @@ const AdminDashboard: React.FC = () => {
               {mockSellerPerformance.map((seller) => (
                 <TableRow key={seller.id}>
                   <TableCell className="font-medium">{seller.name}</TableCell>
-                  <TableCell>${seller.revenue.toLocaleString()}</TableCell>
+                  <TableCell>
+                    <Currency value={seller.revenue} />
+                  </TableCell>
                   <TableCell>{seller.products}</TableCell>
                   <TableCell>
                     <div className="flex items-center">
@@ -217,7 +226,7 @@ const AdminDashboard: React.FC = () => {
                   <span className="text-sm text-gray-600">{category}</span>
                   <div className="flex items-center">
                     <span className="font-medium mr-2">
-                      ${(12000 - i * 2000).toLocaleString()}
+                      <Currency value={1200000 - i * 200000} />
                     </span>
                     <Badge className="bg-green-100 text-green-800 flex items-center">
                       <ArrowUpRight className="h-3 w-3 mr-1" />
