@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,17 +11,42 @@ import {
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
+import { 
+  NavigationMenu, 
+  NavigationMenuContent, 
+  NavigationMenuItem, 
+  NavigationMenuLink, 
+  NavigationMenuList, 
+  NavigationMenuTrigger 
+} from '@/components/ui/navigation-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
-import { Search, ShoppingCart, Menu, X, User } from 'lucide-react';
+import { Search, ShoppingCart, Menu as MenuIcon, X, User } from 'lucide-react';
 import AuthModal from '../auth/AuthModal';
+import { fetchCategories } from '@/services/categoryService';
+import { Category } from '@/types/category';
+import { cn } from '@/lib/utils';
 
 const NavBar: React.FC = () => {
   const { user, logout, isAuthenticated } = useAuth();
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
   const navigate = useNavigate();
+  
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const data = await fetchCategories();
+        setCategories(data);
+      } catch (error) {
+        console.error('Failed to load categories:', error);
+      }
+    };
+    
+    loadCategories();
+  }, []);
   
   const toggleSearch = () => {
     setIsSearchExpanded(!isSearchExpanded);
@@ -57,6 +82,18 @@ const NavBar: React.FC = () => {
         return '/buyer/dashboard';
     }
   };
+
+  // Group categories into columns for the mega menu
+  const categoryColumns = () => {
+    const columns = [];
+    const itemsPerColumn = 5;
+    
+    for (let i = 0; i < categories.length; i += itemsPerColumn) {
+      columns.push(categories.slice(i, i + itemsPerColumn));
+    }
+    
+    return columns;
+  };
   
   return (
     <>
@@ -74,18 +111,51 @@ const NavBar: React.FC = () => {
             
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-4">
-              <Link to="/products" className="text-gray-700 hover:text-brand-600">
-                Products
-              </Link>
-              <Link to="/categories" className="text-gray-700 hover:text-brand-600">
-                Categories
-              </Link>
-              <Link to="/sellers" className="text-gray-700 hover:text-brand-600">
-                Sellers
-              </Link>
-              <Link to="/about" className="text-gray-700 hover:text-brand-600">
-                About
-              </Link>
+              <NavigationMenu>
+                <NavigationMenuList>
+                  <NavigationMenuItem>
+                    <NavigationMenuTrigger>Products</NavigationMenuTrigger>
+                    <NavigationMenuContent>
+                      <div className="grid grid-cols-3 w-[800px] gap-3 p-4">
+                        {categoryColumns().map((column, idx) => (
+                          <div key={idx} className="flex flex-col space-y-2">
+                            {column.map(category => (
+                              <Link
+                                key={category.id}
+                                to={`/categories/${category.slug}`}
+                                className="block p-2 hover:bg-gray-100 rounded"
+                              >
+                                {category.name}
+                              </Link>
+                            ))}
+                          </div>
+                        ))}
+                      </div>
+                    </NavigationMenuContent>
+                  </NavigationMenuItem>
+                  <NavigationMenuItem>
+                    <Link to="/categories" className={cn(
+                      "flex items-center justify-between rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground"
+                    )}>
+                      All Categories
+                    </Link>
+                  </NavigationMenuItem>
+                  <NavigationMenuItem>
+                    <Link to="/sellers" className={cn(
+                      "flex items-center justify-between rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground"
+                    )}>
+                      Sellers
+                    </Link>
+                  </NavigationMenuItem>
+                  <NavigationMenuItem>
+                    <Link to="/about" className={cn(
+                      "flex items-center justify-between rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground"
+                    )}>
+                      About
+                    </Link>
+                  </NavigationMenuItem>
+                </NavigationMenuList>
+              </NavigationMenu>
             </div>
             
             {/* Search Bar */}
@@ -157,7 +227,7 @@ const NavBar: React.FC = () => {
                 {isMobileMenuOpen ? (
                   <X className="h-6 w-6" />
                 ) : (
-                  <Menu className="h-6 w-6" />
+                  <MenuIcon className="h-6 w-6" />
                 )}
               </Button>
             </div>
@@ -174,34 +244,41 @@ const NavBar: React.FC = () => {
               </div>
               
               <div className="space-y-3">
+                <div className="font-medium mb-2">Product Categories</div>
+                {categories.slice(0, 8).map(category => (
+                  <Link 
+                    key={category.id}
+                    to={`/categories/${category.slug}`} 
+                    className="block text-gray-700 hover:text-brand-600"
+                    onClick={toggleMobileMenu}
+                  >
+                    {category.name}
+                  </Link>
+                ))}
                 <Link 
-                  to="/products" 
-                  className="block text-gray-700 hover:text-brand-600"
+                  to="/categories"
+                  className="block text-brand-600 font-medium"
                   onClick={toggleMobileMenu}
                 >
-                  Products
+                  View All Categories
                 </Link>
-                <Link 
-                  to="/categories" 
-                  className="block text-gray-700 hover:text-brand-600"
-                  onClick={toggleMobileMenu}
-                >
-                  Categories
-                </Link>
-                <Link 
-                  to="/sellers" 
-                  className="block text-gray-700 hover:text-brand-600"
-                  onClick={toggleMobileMenu}
-                >
-                  Sellers
-                </Link>
-                <Link 
-                  to="/about" 
-                  className="block text-gray-700 hover:text-brand-600"
-                  onClick={toggleMobileMenu}
-                >
-                  About
-                </Link>
+                
+                <div className="pt-4 border-t border-gray-200">
+                  <Link 
+                    to="/sellers" 
+                    className="block text-gray-700 hover:text-brand-600"
+                    onClick={toggleMobileMenu}
+                  >
+                    Sellers
+                  </Link>
+                  <Link 
+                    to="/about" 
+                    className="block text-gray-700 hover:text-brand-600"
+                    onClick={toggleMobileMenu}
+                  >
+                    About
+                  </Link>
+                </div>
                 
                 <div className="pt-4 border-t border-gray-200">
                   <Link 

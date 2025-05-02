@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -207,10 +206,10 @@ const Home: React.FC = () => {
             </Link>
           </div>
           
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
             {loading ? (
               // Show loading placeholders
-              Array(6).fill(0).map((_, index) => (
+              Array(10).fill(0).map((_, index) => (
                 <Card key={`loading-${index}`} className="overflow-hidden h-full animate-pulse">
                   <div className="aspect-square bg-gray-200"></div>
                 </Card>
