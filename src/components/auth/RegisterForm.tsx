@@ -9,7 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { UserRole } from '@/types/user';
+import { UserRole, RegisterData } from '@/types/user';
 
 const registerSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters' }),
@@ -17,6 +17,7 @@ const registerSchema = z.object({
   password: z.string().min(6, { message: 'Password must be at least 6 characters' }),
   role: z.enum(['buyer', 'seller']).default('buyer'),
   companyName: z.string().min(2, { message: 'Company name must be at least 2 characters' }),
+  phoneNumber: z.string().optional(),
 });
 
 type RegisterFormData = z.infer<typeof registerSchema>;
@@ -33,15 +34,25 @@ const RegisterForm: React.FC<{ onSuccess?: () => void }> = ({ onSuccess }) => {
       password: '',
       role: 'buyer',
       companyName: '',
+      phoneNumber: '',
     },
   });
   
   const onSubmit = async (data: RegisterFormData) => {
     try {
-      await register(data);
+      const registerData: RegisterData = {
+        name: data.name,
+        email: data.email,
+        password: data.password,
+        role: data.role,
+        companyName: data.companyName,
+        phoneNumber: data.phoneNumber,
+      };
+      
+      await register(registerData);
       toast({
         title: 'Registration successful',
-        description: 'Welcome to Switchgear Nexus',
+        description: 'Welcome to Switchgear Shop',
       });
       if (onSuccess) onSuccess();
     } catch (err) {

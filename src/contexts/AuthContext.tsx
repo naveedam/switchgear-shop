@@ -6,12 +6,13 @@ import { User, LoginData, RegisterData, UserRole } from '@/types/user';
 const MOCK_USERS = [
   {
     id: '1',
-    email: 'admin@example.com',
+    email: 'naveedahmedm@hotmail.com',
     name: 'Admin User',
     role: 'admin' as UserRole,
-    companyName: 'Switchgear Nexus',
+    companyName: 'Switchgear Shop',
     phoneNumber: '555-1234',
     createdAt: new Date(),
+    password: 'admin123' // Added password field for admin
   },
   {
     id: '2',
@@ -71,9 +72,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const foundUser = MOCK_USERS.find(u => u.email === credentials.email);
       
       if (foundUser) {
-        // In a real app, validate password here
-        setUser(foundUser);
-        localStorage.setItem('user', JSON.stringify(foundUser));
+        // For the admin account, check the password
+        if (foundUser.email === 'naveedahmedm@hotmail.com' && credentials.password !== 'admin123') {
+          throw new Error('Invalid password for admin account');
+        }
+        
+        // For other accounts, password check would go here in a real app
+        // We'll just extract the relevant user fields without the password
+        const { password, ...userWithoutPassword } = foundUser;
+        
+        setUser(userWithoutPassword);
+        localStorage.setItem('user', JSON.stringify(userWithoutPassword));
       } else {
         throw new Error('Invalid email or password');
       }
@@ -104,6 +113,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         name: data.name,
         role: data.role,
         companyName: data.companyName,
+        phoneNumber: data.phoneNumber,
         createdAt: new Date()
       };
       
