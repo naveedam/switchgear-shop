@@ -119,7 +119,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // In a real app, you would save this to your backend
       // For now, we'll just update our mock data and local state
-      MOCK_USERS.push(newUser);
+      MOCK_USERS.push({...newUser, password: data.password});
       setUser(newUser);
       localStorage.setItem('user', JSON.stringify(newUser));
     } catch (err) {
