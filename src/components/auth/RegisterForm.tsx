@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -23,7 +22,7 @@ const registerSchema = z.object({
 type RegisterFormData = z.infer<typeof registerSchema>;
 
 const RegisterForm: React.FC<{ onSuccess?: () => void }> = ({ onSuccess }) => {
-  const { register, isLoading, error } = useAuth();
+  const { register: registerUser, isLoading, error } = useAuth();
   const { toast } = useToast();
   
   const form = useForm<RegisterFormData>({
@@ -46,10 +45,10 @@ const RegisterForm: React.FC<{ onSuccess?: () => void }> = ({ onSuccess }) => {
         password: data.password,
         role: data.role,
         companyName: data.companyName,
-        phoneNumber: data.phoneNumber,
+        phoneNumber: data.phoneNumber || 'Not provided',
       };
       
-      await register(registerData);
+      await registerUser(registerData);
       toast({
         title: 'Registration successful',
         description: 'Welcome to Switchgear Shop',

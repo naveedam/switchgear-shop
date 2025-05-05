@@ -106,14 +106,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('User already exists');
       }
       
-      // Create new user
+      // Create new user - ensure required fields are provided with defaults if needed
       const newUser: User = {
         id: (MOCK_USERS.length + 1).toString(),
         email: data.email,
         name: data.name,
         role: data.role,
-        companyName: data.companyName,
-        phoneNumber: data.phoneNumber,
+        companyName: data.companyName || 'Default Company', // Provide default if not supplied
+        phoneNumber: data.phoneNumber || 'Not provided', // Provide default if not supplied
         createdAt: new Date()
       };
       

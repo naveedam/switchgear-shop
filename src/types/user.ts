@@ -6,10 +6,10 @@ export interface User {
   email: string;
   name: string;
   role: UserRole;
-  companyName?: string;
-  phoneNumber?: string;
+  companyName: string; // No longer optional
+  phoneNumber: string; // No longer optional
   profileImage?: string;
-  createdAt?: Date;
+  createdAt: Date;
 }
 
 export interface RegisterData {
