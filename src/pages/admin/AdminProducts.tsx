@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -36,6 +35,7 @@ import { Category } from '@/types/category';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from '@tanstack/react-query';
+import { fetchSubcategories } from '@/services/subcategoryService';
 
 // Mock products data
 const mockProducts = [
@@ -102,6 +102,7 @@ interface ProductFormValues {
   stock: number;
   seller: string;
   category: string;
+  subcategory: string;
   sku: string;
 }
 
@@ -110,6 +111,7 @@ const AdminProducts: React.FC = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   
   // Fetch categories from the database
   const { data: categories = [] } = useQuery({
@@ -124,6 +126,13 @@ const AdminProducts: React.FC = () => {
       return data as Category[];
     }
   });
+
+  // Fetch subcategories when a category is selected
+  const { data: subcategories = [] } = useQuery({
+    queryKey: ['subcategories', selectedCategory],
+    queryFn: () => fetchSubcategories(selectedCategory || undefined),
+    enabled: !!selectedCategory
+  });
   
   const form = useForm<ProductFormValues>({
     defaultValues: {
@@ -133,9 +142,21 @@ const AdminProducts: React.FC = () => {
       stock: 0,
       seller: '',
       category: '',
+      subcategory: '',
       sku: '',
     },
   });
+  
+  // Watch for category changes
+  const watchedCategory = form.watch('category');
+  
+  useEffect(() => {
+    if (watchedCategory) {
+      setSelectedCategory(watchedCategory);
+      // Reset subcategory when category changes
+      form.setValue('subcategory', '');
+    }
+  }, [watchedCategory, form]);
   
   // Check if user is admin and redirect if not
   React.useEffect(() => {
@@ -302,20 +323,24 @@ const AdminProducts: React.FC = () => {
                   />
                   <FormField
                     control={form.control}
-                    name="seller"
+                    name="subcategory"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Seller</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormLabel>Subcategory</FormLabel>
+                        <Select 
+                          onValueChange={field.onChange} 
+                          defaultValue={field.value}
+                          disabled={!selectedCategory || subcategories.length === 0}
+                        >
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Select Seller" />
+                              <SelectValue placeholder="Select Subcategory" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {mockSellers.map((seller) => (
-                              <SelectItem key={seller.id} value={seller.id.toString()}>
-                                {seller.name}
+                            {subcategories.map((subcategory) => (
+                              <SelectItem key={subcategory.id} value={subcategory.id}>
+                                {subcategory.name}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -325,6 +350,31 @@ const AdminProducts: React.FC = () => {
                     )}
                   />
                 </div>
+                
+                <FormField
+                  control={form.control}
+                  name="seller"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Seller</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select Seller" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {mockSellers.map((seller) => (
+                            <SelectItem key={seller.id} value={seller.id.toString()}>
+                              {seller.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 
                 <DialogFooter>
                   <Button type="submit" className="mt-4">Add Product</Button>
