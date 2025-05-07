@@ -11,7 +11,7 @@ export interface Category {
 export interface Subcategory {
   id: string;
   name: string;
-  category: string;
+  category: string; // Using string type instead of the enum directly for flexibility
   description?: string;
   imageUrl?: string;
   sortOrder?: number;

@@ -10,6 +10,7 @@ export const fetchSubcategories = async (category?: string): Promise<Subcategory
       .order('sort_order', { ascending: true });
     
     if (category) {
+      // Use the category parameter as a string, not as an enum
       query = query.eq('category', category);
     }
     

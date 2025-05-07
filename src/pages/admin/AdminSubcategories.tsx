@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -114,15 +113,13 @@ const AdminSubcategories: React.FC = () => {
     try {
       const { error } = await supabase
         .from('product_subcategories')
-        .insert([
-          {
-            name: data.name,
-            description: data.description,
-            category: data.category,
-            sort_order: data.sortOrder,
-            status: 'active'
-          }
-        ]);
+        .insert({
+          name: data.name,
+          description: data.description,
+          category: data.category,
+          sort_order: data.sortOrder,
+          status: 'active'
+        });
       
       if (error) throw error;
       
