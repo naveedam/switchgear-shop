@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { Subcategory } from "@/types/category";
+import { Database } from "@/integrations/supabase/types";
 
 export const fetchSubcategories = async (category?: string): Promise<Subcategory[]> => {
   try {
@@ -10,8 +11,9 @@ export const fetchSubcategories = async (category?: string): Promise<Subcategory
       .order('sort_order', { ascending: true });
     
     if (category) {
-      // Use the category parameter as a string, not as an enum
-      query = query.eq('category', category);
+      // Cast the category parameter to the Supabase enum type
+      const categoryEnum = category as Database["public"]["Enums"]["product_category"];
+      query = query.eq('category', categoryEnum);
     }
     
     const { data, error } = await query;

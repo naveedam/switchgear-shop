@@ -28,6 +28,7 @@ import { Input } from '@/components/ui/input';
 import { useForm } from 'react-hook-form';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { Database } from '@/integrations/supabase/types';
 
 interface Category {
   id: string;
@@ -66,12 +67,15 @@ const AddSubcategoryDialog: React.FC<AddSubcategoryDialogProps> = ({
 
   const handleAddSubcategory = async (data: SubcategoryFormValues) => {
     try {
+      // Cast the category to the correct Supabase enum type
+      const categoryEnum = data.category as Database["public"]["Enums"]["product_category"];
+      
       const { error } = await supabase
         .from('product_subcategories')
         .insert({
           name: data.name,
           description: data.description,
-          category: data.category,
+          category: categoryEnum,
           sort_order: data.sortOrder,
           status: 'active'
         });
