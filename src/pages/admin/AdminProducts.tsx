@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -31,11 +32,12 @@ import {
 } from '@/components/ui/select';
 import { useForm } from 'react-hook-form';
 import { Search, PackagePlus, IndianRupee } from 'lucide-react';
-import { Category } from '@/types/category';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from '@tanstack/react-query';
+import { fetchCategories } from '@/services/categoryService';
 import { fetchSubcategories } from '@/services/subcategoryService';
+import { Category, Subcategory } from '@/types/category';
 
 // Mock products data
 const mockProducts = [
@@ -113,22 +115,14 @@ const AdminProducts: React.FC = () => {
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   
-  // Fetch categories from the database
-  const { data: categories = [] } = useQuery({
+  // Fetch categories directly using the service
+  const { data: categories = [], isLoading: categoriesLoading } = useQuery({
     queryKey: ['categories'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('product_categories')
-        .select('*')
-        .order('sort_order');
-      
-      if (error) throw error;
-      return data as Category[];
-    }
+    queryFn: fetchCategories
   });
-
+  
   // Fetch subcategories when a category is selected
-  const { data: subcategories = [] } = useQuery({
+  const { data: subcategories = [], isLoading: subcategoriesLoading } = useQuery({
     queryKey: ['subcategories', selectedCategory],
     queryFn: () => fetchSubcategories(selectedCategory || undefined),
     enabled: !!selectedCategory
@@ -310,11 +304,15 @@ const AdminProducts: React.FC = () => {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {categories.map((category) => (
-                              <SelectItem key={category.id} value={category.id}>
-                                {category.name}
-                              </SelectItem>
-                            ))}
+                            {categoriesLoading ? (
+                              <SelectItem value="loading" disabled>Loading categories...</SelectItem>
+                            ) : (
+                              categories.map((category) => (
+                                <SelectItem key={category.id} value={category.slug}>
+                                  {category.name}
+                                </SelectItem>
+                              ))
+                            )}
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -330,7 +328,7 @@ const AdminProducts: React.FC = () => {
                         <Select 
                           onValueChange={field.onChange} 
                           defaultValue={field.value}
-                          disabled={!selectedCategory || subcategories.length === 0}
+                          disabled={!selectedCategory || subcategories.length === 0 || subcategoriesLoading}
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -338,11 +336,17 @@ const AdminProducts: React.FC = () => {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {subcategories.map((subcategory) => (
-                              <SelectItem key={subcategory.id} value={subcategory.id}>
-                                {subcategory.name}
-                              </SelectItem>
-                            ))}
+                            {subcategoriesLoading ? (
+                              <SelectItem value="loading" disabled>Loading subcategories...</SelectItem>
+                            ) : subcategories.length === 0 ? (
+                              <SelectItem value="none" disabled>No subcategories available</SelectItem>
+                            ) : (
+                              subcategories.map((subcategory) => (
+                                <SelectItem key={subcategory.id} value={subcategory.id}>
+                                  {subcategory.name}
+                                </SelectItem>
+                              ))
+                            )}
                           </SelectContent>
                         </Select>
                         <FormMessage />

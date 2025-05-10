@@ -11,9 +11,8 @@ export const fetchSubcategories = async (category?: string): Promise<Subcategory
       .order('sort_order', { ascending: true });
     
     if (category) {
-      // Cast the category parameter to the Supabase enum type
-      const categoryEnum = category as Database["public"]["Enums"]["product_category"];
-      query = query.eq('category', categoryEnum);
+      // Use the category slug to filter
+      query = query.eq('category', category);
     }
     
     const { data, error } = await query;
