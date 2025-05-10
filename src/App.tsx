@@ -1,5 +1,5 @@
 
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Outlet } from 'react-router-dom';
 import MainLayout from './components/layout/MainLayout';
 import Home from './pages/Home';
 import NotFound from './pages/NotFound';
@@ -23,14 +23,14 @@ function App() {
     <Router>
       <Routes>
         {/* Public routes */}
-        <Route path="/" element={<MainLayout />}>
+        <Route path="/" element={<MainLayout><Outlet /></MainLayout>}>
           <Route index element={<Home />} />
           <Route path="categories/:categorySlug" element={<ProductListingPage />} />
           <Route path="*" element={<NotFound />} />
         </Route>
 
         {/* Admin routes */}
-        <Route path="admin" element={<MainLayout />}>
+        <Route path="admin" element={<MainLayout><Outlet /></MainLayout>}>
           <Route index element={<AdminDashboard />} />
           <Route path="products" element={<AdminProducts />} />
           <Route path="categories" element={<AdminCategories />} />
@@ -40,7 +40,7 @@ function App() {
         </Route>
         
         {/* Seller routes */}
-        <Route path="seller" element={<MainLayout />}>
+        <Route path="seller" element={<MainLayout><Outlet /></MainLayout>}>
           <Route index element={<SellerDashboard />} />
         </Route>
       </Routes>

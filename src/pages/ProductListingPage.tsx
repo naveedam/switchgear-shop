@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { Container } from '@/components/ui/container';
-import { ProductFilter } from '@/components/product/ProductFilter';
+import ProductFilter from '@/components/product/ProductFilter';
 import { Button } from '@/components/ui/button';
 import { 
   Select, 
