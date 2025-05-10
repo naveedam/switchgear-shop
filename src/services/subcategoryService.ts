@@ -44,3 +44,11 @@ export const fetchSubcategories = async (category?: string): Promise<Subcategory
     return [];
   }
 };
+
+export const getCategoryDisplayName = (categorySlug: string): string => {
+  // Convert snake_case to Title Case
+  return categorySlug
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};

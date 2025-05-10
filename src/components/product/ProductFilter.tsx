@@ -13,18 +13,19 @@ import { Slider } from '@/components/ui/slider';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { ProductFilter as FilterType } from '@/types/product';
+import { Subcategory } from '@/types/category';
 
 interface ProductFilterProps {
   initialFilters?: FilterType;
   onFilterChange: (filters: FilterType) => void;
-  categories: { id: string; name: string }[];
+  subcategories: Subcategory[];
   minMaxPrice: { min: number; max: number };
 }
 
 const ProductFilter: React.FC<ProductFilterProps> = ({
   initialFilters,
   onFilterChange,
-  categories,
+  subcategories,
   minMaxPrice,
 }) => {
   const [filters, setFilters] = useState<FilterType>(initialFilters || {});
@@ -42,10 +43,10 @@ const ProductFilter: React.FC<ProductFilterProps> = ({
     setSearchTerm(e.target.value);
   };
   
-  const handleCategoryChange = (categoryId: string, checked: boolean) => {
+  const handleSubcategoryChange = (subcategoryId: string, checked: boolean) => {
     setFilters(prev => ({
       ...prev,
-      categoryId: checked ? categoryId : undefined,
+      subcategoryId: checked ? subcategoryId : undefined,
     }));
   };
   
@@ -101,25 +102,25 @@ const ProductFilter: React.FC<ProductFilterProps> = ({
           </div>
         </div>
         
-        <Accordion type="multiple" defaultValue={['categories', 'price', 'availability', 'sort']}>
-          <AccordionItem value="categories">
-            <AccordionTrigger>Categories</AccordionTrigger>
+        <Accordion type="multiple" defaultValue={['subcategories', 'price', 'availability', 'sort']}>
+          <AccordionItem value="subcategories">
+            <AccordionTrigger>Subcategories</AccordionTrigger>
             <AccordionContent>
               <div className="space-y-2">
-                {categories.map(category => (
-                  <div key={category.id} className="flex items-center space-x-2">
+                {subcategories.map(subcategory => (
+                  <div key={subcategory.id} className="flex items-center space-x-2">
                     <Checkbox
-                      id={`category-${category.id}`}
-                      checked={filters.categoryId === category.id}
+                      id={`subcategory-${subcategory.id}`}
+                      checked={filters.subcategoryId === subcategory.id}
                       onCheckedChange={(checked) => 
-                        handleCategoryChange(category.id, checked as boolean)
+                        handleSubcategoryChange(subcategory.id, checked as boolean)
                       }
                     />
                     <Label
-                      htmlFor={`category-${category.id}`}
+                      htmlFor={`subcategory-${subcategory.id}`}
                       className="text-sm cursor-pointer"
                     >
-                      {category.name}
+                      {subcategory.name}
                     </Label>
                   </div>
                 ))}
@@ -135,13 +136,13 @@ const ProductFilter: React.FC<ProductFilterProps> = ({
                   value={priceRange}
                   min={minMaxPrice.min}
                   max={minMaxPrice.max}
-                  step={1}
+                  step={100}
                   onValueChange={handlePriceChange}
                   className="my-6"
                 />
                 <div className="flex items-center justify-between text-sm">
-                  <span>${priceRange[0]}</span>
-                  <span>${priceRange[1]}</span>
+                  <span>₹{priceRange[0]}</span>
+                  <span>₹{priceRange[1]}</span>
                 </div>
               </div>
             </AccordionContent>
