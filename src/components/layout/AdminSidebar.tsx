@@ -10,7 +10,8 @@ import {
   Settings, 
   Shield, 
   FileText,
-  BarChart
+  BarChart,
+  Box
 } from 'lucide-react';
 
 const menuItems = [
@@ -27,7 +28,17 @@ const menuItems = [
   {
     name: 'Orders',
     href: '/admin/orders',
-    icon: ShoppingBag,
+    icon: Box,
+  },
+  {
+    name: 'Categories',
+    href: '/admin/categories',
+    icon: FileText,
+  },
+  {
+    name: 'Subcategories',
+    href: '/admin/subcategories',
+    icon: FileText,
   },
   {
     name: 'Users',
@@ -73,7 +84,7 @@ const AdminSidebar: React.FC = () => {
       
       <nav className="space-y-1">
         {menuItems.map((item) => {
-          const isActive = pathname === item.href;
+          const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
           
           return (
             <Link

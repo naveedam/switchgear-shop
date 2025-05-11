@@ -124,7 +124,7 @@ const AdminProducts: React.FC = () => {
   // Fetch subcategories when a category is selected
   const { data: subcategories = [], isLoading: subcategoriesLoading } = useQuery({
     queryKey: ['subcategories', selectedCategory],
-    queryFn: () => fetchSubcategories(selectedCategory || undefined),
+    queryFn: () => fetchSubcategories(selectedCategory || ''),
     enabled: !!selectedCategory
   });
   
@@ -328,7 +328,7 @@ const AdminProducts: React.FC = () => {
                         <Select 
                           onValueChange={field.onChange} 
                           defaultValue={field.value}
-                          disabled={!selectedCategory || subcategories.length === 0 || subcategoriesLoading}
+                          disabled={!selectedCategory}
                         >
                           <FormControl>
                             <SelectTrigger>
