@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import LoginForm from '@/components/auth/LoginForm';
@@ -7,23 +7,24 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   
   // If user is already authenticated, redirect to appropriate dashboard
-  React.useEffect(() => {
-    if (user) {
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      console.log("User authenticated, redirecting based on role:", user.role);
       switch(user.role) {
         case 'admin':
-          navigate('/admin');
+          navigate('/admin', { replace: true });
           break;
         case 'seller':
-          navigate('/seller');
+          navigate('/seller', { replace: true });
           break;
         default:
-          navigate('/');
+          navigate('/', { replace: true });
       }
     }
-  }, [user, navigate]);
+  }, [user, isAuthenticated, navigate]);
   
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
