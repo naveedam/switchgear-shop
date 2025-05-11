@@ -146,6 +146,7 @@ const AdminProducts: React.FC = () => {
   
   useEffect(() => {
     if (watchedCategory) {
+      console.log("Category selected:", watchedCategory);
       setSelectedCategory(watchedCategory);
       // Reset subcategory when category changes
       form.setValue('subcategory', '');

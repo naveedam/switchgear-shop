@@ -14,14 +14,17 @@ export const fetchSubcategories = async (category?: string): Promise<Subcategory
       .order('sort_order', { ascending: true });
     
     if (category) {
-      // Check if the category matches any valid enum value
-      const isValidCategory = isCategoryValid(category);
+      // Convert hyphenated category slug to snake_case for database query
+      const normalizedCategory = category.replace(/-/g, '_');
+      
+      // Check if the normalized category matches any valid enum value
+      const isValidCategory = isCategoryValid(normalizedCategory);
       
       if (isValidCategory) {
         // If valid enum value, use it directly
-        query = query.eq('category', category as ProductCategory);
+        query = query.eq('category', normalizedCategory as ProductCategory);
       } else {
-        console.warn(`Invalid category: ${category}`);
+        console.warn(`Invalid category: ${category} (normalized: ${normalizedCategory})`);
         return [];
       }
     }
