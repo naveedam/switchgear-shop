@@ -817,70 +817,673 @@ export type Database = {
       }
       products: {
         Row: {
+          accuracy: string | null
+          adjustable_magnetic_setting: boolean | null
+          adjustable_thermal_setting: boolean | null
+          air_delivery: string | null
+          air_flow_direction: string | null
+          armoured: boolean | null
+          auto_ranging: boolean | null
+          auxiliary_contact_type: string | null
+          battery_life: string | null
+          battery_type: string | null
+          beam_angle: string | null
+          bearing_type: string | null
+          bend_radius: string | null
+          bis_certification_number: string | null
+          braking_method: string | null
           brand_id: string | null
+          breaking_capacity: string | null
+          breaking_capacity_ac23: string | null
+          breaking_capacity_ics: string | null
+          breaking_capacity_icu: string | null
+          burial_depth: string | null
+          busbar_material: string | null
+          busbar_rating: string | null
+          button_color: string | null
+          button_type: string | null
+          cable_entry_size: string | null
+          cable_entry_type: string | null
+          calibration_period: string | null
+          capacitance: string | null
           category: Database["public"]["Enums"]["product_category"] | null
+          ce_marked: boolean | null
+          changeover_type: string | null
+          closing_time: string | null
+          coating_thickness: string | null
+          coating_type: string | null
+          coil_voltage: string | null
+          color_rendering_index: string | null
+          color_temperature: string | null
+          communication_interface: string | null
+          communication_protocol: string | null
+          compression_strength: string | null
+          conductor_material: string | null
+          conductor_resistance: string | null
+          conductor_shape: string | null
+          conductor_size: string | null
+          conductor_type: string | null
+          conduit_material: string | null
+          conduit_type: string | null
+          connection_type: string | null
+          contact_configuration: string | null
+          contact_material: string | null
+          contact_plating: string | null
+          contact_rating: string | null
+          control_method: string | null
+          control_type: string | null
+          controller_type: string | null
+          cooling_method: string | null
+          cooling_type: string | null
+          core_material: string | null
+          core_type: string | null
+          corrosion_resistance_rating: string | null
           created_at: string | null
           currency: string
+          current_carrying_capacity: string | null
+          data_logging_capacity: string | null
           description: string | null
+          detuning_factor: string | null
+          dielectric_type: string | null
+          dimming_capability: boolean | null
+          dimming_range: string | null
+          discharge_resistor: boolean | null
+          display_type: string | null
+          door_type: string | null
+          drawout_type: boolean | null
+          driver_type: string | null
+          earth_resistance: string | null
+          efficiency_rating: string | null
+          electrical_life_cycles: string | null
+          energy_efficiency_rating: string | null
+          fan_mounting_type: string | null
+          finish_type: string | null
+          fire_resistance_rating: string | null
+          fire_retardant: boolean | null
+          frame_size: string | null
+          frequency_range: string | null
+          grip_type: string | null
+          halogen_free: boolean | null
+          handle_material: string | null
+          hardness_rating: string | null
+          harmonic_handling_capacity: string | null
+          head_type: string | null
           hsn_code: string | null
           id: string
+          iec_standards_compliance: string[] | null
+          illumination_color: string | null
+          illumination_type: string | null
           Images: string | null
+          impedance_percentage: string | null
+          impulse_withstand_voltage: string | null
+          incoming_terminal_size: string | null
+          indicator_type: string | null
+          ingress_protection: string | null
+          inner_diameter: string | null
+          input_voltage_range: string | null
+          installation_type: string | null
+          insulation_class: string | null
+          insulation_color: string | null
+          insulation_material: string | null
+          insulation_rating: string | null
+          interlocking_type: string | null
+          ip_rating: string | null
+          length: string | null
+          light_distribution_pattern: string | null
+          locking_mechanism: string | null
+          luminous_flux: string | null
+          magnetic_setting_range: string | null
+          making_capacity: string | null
+          manual_operation_override: boolean | null
+          material_composition: string | null
+          measurement_category: string | null
+          measurement_range: string | null
+          mechanical_life_cycles: string | null
           min_order_quantity: number | null
+          model_number: string | null
+          monitoring_parameters: string[] | null
+          mounting_orientation: string | null
+          mounting_type: string | null
           name: string
+          neutral_pole_setting: string | null
+          noise_level_db: string | null
+          noise_level_fan: string | null
+          nominal_cross_section: string | null
+          number_of_blades: number | null
+          number_of_cores: number | null
+          number_of_poles: number | null
+          number_of_rows: number | null
+          number_of_ways: number | null
+          opening_time: string | null
+          operating_life_hours: string | null
+          operating_temperature_range: string | null
+          operation_time_motorized: string | null
+          outer_diameter: string | null
+          outgoing_terminal_size: string | null
+          output_voltage_range: string | null
+          overload_capacity: string | null
+          pin_configuration: string | null
+          pin_material: string | null
+          pole_count: number | null
+          positive_break_indication: boolean | null
+          power_consumption: string | null
+          power_loss: string | null
+          power_range: string | null
+          power_rating: string | null
           price: number
+          primary_voltage: string | null
+          programming_interface: string | null
+          protection_features: string[] | null
+          protection_release_type: string | null
+          rated_current: string | null
+          rated_frequency: string | null
+          rated_insulation_voltage: string | null
+          rated_voltage: string | null
+          reactor_current: string | null
+          reactor_inductance: string | null
+          reactor_type: string | null
+          residual_current_rating: string | null
+          residual_current_type: string | null
+          resolution: string | null
+          rohs_compliant: boolean | null
+          sampling_rate: string | null
           search_vector: unknown | null
+          secondary_voltage: string | null
+          selective_type: boolean | null
+          series_name: string | null
+          sheath_color: string | null
+          sheath_material: string | null
+          sheet_metal_thickness: string | null
           sku: string | null
+          socket_material: string | null
+          soil_resistivity_range: string | null
           sort_order: number | null
+          sound_level: string | null
+          source_position_indication: boolean | null
+          speed_range: string | null
+          speed_rpm: string | null
+          spring_charging_time: string | null
+          standard_length_per_roll: string | null
           status: string | null
           stock_quantity: number | null
           subcategory_id: string | null
+          surface_treatment: string | null
+          sweep_size: string | null
+          switching_time: string | null
+          tap_configuration: string | null
           tax_rate: number | null
+          temperature_category: string | null
+          temperature_rating: string | null
+          temperature_resistance: string | null
+          temperature_rise: string | null
+          terminal_capacity: string | null
+          terminal_type: string | null
+          thermal_setting_range: string | null
+          time_current_characteristic: string | null
+          tool_type: string | null
+          transition_type: string | null
+          tripping_characteristic: string | null
           updated_at: string | null
+          utilization_category: string | null
+          utilization_category_lb: string | null
+          uv_resistant: boolean | null
+          vector_group: string | null
           vendor_id: string
+          vfd_communication_protocol: string | null
+          vfd_display_type: string | null
+          voltage_grade: string | null
+          voltage_rating: string | null
+          warranty_period: string | null
+          weather_resistant: boolean | null
+          width_per_pole: string | null
+          winding_material: string | null
+          working_length: string | null
         }
         Insert: {
+          accuracy?: string | null
+          adjustable_magnetic_setting?: boolean | null
+          adjustable_thermal_setting?: boolean | null
+          air_delivery?: string | null
+          air_flow_direction?: string | null
+          armoured?: boolean | null
+          auto_ranging?: boolean | null
+          auxiliary_contact_type?: string | null
+          battery_life?: string | null
+          battery_type?: string | null
+          beam_angle?: string | null
+          bearing_type?: string | null
+          bend_radius?: string | null
+          bis_certification_number?: string | null
+          braking_method?: string | null
           brand_id?: string | null
+          breaking_capacity?: string | null
+          breaking_capacity_ac23?: string | null
+          breaking_capacity_ics?: string | null
+          breaking_capacity_icu?: string | null
+          burial_depth?: string | null
+          busbar_material?: string | null
+          busbar_rating?: string | null
+          button_color?: string | null
+          button_type?: string | null
+          cable_entry_size?: string | null
+          cable_entry_type?: string | null
+          calibration_period?: string | null
+          capacitance?: string | null
           category?: Database["public"]["Enums"]["product_category"] | null
+          ce_marked?: boolean | null
+          changeover_type?: string | null
+          closing_time?: string | null
+          coating_thickness?: string | null
+          coating_type?: string | null
+          coil_voltage?: string | null
+          color_rendering_index?: string | null
+          color_temperature?: string | null
+          communication_interface?: string | null
+          communication_protocol?: string | null
+          compression_strength?: string | null
+          conductor_material?: string | null
+          conductor_resistance?: string | null
+          conductor_shape?: string | null
+          conductor_size?: string | null
+          conductor_type?: string | null
+          conduit_material?: string | null
+          conduit_type?: string | null
+          connection_type?: string | null
+          contact_configuration?: string | null
+          contact_material?: string | null
+          contact_plating?: string | null
+          contact_rating?: string | null
+          control_method?: string | null
+          control_type?: string | null
+          controller_type?: string | null
+          cooling_method?: string | null
+          cooling_type?: string | null
+          core_material?: string | null
+          core_type?: string | null
+          corrosion_resistance_rating?: string | null
           created_at?: string | null
           currency?: string
+          current_carrying_capacity?: string | null
+          data_logging_capacity?: string | null
           description?: string | null
+          detuning_factor?: string | null
+          dielectric_type?: string | null
+          dimming_capability?: boolean | null
+          dimming_range?: string | null
+          discharge_resistor?: boolean | null
+          display_type?: string | null
+          door_type?: string | null
+          drawout_type?: boolean | null
+          driver_type?: string | null
+          earth_resistance?: string | null
+          efficiency_rating?: string | null
+          electrical_life_cycles?: string | null
+          energy_efficiency_rating?: string | null
+          fan_mounting_type?: string | null
+          finish_type?: string | null
+          fire_resistance_rating?: string | null
+          fire_retardant?: boolean | null
+          frame_size?: string | null
+          frequency_range?: string | null
+          grip_type?: string | null
+          halogen_free?: boolean | null
+          handle_material?: string | null
+          hardness_rating?: string | null
+          harmonic_handling_capacity?: string | null
+          head_type?: string | null
           hsn_code?: string | null
           id?: string
+          iec_standards_compliance?: string[] | null
+          illumination_color?: string | null
+          illumination_type?: string | null
           Images?: string | null
+          impedance_percentage?: string | null
+          impulse_withstand_voltage?: string | null
+          incoming_terminal_size?: string | null
+          indicator_type?: string | null
+          ingress_protection?: string | null
+          inner_diameter?: string | null
+          input_voltage_range?: string | null
+          installation_type?: string | null
+          insulation_class?: string | null
+          insulation_color?: string | null
+          insulation_material?: string | null
+          insulation_rating?: string | null
+          interlocking_type?: string | null
+          ip_rating?: string | null
+          length?: string | null
+          light_distribution_pattern?: string | null
+          locking_mechanism?: string | null
+          luminous_flux?: string | null
+          magnetic_setting_range?: string | null
+          making_capacity?: string | null
+          manual_operation_override?: boolean | null
+          material_composition?: string | null
+          measurement_category?: string | null
+          measurement_range?: string | null
+          mechanical_life_cycles?: string | null
           min_order_quantity?: number | null
+          model_number?: string | null
+          monitoring_parameters?: string[] | null
+          mounting_orientation?: string | null
+          mounting_type?: string | null
           name: string
+          neutral_pole_setting?: string | null
+          noise_level_db?: string | null
+          noise_level_fan?: string | null
+          nominal_cross_section?: string | null
+          number_of_blades?: number | null
+          number_of_cores?: number | null
+          number_of_poles?: number | null
+          number_of_rows?: number | null
+          number_of_ways?: number | null
+          opening_time?: string | null
+          operating_life_hours?: string | null
+          operating_temperature_range?: string | null
+          operation_time_motorized?: string | null
+          outer_diameter?: string | null
+          outgoing_terminal_size?: string | null
+          output_voltage_range?: string | null
+          overload_capacity?: string | null
+          pin_configuration?: string | null
+          pin_material?: string | null
+          pole_count?: number | null
+          positive_break_indication?: boolean | null
+          power_consumption?: string | null
+          power_loss?: string | null
+          power_range?: string | null
+          power_rating?: string | null
           price: number
+          primary_voltage?: string | null
+          programming_interface?: string | null
+          protection_features?: string[] | null
+          protection_release_type?: string | null
+          rated_current?: string | null
+          rated_frequency?: string | null
+          rated_insulation_voltage?: string | null
+          rated_voltage?: string | null
+          reactor_current?: string | null
+          reactor_inductance?: string | null
+          reactor_type?: string | null
+          residual_current_rating?: string | null
+          residual_current_type?: string | null
+          resolution?: string | null
+          rohs_compliant?: boolean | null
+          sampling_rate?: string | null
           search_vector?: unknown | null
+          secondary_voltage?: string | null
+          selective_type?: boolean | null
+          series_name?: string | null
+          sheath_color?: string | null
+          sheath_material?: string | null
+          sheet_metal_thickness?: string | null
           sku?: string | null
+          socket_material?: string | null
+          soil_resistivity_range?: string | null
           sort_order?: number | null
+          sound_level?: string | null
+          source_position_indication?: boolean | null
+          speed_range?: string | null
+          speed_rpm?: string | null
+          spring_charging_time?: string | null
+          standard_length_per_roll?: string | null
           status?: string | null
           stock_quantity?: number | null
           subcategory_id?: string | null
+          surface_treatment?: string | null
+          sweep_size?: string | null
+          switching_time?: string | null
+          tap_configuration?: string | null
           tax_rate?: number | null
+          temperature_category?: string | null
+          temperature_rating?: string | null
+          temperature_resistance?: string | null
+          temperature_rise?: string | null
+          terminal_capacity?: string | null
+          terminal_type?: string | null
+          thermal_setting_range?: string | null
+          time_current_characteristic?: string | null
+          tool_type?: string | null
+          transition_type?: string | null
+          tripping_characteristic?: string | null
           updated_at?: string | null
+          utilization_category?: string | null
+          utilization_category_lb?: string | null
+          uv_resistant?: boolean | null
+          vector_group?: string | null
           vendor_id: string
+          vfd_communication_protocol?: string | null
+          vfd_display_type?: string | null
+          voltage_grade?: string | null
+          voltage_rating?: string | null
+          warranty_period?: string | null
+          weather_resistant?: boolean | null
+          width_per_pole?: string | null
+          winding_material?: string | null
+          working_length?: string | null
         }
         Update: {
+          accuracy?: string | null
+          adjustable_magnetic_setting?: boolean | null
+          adjustable_thermal_setting?: boolean | null
+          air_delivery?: string | null
+          air_flow_direction?: string | null
+          armoured?: boolean | null
+          auto_ranging?: boolean | null
+          auxiliary_contact_type?: string | null
+          battery_life?: string | null
+          battery_type?: string | null
+          beam_angle?: string | null
+          bearing_type?: string | null
+          bend_radius?: string | null
+          bis_certification_number?: string | null
+          braking_method?: string | null
           brand_id?: string | null
+          breaking_capacity?: string | null
+          breaking_capacity_ac23?: string | null
+          breaking_capacity_ics?: string | null
+          breaking_capacity_icu?: string | null
+          burial_depth?: string | null
+          busbar_material?: string | null
+          busbar_rating?: string | null
+          button_color?: string | null
+          button_type?: string | null
+          cable_entry_size?: string | null
+          cable_entry_type?: string | null
+          calibration_period?: string | null
+          capacitance?: string | null
           category?: Database["public"]["Enums"]["product_category"] | null
+          ce_marked?: boolean | null
+          changeover_type?: string | null
+          closing_time?: string | null
+          coating_thickness?: string | null
+          coating_type?: string | null
+          coil_voltage?: string | null
+          color_rendering_index?: string | null
+          color_temperature?: string | null
+          communication_interface?: string | null
+          communication_protocol?: string | null
+          compression_strength?: string | null
+          conductor_material?: string | null
+          conductor_resistance?: string | null
+          conductor_shape?: string | null
+          conductor_size?: string | null
+          conductor_type?: string | null
+          conduit_material?: string | null
+          conduit_type?: string | null
+          connection_type?: string | null
+          contact_configuration?: string | null
+          contact_material?: string | null
+          contact_plating?: string | null
+          contact_rating?: string | null
+          control_method?: string | null
+          control_type?: string | null
+          controller_type?: string | null
+          cooling_method?: string | null
+          cooling_type?: string | null
+          core_material?: string | null
+          core_type?: string | null
+          corrosion_resistance_rating?: string | null
           created_at?: string | null
           currency?: string
+          current_carrying_capacity?: string | null
+          data_logging_capacity?: string | null
           description?: string | null
+          detuning_factor?: string | null
+          dielectric_type?: string | null
+          dimming_capability?: boolean | null
+          dimming_range?: string | null
+          discharge_resistor?: boolean | null
+          display_type?: string | null
+          door_type?: string | null
+          drawout_type?: boolean | null
+          driver_type?: string | null
+          earth_resistance?: string | null
+          efficiency_rating?: string | null
+          electrical_life_cycles?: string | null
+          energy_efficiency_rating?: string | null
+          fan_mounting_type?: string | null
+          finish_type?: string | null
+          fire_resistance_rating?: string | null
+          fire_retardant?: boolean | null
+          frame_size?: string | null
+          frequency_range?: string | null
+          grip_type?: string | null
+          halogen_free?: boolean | null
+          handle_material?: string | null
+          hardness_rating?: string | null
+          harmonic_handling_capacity?: string | null
+          head_type?: string | null
           hsn_code?: string | null
           id?: string
+          iec_standards_compliance?: string[] | null
+          illumination_color?: string | null
+          illumination_type?: string | null
           Images?: string | null
+          impedance_percentage?: string | null
+          impulse_withstand_voltage?: string | null
+          incoming_terminal_size?: string | null
+          indicator_type?: string | null
+          ingress_protection?: string | null
+          inner_diameter?: string | null
+          input_voltage_range?: string | null
+          installation_type?: string | null
+          insulation_class?: string | null
+          insulation_color?: string | null
+          insulation_material?: string | null
+          insulation_rating?: string | null
+          interlocking_type?: string | null
+          ip_rating?: string | null
+          length?: string | null
+          light_distribution_pattern?: string | null
+          locking_mechanism?: string | null
+          luminous_flux?: string | null
+          magnetic_setting_range?: string | null
+          making_capacity?: string | null
+          manual_operation_override?: boolean | null
+          material_composition?: string | null
+          measurement_category?: string | null
+          measurement_range?: string | null
+          mechanical_life_cycles?: string | null
           min_order_quantity?: number | null
+          model_number?: string | null
+          monitoring_parameters?: string[] | null
+          mounting_orientation?: string | null
+          mounting_type?: string | null
           name?: string
+          neutral_pole_setting?: string | null
+          noise_level_db?: string | null
+          noise_level_fan?: string | null
+          nominal_cross_section?: string | null
+          number_of_blades?: number | null
+          number_of_cores?: number | null
+          number_of_poles?: number | null
+          number_of_rows?: number | null
+          number_of_ways?: number | null
+          opening_time?: string | null
+          operating_life_hours?: string | null
+          operating_temperature_range?: string | null
+          operation_time_motorized?: string | null
+          outer_diameter?: string | null
+          outgoing_terminal_size?: string | null
+          output_voltage_range?: string | null
+          overload_capacity?: string | null
+          pin_configuration?: string | null
+          pin_material?: string | null
+          pole_count?: number | null
+          positive_break_indication?: boolean | null
+          power_consumption?: string | null
+          power_loss?: string | null
+          power_range?: string | null
+          power_rating?: string | null
           price?: number
+          primary_voltage?: string | null
+          programming_interface?: string | null
+          protection_features?: string[] | null
+          protection_release_type?: string | null
+          rated_current?: string | null
+          rated_frequency?: string | null
+          rated_insulation_voltage?: string | null
+          rated_voltage?: string | null
+          reactor_current?: string | null
+          reactor_inductance?: string | null
+          reactor_type?: string | null
+          residual_current_rating?: string | null
+          residual_current_type?: string | null
+          resolution?: string | null
+          rohs_compliant?: boolean | null
+          sampling_rate?: string | null
           search_vector?: unknown | null
+          secondary_voltage?: string | null
+          selective_type?: boolean | null
+          series_name?: string | null
+          sheath_color?: string | null
+          sheath_material?: string | null
+          sheet_metal_thickness?: string | null
           sku?: string | null
+          socket_material?: string | null
+          soil_resistivity_range?: string | null
           sort_order?: number | null
+          sound_level?: string | null
+          source_position_indication?: boolean | null
+          speed_range?: string | null
+          speed_rpm?: string | null
+          spring_charging_time?: string | null
+          standard_length_per_roll?: string | null
           status?: string | null
           stock_quantity?: number | null
           subcategory_id?: string | null
+          surface_treatment?: string | null
+          sweep_size?: string | null
+          switching_time?: string | null
+          tap_configuration?: string | null
           tax_rate?: number | null
+          temperature_category?: string | null
+          temperature_rating?: string | null
+          temperature_resistance?: string | null
+          temperature_rise?: string | null
+          terminal_capacity?: string | null
+          terminal_type?: string | null
+          thermal_setting_range?: string | null
+          time_current_characteristic?: string | null
+          tool_type?: string | null
+          transition_type?: string | null
+          tripping_characteristic?: string | null
           updated_at?: string | null
+          utilization_category?: string | null
+          utilization_category_lb?: string | null
+          uv_resistant?: boolean | null
+          vector_group?: string | null
           vendor_id?: string
+          vfd_communication_protocol?: string | null
+          vfd_display_type?: string | null
+          voltage_grade?: string | null
+          voltage_rating?: string | null
+          warranty_period?: string | null
+          weather_resistant?: boolean | null
+          width_per_pole?: string | null
+          winding_material?: string | null
+          working_length?: string | null
         }
         Relationships: [
           {

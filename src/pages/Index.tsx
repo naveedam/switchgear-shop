@@ -3,10 +3,18 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
 const Index = () => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
+  
+  console.log("Index page - isAuthenticated:", isAuthenticated, "user:", user);
+  
+  // Show loading while checking auth state
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
   
   // If user is authenticated, redirect based on role
   if (isAuthenticated && user) {
+    console.log("Redirecting user with role:", user.role);
     switch(user.role) {
       case 'admin':
         return <Navigate to="/admin" replace />;
@@ -17,7 +25,7 @@ const Index = () => {
     }
   }
   
-  // If not authenticated or no user, just go to home
+  // If not authenticated, redirect to home page
   return <Navigate to="/" replace />;
 };
 

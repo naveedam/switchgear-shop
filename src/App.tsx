@@ -13,9 +13,6 @@ import SellerDashboard from './pages/SellerDashboard';
 import ProductListingPage from './pages/ProductListingPage';
 import LoginPage from './pages/auth/LoginPage';
 
-// For root path handling
-import Index from './pages/Index';
-
 import { Toaster } from './components/ui/toaster';
 import './App.css';
 import { useAuth } from './contexts/AuthContext';
@@ -28,13 +25,21 @@ const ProtectedRoute = ({
   children: JSX.Element, 
   requiredRole?: 'admin' | 'seller' | 'buyer' 
 }) => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
+  
+  console.log("ProtectedRoute - isAuthenticated:", isAuthenticated, "user:", user, "requiredRole:", requiredRole);
+  
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
   
   if (!isAuthenticated) {
+    console.log("User not authenticated, redirecting to login");
     return <Navigate to="/login" replace />;
   }
   
   if (requiredRole && user?.role !== requiredRole) {
+    console.log("User role mismatch, redirecting to home");
     return <Navigate to="/" replace />;
   }
   
