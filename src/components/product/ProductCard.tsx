@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Currency } from '@/components/ui/currency';
 import { Product } from '@/types/product';
 import { ShoppingCart, Star } from 'lucide-react';
 
@@ -22,18 +23,17 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     0
   );
   
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(price);
-  };
-  
   const renderPriceRange = () => {
     if (lowestPrice === highestPrice) {
-      return formatPrice(lowestPrice);
+      return <Currency value={lowestPrice} />;
     }
-    return `${formatPrice(lowestPrice)} - ${formatPrice(highestPrice)}`;
+    return (
+      <div className="flex items-center">
+        <Currency value={lowestPrice} />
+        <span className="mx-1">-</span>
+        <Currency value={highestPrice} />
+      </div>
+    );
   };
   
   const getTotalStock = () => {
@@ -96,9 +96,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           ))}
         </div>
         
-        <p className="text-lg font-semibold text-gray-900">
+        <div className="text-lg font-semibold text-gray-900">
           {renderPriceRange()}
-        </p>
+        </div>
       </CardContent>
       
       <CardFooter className="px-4 pb-4 pt-0">

@@ -5,20 +5,13 @@ import { Product } from '@/types/product';
 import { Star, ShoppingCart, ArrowRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Currency } from '@/components/ui/currency';
 
 interface ProductListProps {
   products: Product[];
 }
 
 const ProductList: React.FC<ProductListProps> = ({ products }) => {
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 0,
-    }).format(price);
-  };
-
   const getTotalStock = (product: Product) => {
     return product.variants.reduce((total, variant) => total + variant.stock, 0);
   };
@@ -109,9 +102,9 @@ const ProductList: React.FC<ProductListProps> = ({ products }) => {
               
               <div className="mt-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div>
-                  <p className="text-xl font-semibold text-gray-900">
-                    {formatPrice(lowestPrice)}
-                  </p>
+                  <div className="text-xl font-semibold text-gray-900">
+                    <Currency value={lowestPrice} />
+                  </div>
                   {inStock ? (
                     <p className="text-green-600 text-sm">In Stock</p>
                   ) : (

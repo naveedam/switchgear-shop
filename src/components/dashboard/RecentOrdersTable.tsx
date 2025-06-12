@@ -3,6 +3,7 @@ import React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Currency } from '@/components/ui/currency';
 import { Order, OrderStatus } from '@/types/order';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -36,13 +37,6 @@ const formatStatus = (status: OrderStatus) => {
 };
 
 const RecentOrdersTable: React.FC<RecentOrdersTableProps> = ({ orders }) => {
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount);
-  };
-  
   return (
     <Card>
       <CardHeader>
@@ -65,7 +59,9 @@ const RecentOrdersTable: React.FC<RecentOrdersTableProps> = ({ orders }) => {
                 <TableCell className="font-medium">#{order.id.slice(0, 8)}</TableCell>
                 <TableCell>{order.buyerName}</TableCell>
                 <TableCell>{formatDistanceToNow(new Date(order.createdAt), { addSuffix: true })}</TableCell>
-                <TableCell>{formatCurrency(order.totalAmount)}</TableCell>
+                <TableCell>
+                  <Currency value={order.totalAmount} />
+                </TableCell>
                 <TableCell>
                   <Badge className={getStatusColor(order.status)}>
                     {formatStatus(order.status)}
