@@ -12,6 +12,7 @@ import AdminSettings from './pages/admin/AdminSettings';
 import SellerDashboard from './pages/SellerDashboard';
 import ProductListingPage from './pages/ProductListingPage';
 import LoginPage from './pages/auth/LoginPage';
+import AllCategories from './pages/AllCategories';
 
 import { Toaster } from './components/ui/toaster';
 import './App.css';
@@ -53,6 +54,7 @@ function App() {
         {/* Public routes */}
         <Route path="/" element={<MainLayout><Outlet /></MainLayout>}>
           <Route index element={<Home />} />
+          <Route path="categories" element={<AllCategories />} />
           <Route path="categories/:categorySlug" element={<ProductListingPage />} />
         </Route>
         

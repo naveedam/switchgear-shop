@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -5,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { Product } from '@/types/product';
 import ProductCard from '@/components/product/ProductCard';
-import { ArrowRight, ShieldCheck, Truck, Clock, Award } from 'lucide-react';
+import { ArrowRight, ShieldCheck, Truck, Clock, Award, RefreshCw } from 'lucide-react';
 import { Category } from '@/types/category';
 import { fetchCategories } from '@/services/categoryService';
 
@@ -77,6 +78,7 @@ const Home: React.FC = () => {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   
   useEffect(() => {
     // In a real app, fetch products from API
@@ -86,10 +88,13 @@ const Home: React.FC = () => {
     const loadCategories = async () => {
       try {
         setLoading(true);
+        setError(null);
         const data = await fetchCategories();
+        console.log('Categories loaded in Home page:', data);
         setCategories(data);
       } catch (error) {
         console.error('Failed to load categories:', error);
+        setError('Failed to load categories. Please check your connection and try again.');
       } finally {
         setLoading(false);
       }
@@ -97,6 +102,25 @@ const Home: React.FC = () => {
     
     loadCategories();
   }, []);
+
+  const handleRetryCategories = () => {
+    console.log('Retrying category fetch...');
+    const loadCategories = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await fetchCategories();
+        setCategories(data);
+      } catch (error) {
+        console.error('Failed to load categories on retry:', error);
+        setError('Failed to load categories. Please check your connection and try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadCategories();
+  };
   
   return (
     <div className="min-h-screen">
@@ -212,11 +236,23 @@ const Home: React.FC = () => {
               Array(10).fill(0).map((_, index) => (
                 <Card key={`loading-${index}`} className="overflow-hidden h-full animate-pulse">
                   <div className="aspect-square bg-gray-200"></div>
+                  <div className="p-2">
+                    <div className="h-3 bg-gray-200 rounded"></div>
+                  </div>
                 </Card>
               ))
+            ) : error ? (
+              // Show error state
+              <div className="col-span-full py-12 text-center">
+                <p className="text-red-600 mb-4">{error}</p>
+                <Button onClick={handleRetryCategories} variant="outline" size="sm">
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Try Again
+                </Button>
+              </div>
             ) : categories.length > 0 ? (
               // Show actual categories
-              categories.map(category => (
+              categories.slice(0, 10).map(category => (
                 <Link 
                   key={category.id} 
                   to={`/categories/${category.slug}`}
@@ -228,10 +264,14 @@ const Home: React.FC = () => {
                         src={category.imageUrl || 'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&w=300&h=200'} 
                         alt={category.name} 
                         className="w-full h-full object-cover transition-transform group-hover:scale-105" 
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.src = 'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&w=300&h=200';
+                        }}
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                       <div className="absolute bottom-0 left-0 right-0 p-4">
-                        <h3 className="text-white font-medium text-center">
+                        <h3 className="text-white font-medium text-center text-sm">
                           {category.name}
                         </h3>
                       </div>
@@ -241,8 +281,12 @@ const Home: React.FC = () => {
               ))
             ) : (
               // If no categories found
-              <div className="col-span-6 py-12 text-center text-gray-500">
-                <p>No categories found.</p>
+              <div className="col-span-full py-12 text-center text-gray-500">
+                <p className="mb-2">No categories available at the moment.</p>
+                <Button onClick={handleRetryCategories} variant="outline" size="sm">
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Refresh
+                </Button>
               </div>
             )}
           </div>

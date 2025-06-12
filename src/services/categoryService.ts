@@ -4,17 +4,22 @@ import { Category } from "@/types/category";
 
 export const fetchCategories = async (): Promise<Category[]> => {
   try {
+    console.log('Fetching categories from database...');
+    
     const { data, error } = await supabase
       .from('product_categories')
       .select('*')
       .order('sort_order', { ascending: true });
 
     if (error) {
-      console.error('Error fetching categories:', error);
+      console.error('Supabase error fetching categories:', error);
       return [];
     }
 
+    console.log('Raw category data from database:', data);
+
     if (!data || data.length === 0) {
+      console.log('No categories found in database');
       return [];
     }
 
@@ -28,6 +33,7 @@ export const fetchCategories = async (): Promise<Category[]> => {
       sortOrder: item.sort_order
     }));
 
+    console.log('Transformed categories:', categories);
     return categories;
   } catch (error) {
     console.error('Error in fetchCategories:', error);
