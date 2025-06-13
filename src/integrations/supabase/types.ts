@@ -1543,9 +1543,12 @@ export type Database = {
         Row: {
           admin_notes: string | null
           created_at: string
-          document_type: string
+          document_name: string | null
+          document_type: Database["public"]["Enums"]["document_type_enum"]
           document_url: string
+          expiry_date: string | null
           id: string
+          issued_by: string | null
           seller_id: string | null
           status: string | null
           updated_at: string
@@ -1553,9 +1556,12 @@ export type Database = {
         Insert: {
           admin_notes?: string | null
           created_at?: string
-          document_type: string
+          document_name?: string | null
+          document_type: Database["public"]["Enums"]["document_type_enum"]
           document_url: string
+          expiry_date?: string | null
           id?: string
+          issued_by?: string | null
           seller_id?: string | null
           status?: string | null
           updated_at?: string
@@ -1563,9 +1569,12 @@ export type Database = {
         Update: {
           admin_notes?: string | null
           created_at?: string
-          document_type?: string
+          document_name?: string | null
+          document_type?: Database["public"]["Enums"]["document_type_enum"]
           document_url?: string
+          expiry_date?: string | null
           id?: string
+          issued_by?: string | null
           seller_id?: string | null
           status?: string | null
           updated_at?: string
@@ -1584,68 +1593,101 @@ export type Database = {
         Row: {
           address: string
           admin_notes: string | null
+          annual_turnover: string | null
+          authorization_certificates: Json | null
+          bank_account_number: string | null
+          bank_ifsc_code: string | null
+          bank_name: string | null
           business_type: string
+          certifications: string[] | null
           city: string
           company_description: string | null
           company_name: string
+          company_pan_number: string | null
           contact_email: string
           contact_phone: string
           country: string
           created_at: string
+          gst_number: string | null
           id: string
           postal_code: string
+          primary_product_categories: string[] | null
           registration_number: string | null
           state: string
           status: string | null
           step: number | null
           tax_id: string | null
+          trade_license_number: string | null
           updated_at: string
           user_id: string | null
           website: string | null
+          years_in_business: number | null
         }
         Insert: {
           address: string
           admin_notes?: string | null
+          annual_turnover?: string | null
+          authorization_certificates?: Json | null
+          bank_account_number?: string | null
+          bank_ifsc_code?: string | null
+          bank_name?: string | null
           business_type: string
+          certifications?: string[] | null
           city: string
           company_description?: string | null
           company_name: string
+          company_pan_number?: string | null
           contact_email: string
           contact_phone: string
           country: string
           created_at?: string
+          gst_number?: string | null
           id?: string
           postal_code: string
+          primary_product_categories?: string[] | null
           registration_number?: string | null
           state: string
           status?: string | null
           step?: number | null
           tax_id?: string | null
+          trade_license_number?: string | null
           updated_at?: string
           user_id?: string | null
           website?: string | null
+          years_in_business?: number | null
         }
         Update: {
           address?: string
           admin_notes?: string | null
+          annual_turnover?: string | null
+          authorization_certificates?: Json | null
+          bank_account_number?: string | null
+          bank_ifsc_code?: string | null
+          bank_name?: string | null
           business_type?: string
+          certifications?: string[] | null
           city?: string
           company_description?: string | null
           company_name?: string
+          company_pan_number?: string | null
           contact_email?: string
           contact_phone?: string
           country?: string
           created_at?: string
+          gst_number?: string | null
           id?: string
           postal_code?: string
+          primary_product_categories?: string[] | null
           registration_number?: string | null
           state?: string
           status?: string | null
           step?: number | null
           tax_id?: string | null
+          trade_license_number?: string | null
           updated_at?: string
           user_id?: string | null
           website?: string | null
+          years_in_business?: number | null
         }
         Relationships: []
       }
@@ -1709,6 +1751,14 @@ export type Database = {
         | "other_income"
         | "other_expenses"
       account_type: "asset" | "liability" | "equity" | "revenue" | "expense"
+      document_type_enum:
+        | "authorization_certificate"
+        | "gst_certificate"
+        | "pan_card"
+        | "trade_license"
+        | "bank_statement"
+        | "incorporation_certificate"
+        | "other"
       invoice_status: "draft" | "sent" | "paid" | "cancelled" | "overdue"
       product_category:
         | "starters_and_switches"
@@ -1868,6 +1918,15 @@ export const Constants = {
         "other_expenses",
       ],
       account_type: ["asset", "liability", "equity", "revenue", "expense"],
+      document_type_enum: [
+        "authorization_certificate",
+        "gst_certificate",
+        "pan_card",
+        "trade_license",
+        "bank_statement",
+        "incorporation_certificate",
+        "other",
+      ],
       invoice_status: ["draft", "sent", "paid", "cancelled", "overdue"],
       product_category: [
         "starters_and_switches",
