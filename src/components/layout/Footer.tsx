@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Facebook, Twitter, Instagram, Linkedin, Mail, Phone } from 'lucide-react';
@@ -50,8 +51,14 @@ const Footer: React.FC = () => {
           </div>
           
           <div>
-            <h4 className="text-lg font-semibold mb-4">Resources</h4>
+            <h4 className="text-lg font-semibold mb-4">For Business</h4>
             <ul className="space-y-2">
+              <li>
+                <Link to="/register?role=seller" className="text-gray-400 hover:text-white">Become a Seller</Link>
+              </li>
+              <li>
+                <Link to="/register?role=buyer" className="text-gray-400 hover:text-white">Join as Buyer</Link>
+              </li>
               <li>
                 <Link to="/blog" className="text-gray-400 hover:text-white">Blog</Link>
               </li>
@@ -61,18 +68,18 @@ const Footer: React.FC = () => {
               <li>
                 <Link to="/support" className="text-gray-400 hover:text-white">Support</Link>
               </li>
+            </ul>
+          </div>
+          
+          <div>
+            <h4 className="text-lg font-semibold mb-4">Legal & Contact</h4>
+            <ul className="space-y-2 mb-4">
               <li>
                 <Link to="/terms" className="text-gray-400 hover:text-white">Terms & Conditions</Link>
               </li>
               <li>
                 <Link to="/privacy" className="text-gray-400 hover:text-white">Privacy Policy</Link>
               </li>
-            </ul>
-          </div>
-          
-          <div>
-            <h4 className="text-lg font-semibold mb-4">Contact Us</h4>
-            <ul className="space-y-2">
               <li className="flex items-center">
                 <Mail size={18} className="mr-2 text-gray-400" />
                 <span className="text-gray-400">info@switchgearshop.com</span>
