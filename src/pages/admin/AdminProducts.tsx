@@ -35,6 +35,8 @@ import { toast } from '@/hooks/use-toast';
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchCategories } from '@/services/categoryService';
+import { fetchSubcategories } from '@/services/subcategoryService';
+import { Database } from '@/integrations/supabase/types';
 
 // Mock products data
 const mockProducts = [
@@ -203,8 +205,6 @@ const AdminProducts: React.FC = () => {
         imageUrl = urlData.publicUrl;
       }
       
-      const { data: categoryData } = await supabase.from('product_categories').select('name').eq('slug', data.category).single();
-
       const newProduct = {
         name: data.name,
         description: data.description,
@@ -212,17 +212,17 @@ const AdminProducts: React.FC = () => {
         stock_quantity: data.stock,
         vendor_id: data.seller,
         subcategory_id: data.subcategory,
-        category: data.category,
+        category: data.category.replace(/-/g, '_') as Database['public']['Enums']['product_category'],
         sku: data.sku,
         Images: imageUrl,
         rated_voltage: data.rated_voltage,
         power_rating: data.power_rating,
         dimensions: data.dimensions,
-        status: 'active',
+        status: 'active' as const,
         currency: 'INR',
       };
 
-      const { error } = await supabase.from('products').insert([newProduct]).select();
+      const { error } = await supabase.from('products').insert(newProduct);
 
       if (error) {
         throw error;
@@ -437,8 +437,10 @@ const AdminProducts: React.FC = () => {
                               type="file"
                               className="pl-8"
                               accept="image/png, image/jpeg, image/gif"
-                              onChange={(e) => onChange(e.target.files)}
-                              {...fieldProps}
+                              onBlur={field.onBlur}
+                              name={field.name}
+                              ref={field.ref}
+                              onChange={(e) => field.onChange(e.target.files)}
                             />
                          </div>
                       </FormControl>
