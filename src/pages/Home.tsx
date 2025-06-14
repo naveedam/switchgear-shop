@@ -83,6 +83,8 @@ const getDefaultCategoryImage = (categoryName: string) => {
       "https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7?auto=format&fit=crop&w=300&h=200", // closeup electronics
     "control panels":
       "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=300&h=200", // control panels
+    "low voltage switchgears":
+      "https://images.unsplash.com/photo-1531297484001-80022131f5a1?auto=format&fit=crop&w=300&h=200", // fitting Unsplash image for L.V. switchgear
     // add more mappings as needed
   };
 
