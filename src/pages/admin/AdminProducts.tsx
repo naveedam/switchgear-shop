@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -31,13 +30,11 @@ import {
   SelectValue 
 } from '@/components/ui/select';
 import { useForm } from 'react-hook-form';
-import { Search, PackagePlus, IndianRupee } from 'lucide-react';
+import { Search, PackagePlus, IndianRupee, Image as ImageIcon, Zap, Power, Ruler } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchCategories } from '@/services/categoryService';
-import { fetchSubcategories } from '@/services/subcategoryService';
-import { Category, Subcategory } from '@/types/category';
 
 // Mock products data
 const mockProducts = [
@@ -89,13 +86,8 @@ const mockProducts = [
 ];
 
 // Mock sellers for the dropdown
-const mockSellers = [
-  { id: 1, name: 'ElectroTech Industries' },
-  { id: 2, name: 'PowerGrid Solutions' },
-  { id: 3, name: 'Circuit Systems Ltd' },
-  { id: 4, name: 'VoltMax Industries' },
-  { id: 5, name: 'SwitchPro Electronics' },
-];
+// This will be replaced by a database query
+// const mockSellers = [ ... ];
 
 interface ProductFormValues {
   name: string;
@@ -106,11 +98,16 @@ interface ProductFormValues {
   category: string;
   subcategory: string;
   sku: string;
+  image?: FileList;
+  rated_voltage?: string;
+  power_rating?: string;
+  dimensions?: string;
 }
 
 const AdminProducts: React.FC = () => {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -127,6 +124,24 @@ const AdminProducts: React.FC = () => {
     queryFn: () => fetchSubcategories(selectedCategory || ''),
     enabled: !!selectedCategory
   });
+
+  // Fetch sellers from the database
+  const { data: sellers = [], isLoading: sellersLoading } = useQuery({
+    queryKey: ['sellers'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('companies')
+        .select('id, name')
+        .eq('is_vendor', true)
+        .eq('status', 'active');
+      if (error) {
+        console.error("Error fetching sellers:", error);
+        toast({ title: "Error", description: "Could not fetch sellers.", variant: "destructive" });
+        return [];
+      }
+      return data;
+    }
+  });
   
   const form = useForm<ProductFormValues>({
     defaultValues: {
@@ -138,6 +153,9 @@ const AdminProducts: React.FC = () => {
       category: '',
       subcategory: '',
       sku: '',
+      rated_voltage: '',
+      power_rating: '',
+      dimensions: '',
     },
   });
   
@@ -168,15 +186,65 @@ const AdminProducts: React.FC = () => {
         product.seller.toLowerCase().includes(searchTerm.toLowerCase()))
     : mockProducts;
   
-  const handleAddProduct = (data: ProductFormValues) => {
-    // In a real app, you would add the product to the database
-    console.log('Adding new product:', data);
-    toast({
-      title: 'Product Created',
-      description: `${data.name} has been successfully added to the product catalog.`,
-    });
-    setIsAddProductOpen(false);
-    form.reset();
+  const handleAddProduct = async (data: ProductFormValues) => {
+    try {
+      let imageUrl: string | undefined;
+      const imageFile = data.image?.[0];
+
+      if (imageFile) {
+        const filePath = `public/${Date.now()}_${imageFile.name}`;
+        const { error: uploadError } = await supabase.storage
+          .from('product-images')
+          .upload(filePath, imageFile);
+
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage.from('product-images').getPublicUrl(filePath);
+        imageUrl = urlData.publicUrl;
+      }
+      
+      const { data: categoryData } = await supabase.from('product_categories').select('name').eq('slug', data.category).single();
+
+      const newProduct = {
+        name: data.name,
+        description: data.description,
+        price: data.price,
+        stock_quantity: data.stock,
+        vendor_id: data.seller,
+        subcategory_id: data.subcategory,
+        category: data.category,
+        sku: data.sku,
+        Images: imageUrl,
+        rated_voltage: data.rated_voltage,
+        power_rating: data.power_rating,
+        dimensions: data.dimensions,
+        status: 'active',
+        currency: 'INR',
+      };
+
+      const { error } = await supabase.from('products').insert([newProduct]).select();
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: 'Product Created',
+        description: `${data.name} has been successfully added.`,
+      });
+
+      // Note: The product list is using mock data. The new product will not appear until the page is refactored to fetch products from the database.
+      queryClient.invalidateQueries({ queryKey: ['products'] }); // In case we switch to DB fetching
+      setIsAddProductOpen(false);
+      form.reset();
+    } catch (error: any) {
+      console.error("Error creating product:", error);
+      toast({
+        title: 'Error creating product',
+        description: error.message || "An unexpected error occurred.",
+        variant: 'destructive',
+      });
+    }
   };
   
   // Format price in Indian Rupees
@@ -204,7 +272,7 @@ const AdminProducts: React.FC = () => {
               <DialogTitle>Add New Product</DialogTitle>
             </DialogHeader>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(handleAddProduct)} className="space-y-4 py-4">
+              <form onSubmit={form.handleSubmit(handleAddProduct)} className="space-y-4 py-4 max-h-[80vh] overflow-y-auto pr-2">
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
@@ -358,6 +426,83 @@ const AdminProducts: React.FC = () => {
                 
                 <FormField
                   control={form.control}
+                  name="image"
+                  render={({ field: { onChange, ...fieldProps } }) => (
+                    <FormItem>
+                      <FormLabel>Product Image</FormLabel>
+                      <FormControl>
+                         <div className="relative">
+                            <ImageIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                            <Input
+                              type="file"
+                              className="pl-8"
+                              accept="image/png, image/jpeg, image/gif"
+                              onChange={(e) => onChange(e.target.files)}
+                              {...fieldProps}
+                            />
+                         </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="rated_voltage"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Voltage</FormLabel>
+                         <FormControl>
+                          <div className="relative">
+                            <Zap className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                            <Input placeholder="e.g. 220V" {...field} className="pl-8" />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="power_rating"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Power Rating</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Power className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                            <Input placeholder="e.g. 100W" {...field} className="pl-8" />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                
+                <div className="grid grid-cols-3 gap-4">
+                   <FormField
+                    control={form.control}
+                    name="dimensions"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Dimensions</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Ruler className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                            <Input placeholder="e.g. 10x5x3 cm" {...field} className="pl-8" />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                
+                <FormField
+                  control={form.control}
                   name="seller"
                   render={({ field }) => (
                     <FormItem>
@@ -369,11 +514,15 @@ const AdminProducts: React.FC = () => {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {mockSellers.map((seller) => (
-                            <SelectItem key={seller.id} value={seller.id.toString()}>
-                              {seller.name}
-                            </SelectItem>
-                          ))}
+                          {sellersLoading ? (
+                            <SelectItem value="loading" disabled>Loading sellers...</SelectItem>
+                          ) : (
+                            sellers.map((seller) => (
+                              <SelectItem key={seller.id} value={seller.id}>
+                                {seller.name}
+                              </SelectItem>
+                            ))
+                          )}
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -382,7 +531,9 @@ const AdminProducts: React.FC = () => {
                 />
                 
                 <DialogFooter>
-                  <Button type="submit" className="mt-4">Add Product</Button>
+                  <Button type="submit" className="mt-4" disabled={form.formState.isSubmitting}>
+                    {form.formState.isSubmitting ? 'Adding...' : 'Add Product'}
+                  </Button>
                 </DialogFooter>
               </form>
             </Form>

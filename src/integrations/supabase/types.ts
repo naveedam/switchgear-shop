@@ -885,6 +885,7 @@ export type Database = {
           description: string | null
           detuning_factor: string | null
           dielectric_type: string | null
+          dimensions: string | null
           dimming_capability: boolean | null
           dimming_range: string | null
           discharge_resistor: boolean | null
@@ -1108,6 +1109,7 @@ export type Database = {
           description?: string | null
           detuning_factor?: string | null
           dielectric_type?: string | null
+          dimensions?: string | null
           dimming_capability?: boolean | null
           dimming_range?: string | null
           discharge_resistor?: boolean | null
@@ -1331,6 +1333,7 @@ export type Database = {
           description?: string | null
           detuning_factor?: string | null
           dielectric_type?: string | null
+          dimensions?: string | null
           dimming_capability?: boolean | null
           dimming_range?: string | null
           discharge_resistor?: boolean | null
