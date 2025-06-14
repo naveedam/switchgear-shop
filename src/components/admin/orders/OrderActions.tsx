@@ -15,9 +15,10 @@ import { useToast } from '@/components/ui/use-toast';
 
 interface OrderActionsProps {
   order: Order;
+  onViewDetails: (order: Order) => void;
 }
 
-const OrderActions: React.FC<OrderActionsProps> = ({ order }) => {
+const OrderActions: React.FC<OrderActionsProps> = ({ order, onViewDetails }) => {
     const { toast } = useToast();
 
     const handleAction = (action: string) => {
@@ -37,7 +38,7 @@ const OrderActions: React.FC<OrderActionsProps> = ({ order }) => {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuLabel>Actions</DropdownMenuLabel>
-        <DropdownMenuItem onClick={() => handleAction('View Details')}>
+        <DropdownMenuItem onClick={() => onViewDetails(order)}>
           <Eye className="mr-2 h-4 w-4" />
           <span>View Details</span>
         </DropdownMenuItem>

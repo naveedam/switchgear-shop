@@ -1,13 +1,25 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { mockOrders } from '@/data/mockOrders';
 import OrderStatusBadge from '@/components/admin/orders/OrderStatusBadge';
 import OrderActions from '@/components/admin/orders/OrderActions';
 import { format } from 'date-fns';
+import { Order } from '@/types/order';
+import OrderDetailsModal from '@/components/admin/orders/OrderDetailsModal';
 
 const AdminOrders: React.FC = () => {
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+
+  const handleViewDetails = (order: Order) => {
+    setSelectedOrder(order);
+  };
+
+  const handleCloseModal = () => {
+    setSelectedOrder(null);
+  };
+
   return (
     <div className="p-6">
       <Card>
@@ -42,7 +54,7 @@ const AdminOrders: React.FC = () => {
                   </TableCell>
                   <TableCell>{format(order.createdAt, 'MMM d, yyyy')}</TableCell>
                   <TableCell className="text-right">
-                    <OrderActions order={order} />
+                    <OrderActions order={order} onViewDetails={handleViewDetails} />
                   </TableCell>
                 </TableRow>
               ))}
@@ -50,6 +62,7 @@ const AdminOrders: React.FC = () => {
           </Table>
         </CardContent>
       </Card>
+      <OrderDetailsModal order={selectedOrder} isOpen={!!selectedOrder} onClose={handleCloseModal} />
     </div>
   );
 };
