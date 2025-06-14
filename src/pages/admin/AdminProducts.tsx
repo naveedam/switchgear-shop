@@ -427,7 +427,7 @@ const AdminProducts: React.FC = () => {
                 <FormField
                   control={form.control}
                   name="image"
-                  render={({ field: { onChange, ...fieldProps } }) => (
+                  render={({ field }) => (
                     <FormItem>
                       <FormLabel>Product Image</FormLabel>
                       <FormControl>
