@@ -18,6 +18,11 @@ import ProductListingPage from './pages/ProductListingPage';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import AllCategories from './pages/AllCategories';
+import AdminOrders from './pages/admin/AdminOrders';
+import AdminUsers from './pages/admin/AdminUsers';
+import AdminAnalytics from './pages/admin/AdminAnalytics';
+import AdminPermissions from './pages/admin/AdminPermissions';
+import AdminReports from './pages/admin/AdminReports';
 
 import { Toaster } from './components/ui/toaster';
 import './App.css';
@@ -83,10 +88,15 @@ function App() {
           <Route path="categories/:id" element={<EditCategory />} />
           <Route path="subcategories" element={<AdminSubcategories />} />
           <Route path="subcategories/:id" element={<EditSubcategory />} />
+          <Route path="orders" element={<AdminOrders />} />
+          <Route path="users" element={<AdminUsers />} />
           <Route path="users/:id" element={<EditUser />} />
           <Route path="sellers" element={<AdminSellers />} />
           <Route path="sellers/:id" element={<EditSeller />} />
+          <Route path="analytics" element={<AdminAnalytics />} />
           <Route path="settings" element={<AdminSettings />} />
+          <Route path="permissions" element={<AdminPermissions />} />
+          <Route path="reports" element={<AdminReports />} />
         </Route>
         
         {/* Seller routes - protected */}
