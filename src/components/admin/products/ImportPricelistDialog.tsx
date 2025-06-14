@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/form';
 import { Upload } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ImportFormValues {
   pricelist: FileList;
@@ -29,6 +30,7 @@ interface ImportFormValues {
 
 export const ImportPricelistDialog: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
   const form = useForm<ImportFormValues>();
 
   const handleImport = async (data: ImportFormValues) => {
@@ -51,19 +53,47 @@ export const ImportPricelistDialog: React.FC = () => {
       return;
     }
 
-    // This is a placeholder for the actual file processing logic,
-    // which will be handled by a Supabase Edge Function.
-    console.log('Importing file:', file.name);
-    toast({
-      title: 'Upload Started',
-      description: `${file.name} is being processed. You will be notified upon completion.`,
-    });
-    
-    // In a real implementation, we would start the upload to Supabase storage
-    // and then trigger the edge function.
-    
-    setIsOpen(false);
-    form.reset();
+    setIsImporting(true);
+
+    try {
+      const filePath = `public/pricelist-${Date.now()}-${file.name.replace(/\s/g, '_')}`;
+
+      // 1. Upload the file to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('pricelists')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      toast({
+        title: 'File Uploaded',
+        description: 'Your pricelist is being processed in the background.',
+      });
+
+      // 2. Trigger the Edge Function to process the file
+      const { error: functionError } = await supabase.functions.invoke('process-pricelist', {
+        body: { filePath },
+      });
+
+      if (functionError) throw functionError;
+
+      toast({
+        title: 'Processing Started',
+        description: `You will be notified upon completion.`,
+      });
+
+      setIsOpen(false);
+      form.reset();
+    } catch (error: any) {
+      console.error('Error importing pricelist:', error);
+      toast({
+        title: 'Import Failed',
+        description: error.message || 'An unexpected error occurred.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsImporting(false);
+    }
   };
 
   return (
@@ -103,6 +133,7 @@ export const ImportPricelistDialog: React.FC = () => {
                           onChange(files);
                         }
                       }}
+                      disabled={isImporting}
                     />
                   </FormControl>
                   <FormMessage />
@@ -110,8 +141,8 @@ export const ImportPricelistDialog: React.FC = () => {
               )}
             />
             <DialogFooter>
-              <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? 'Importing...' : 'Import Products'}
+              <Button type="submit" disabled={isImporting}>
+                {isImporting ? 'Importing...' : 'Import Products'}
               </Button>
             </DialogFooter>
           </form>

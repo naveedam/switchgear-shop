@@ -1,1 +1,7 @@
-project_id = "hdoefblcoavpzvfiiglm"
+
+# This file configures the Supabase project.
+
+[functions.process-pricelist]
+# Verifies the JWT to ensure only authenticated users can call this function.
+# Further permission checks are done inside the function logic.
+verify_jwt = true
