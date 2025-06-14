@@ -85,10 +85,12 @@ export const ImportPricelistDialog: React.FC = () => {
       setIsOpen(false);
       form.reset();
     } catch (error: any) {
-      console.error('Error importing pricelist:', error);
+      console.error('Error importing pricelist:', JSON.stringify(error, null, 2));
+      const description = error.message || 'An unexpected error occurred.';
+      const details = error.error ? ` Details: ${error.error} (${error.statusCode})` : '';
       toast({
         title: 'Import Failed',
-        description: error.message || 'An unexpected error occurred.',
+        description: description + details,
         variant: 'destructive',
       });
     } finally {

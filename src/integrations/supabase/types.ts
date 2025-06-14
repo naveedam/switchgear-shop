@@ -1728,10 +1728,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      is_super_admin: {
-        Args: { user_id: string }
-        Returns: boolean
-      }
       make_user_super_admin: {
         Args: { user_email: string }
         Returns: string
