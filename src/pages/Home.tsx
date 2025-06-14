@@ -73,6 +73,23 @@ const mockFeaturedProducts: Product[] = Array.from({ length: 8 }, (_, i) => ({
   status: 'published',
 }));
 
+// Helper to get a relevant default image per category name (case-insensitive)
+const getDefaultCategoryImage = (categoryName: string) => {
+  // Add mappings for categories you want to customize
+  const categoryMap: Record<string, string> = {
+    "wires & cables":
+      "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=300&h=200", // macro photography of wires
+    "circuit breakers":
+      "https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7?auto=format&fit=crop&w=300&h=200", // closeup electronics
+    "control panels":
+      "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=300&h=200", // control panels
+    // add more mappings as needed
+  };
+
+  const key = categoryName.toLowerCase().trim();
+  return categoryMap[key] || "https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&w=300&h=200";
+};
+
 const Home: React.FC = () => {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -260,12 +277,16 @@ const Home: React.FC = () => {
                   <Card className="overflow-hidden h-full card-hover">
                     <div className="aspect-square relative">
                       <img 
-                        src={category.imageUrl || 'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&w=300&h=200'} 
+                        src={
+                          category.imageUrl?.trim()
+                            ? category.imageUrl
+                            : getDefaultCategoryImage(category.name)
+                        }
                         alt={category.name} 
                         className="w-full h-full object-cover transition-transform group-hover:scale-105" 
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
-                          target.src = 'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&w=300&h=200';
+                          target.src = getDefaultCategoryImage(category.name);
                         }}
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
