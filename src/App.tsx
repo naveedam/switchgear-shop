@@ -8,6 +8,8 @@ import AdminCategories from './pages/admin/AdminCategories';
 import AdminSubcategories from './pages/admin/AdminSubcategories';
 import AdminSellers from './pages/admin/AdminSellers';
 import AdminSettings from './pages/admin/AdminSettings';
+import EditProduct from './pages/admin/EditProduct';
+import EditCategory from './pages/admin/EditCategory';
 import SellerDashboard from './pages/SellerDashboard';
 import ProductListingPage from './pages/ProductListingPage';
 import LoginPage from './pages/auth/LoginPage';
@@ -73,7 +75,9 @@ function App() {
         >
           <Route index element={<AdminDashboard />} />
           <Route path="products" element={<AdminProducts />} />
+          <Route path="products/:id" element={<EditProduct />} />
           <Route path="categories" element={<AdminCategories />} />
+          <Route path="categories/:id" element={<EditCategory />} />
           <Route path="subcategories" element={<AdminSubcategories />} />
           <Route path="sellers" element={<AdminSellers />} />
           <Route path="settings" element={<AdminSettings />} />
