@@ -10,6 +10,9 @@ import AdminSellers from './pages/admin/AdminSellers';
 import AdminSettings from './pages/admin/AdminSettings';
 import EditProduct from './pages/admin/EditProduct';
 import EditCategory from './pages/admin/EditCategory';
+import EditSubcategory from './pages/admin/EditSubcategory';
+import EditUser from './pages/admin/EditUser';
+import EditSeller from './pages/admin/EditSeller';
 import SellerDashboard from './pages/SellerDashboard';
 import ProductListingPage from './pages/ProductListingPage';
 import LoginPage from './pages/auth/LoginPage';
@@ -79,7 +82,10 @@ function App() {
           <Route path="categories" element={<AdminCategories />} />
           <Route path="categories/:id" element={<EditCategory />} />
           <Route path="subcategories" element={<AdminSubcategories />} />
+          <Route path="subcategories/:id" element={<EditSubcategory />} />
+          <Route path="users/:id" element={<EditUser />} />
           <Route path="sellers" element={<AdminSellers />} />
+          <Route path="sellers/:id" element={<EditSeller />} />
           <Route path="settings" element={<AdminSettings />} />
         </Route>
         
