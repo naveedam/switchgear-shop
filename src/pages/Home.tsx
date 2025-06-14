@@ -79,21 +79,22 @@ const mockFeaturedProducts: Product[] = Array.from({ length: 8 }, (_, i) => ({
   status: 'published',
 }));
 
-// Helper to get a relevant default image per category name (case-insensitive)
+// Helper to get a relevant default image per category name (case-insensitive, more robust)
 const getDefaultCategoryImage = (categoryName: string) => {
-  const categoryMap: Record<string, string> = {
-    "wires & cables":
-      "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=300&h=200", 
-    "circuit breakers":
-      "https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7?auto=format&fit=crop&w=300&h=200",
-    "control panels":
-      "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=300&h=200",
-    "low voltage switchgears":
-      "https://images.unsplash.com/photo-1531297484001-80022131f5a1?auto=format&fit=crop&w=300&h=200",
-  };
-
-  const key = categoryName.toLowerCase().trim();
-  return categoryMap[key] || "https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&w=300&h=200";
+  const normalized = categoryName.toLowerCase().replace(/&/g, 'and').replace(/[-_]/g, ' ').trim();
+  switch (normalized) {
+    case "circuit breakers":
+      return "https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7?auto=format&fit=crop&w=600&q=80";
+    case "low voltage switchgears":
+      return "https://images.unsplash.com/photo-1531297484001-80022131f5a1?auto=format&fit=crop&w=600&q=80";
+    case "control panels":
+      return "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=600&q=80";
+    case "wires and cables":
+      return "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=600&q=80";
+    default:
+      // fallback image
+      return "https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&w=600&q=80";
+  }
 };
 
 const Home: React.FC = () => {
