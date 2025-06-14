@@ -1,6 +1,7 @@
+
 import { BrowserRouter as Router, Routes, Route, Outlet, Navigate } from 'react-router-dom';
 import MainLayout from './components/layout/MainLayout';
-import Home from './pages/Home';
+import Index from './pages/Index';
 import NotFound from './pages/NotFound';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminProducts from './pages/admin/AdminProducts';
@@ -63,7 +64,7 @@ function App() {
       <Routes>
         {/* Public routes */}
         <Route path="/" element={<MainLayout><Outlet /></MainLayout>}>
-          <Route index element={<Home />} />
+          <Route index element={<Index />} />
           <Route path="categories" element={<AllCategories />} />
           <Route path="categories/:categorySlug" element={<ProductListingPage />} />
         </Route>
