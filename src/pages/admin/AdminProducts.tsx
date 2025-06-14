@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -12,6 +11,7 @@ import { toast } from '@/hooks/use-toast';
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from '@tanstack/react-query';
 import { AddProductDialog } from '@/components/admin/products/AddProductDialog';
+import { ImportPricelistDialog } from '@/components/admin/products/ImportPricelistDialog';
 
 const AdminProducts: React.FC = () => {
   const { user, isAuthenticated } = useAuth();
@@ -76,7 +76,10 @@ const AdminProducts: React.FC = () => {
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Manage Products</h1>
-        <AddProductDialog />
+        <div className="flex items-center gap-2">
+          <ImportPricelistDialog />
+          <AddProductDialog />
+        </div>
       </div>
       
       <Card className="mb-8">
