@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -24,10 +23,15 @@ const buyerRegistrationSchema = z.object({
 
 type BuyerRegistrationData = z.infer<typeof buyerRegistrationSchema>;
 
-const RegisterForm: React.FC<{ onSuccess?: () => void }> = ({ onSuccess }) => {
+const RegisterForm: React.FC<{ onSuccess?: () => void; initialTab?: 'buyer' | 'seller' }> = ({
+  onSuccess,
+  initialTab,
+}) => {
   const { register: registerUser, isLoading, error } = useAuth();
   const { toast } = useToast();
-  const [registrationType, setRegistrationType] = useState<'buyer' | 'seller'>('buyer');
+  const [registrationType, setRegistrationType] = useState<'buyer' | 'seller'>(
+    initialTab || 'buyer'
+  );
   
   const form = useForm<BuyerRegistrationData>({
     resolver: zodResolver(buyerRegistrationSchema),

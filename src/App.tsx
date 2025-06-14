@@ -1,4 +1,3 @@
-
 import { BrowserRouter as Router, Routes, Route, Outlet, Navigate } from 'react-router-dom';
 import MainLayout from './components/layout/MainLayout';
 import Home from './pages/Home';
@@ -12,6 +11,7 @@ import AdminSettings from './pages/admin/AdminSettings';
 import SellerDashboard from './pages/SellerDashboard';
 import ProductListingPage from './pages/ProductListingPage';
 import LoginPage from './pages/auth/LoginPage';
+import RegisterPage from './pages/auth/RegisterPage';
 import AllCategories from './pages/AllCategories';
 
 import { Toaster } from './components/ui/toaster';
@@ -60,6 +60,7 @@ function App() {
         
         {/* Auth routes */}
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
         
         {/* Admin routes - protected */}
         <Route 
