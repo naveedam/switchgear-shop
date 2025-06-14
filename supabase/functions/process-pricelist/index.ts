@@ -32,10 +32,17 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Check if the user is a super admin
-    const { data: isSuperAdmin, error: rpcError } = await adminClient.rpc('is_super_admin', { user_id: user.id });
-    if (rpcError) throw rpcError;
-    if (!isSuperAdmin) throw new Error("Permission denied. You must be a super admin to perform this action.");
+    // Check if the user is an admin by querying the companies table
+    const { data: company, error: companyError } = await adminClient
+      .from('companies')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    if (companyError) throw companyError;
+    if (!company || company.role !== 'admin') {
+      throw new Error("Permission denied. You must be an admin to perform this action.");
+    }
     
     const { filePath } = await req.json();
     if (!filePath) {

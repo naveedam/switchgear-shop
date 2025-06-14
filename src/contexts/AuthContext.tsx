@@ -1,38 +1,7 @@
-
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { User, LoginData, RegisterData, UserRole } from '@/types/user';
-
-// Mock user data for development
-const MOCK_USERS = [
-  {
-    id: '1',
-    email: 'naveedahmedm@hotmail.com',
-    name: 'Admin User',
-    role: 'admin' as UserRole,
-    companyName: 'Switchgear Shop',
-    phoneNumber: '555-1234',
-    createdAt: new Date(),
-    password: 'admin123' // Added password field for admin
-  },
-  {
-    id: '2',
-    email: 'seller@example.com',
-    name: 'Seller User',
-    role: 'seller' as UserRole,
-    companyName: 'ElectroTech Industries',
-    phoneNumber: '555-5678',
-    createdAt: new Date(),
-  },
-  {
-    id: '3',
-    email: 'buyer@example.com',
-    name: 'Buyer User',
-    role: 'buyer' as UserRole,
-    companyName: 'PowerGrid Solutions',
-    phoneNumber: '555-9012',
-    createdAt: new Date(),
-  }
-];
+import { supabase } from '@/integrations/supabase/client';
+import { Session } from '@supabase/supabase-js';
 
 interface AuthContextType {
   user: User | null;
@@ -48,46 +17,65 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check for saved user in localStorage
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
-    setIsLoading(false);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        setSession(session);
+        if (session?.user) {
+          const { data: companyProfile, error: profileError } = await supabase
+            .from('companies')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+
+          if (profileError) {
+            console.error('Error fetching user profile:', profileError);
+            setUser(null);
+          } else if (companyProfile) {
+            const fullUser: User = {
+              id: session.user.id,
+              email: session.user.email || '',
+              name: session.user.user_metadata?.name || companyProfile.name,
+              role: companyProfile.role as UserRole,
+              companyName: companyProfile.name,
+              phoneNumber: companyProfile.phone || '',
+              createdAt: new Date(session.user.created_at),
+            };
+            setUser(fullUser);
+          }
+        } else {
+          setUser(null);
+        }
+        setIsLoading(false);
+      }
+    );
+
+    // Check for initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) {
+        setIsLoading(false);
+      }
+    });
+
+    return () => {
+      subscription?.unsubscribe();
+    };
   }, []);
 
   const login = async (credentials: LoginData): Promise<void> => {
     setIsLoading(true);
     setError(null);
-    
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Find user in mock data
-      const foundUser = MOCK_USERS.find(u => u.email === credentials.email);
-      
-      if (foundUser) {
-        // For the admin account, check the password
-        if (foundUser.email === 'naveedahmedm@hotmail.com' && credentials.password !== 'admin123') {
-          throw new Error('Invalid password for admin account');
-        }
-        
-        // For other accounts, password check would go here in a real app
-        // We'll just extract the relevant user fields without the password
-        const { password, ...userWithoutPassword } = foundUser;
-        
-        setUser(userWithoutPassword);
-        localStorage.setItem('user', JSON.stringify(userWithoutPassword));
-      } else {
-        throw new Error('Invalid email or password');
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      const { error } = await supabase.auth.signInWithPassword(credentials);
+      if (error) throw error;
+      // onAuthStateChange will handle setting the user
+    } catch (err: any) {
+      setError(err.message || 'An error occurred during login.');
+      throw err;
     } finally {
       setIsLoading(false);
     }
@@ -96,41 +84,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const register = async (data: RegisterData): Promise<void> => {
     setIsLoading(true);
     setError(null);
-    
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Check if user already exists
-      if (MOCK_USERS.some(u => u.email === data.email)) {
-        throw new Error('User already exists');
-      }
-      
-      // Create new user - ensure required fields are provided with defaults if needed
-      const newUser: User = {
-        id: (MOCK_USERS.length + 1).toString(),
+      const { error } = await supabase.auth.signUp({
         email: data.email,
-        name: data.name,
-        role: data.role,
-        companyName: data.companyName || 'Default Company', // Provide default if not supplied
-        phoneNumber: data.phoneNumber || 'Not provided', // Provide default if not supplied
-        createdAt: new Date()
-      };
-      
-      // In a real app, you would save this to your backend
-      // For now, we'll just update our mock data and local state
-      MOCK_USERS.push({...newUser, password: data.password});
-      setUser(newUser);
-      localStorage.setItem('user', JSON.stringify(newUser));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+        password: data.password,
+        options: {
+          data: {
+            name: data.name,
+            companyName: data.companyName,
+            phoneNumber: data.phoneNumber,
+            role: data.role,
+          },
+        },
+      });
+      if (error) throw error;
+      // onAuthStateChange will handle setting the user after confirmation
+    } catch (err: any) {
+      setError(err.message || 'An error occurred during registration.');
+      throw err;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const logout = (): void => {
-    localStorage.removeItem('user');
+  const logout = async (): Promise<void> => {
+    await supabase.auth.signOut();
     setUser(null);
   };
 
