@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { User, LoginData, RegisterData, UserRole } from '@/types/user';
 import { supabase } from '@/integrations/supabase/client';
@@ -24,13 +25,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
+        console.log('onAuthStateChange triggered. Session:', session);
         setSession(session);
         if (session?.user) {
+          console.log('Fetching profile for user:', session.user.id);
           const { data: companyProfile, error: profileError } = await supabase
             .from('companies')
             .select('*')
             .eq('id', session.user.id)
             .single();
+
+          console.log('Company profile fetched:', companyProfile);
+          console.error('Profile fetch error:', profileError);
 
           if (profileError) {
             console.error('Error fetching user profile:', profileError);
@@ -45,9 +51,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               phoneNumber: companyProfile.phone || '',
               createdAt: new Date(session.user.created_at),
             };
+            console.log('Setting full user object:', fullUser);
             setUser(fullUser);
           }
         } else {
+          console.log('No session, setting user to null.');
           setUser(null);
         }
         setIsLoading(false);
