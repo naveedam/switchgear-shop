@@ -25,6 +25,8 @@ import AdminAnalytics from './pages/admin/AdminAnalytics';
 import AdminPermissions from './pages/admin/AdminPermissions';
 import AdminReports from './pages/admin/AdminReports';
 import CheckoutPage from './pages/CheckoutPage';
+import SellerProducts from './pages/SellerProducts';
+import SellerOrders from './pages/SellerOrders';
 
 import { Toaster } from './components/ui/toaster';
 import './App.css';
@@ -119,6 +121,8 @@ function App() {
             }
           >
             <Route index element={<SellerDashboard />} />
+            <Route path="products" element={<SellerProducts />} />
+            <Route path="orders" element={<SellerOrders />} />
           </Route>
 
           {/* Catch all */}
