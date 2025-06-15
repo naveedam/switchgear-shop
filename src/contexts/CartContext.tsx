@@ -39,10 +39,9 @@ interface CartContextType {
   refetchCart: () => Promise<void>;
 }
 
-// --- "Safe Context" Pattern ---
-const CartContext = createContext<CartContextType | undefined>(undefined);
+const CartContext = createContext<CartContextType | null>(null);
 
-export const CartProvider = ({ children }: { children: ReactNode }) => {
+export function CartProvider({ children }: { children: ReactNode }) {
   const { user, isAuthenticated } = useAuth();
   const [cartId, setCartId] = useState<string | null>(null);
   const [items, setItems] = useState<CartItem[]>([]);
@@ -179,11 +178,17 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     refetchCart: fetchCart,
   };
 
-  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
-};
+  return (
+    <CartContext.Provider value={value}>
+      {children}
+    </CartContext.Provider>
+  );
+}
 
-export const useCart = (): CartContextType => {
+export function useCart(): CartContextType {
   const ctx = useContext(CartContext);
-  if (!ctx) throw new Error('useCart must be used within a CartProvider');
+  if (!ctx) {
+    throw new Error('useCart must be used within a CartProvider');
+  }
   return ctx;
-};
+}
