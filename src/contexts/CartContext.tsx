@@ -16,11 +16,23 @@ export interface CartItem {
   totalPrice: number;
 }
 
+// Define a simpler type to use for addToCart
+export type AddToCartItem = {
+  productId: string;
+  productName: string;
+  productImage: string;
+  variantId?: string;
+  variantName?: string;
+  sku: string;
+  quantity: number;
+  unitPrice: number;
+};
+
 interface CartContextType {
   cartId: string | null;
   items: CartItem[];
   isFetching: boolean;
-  addToCart: (item: Omit<CartItem, 'id'|'totalPrice'>) => Promise<void>;
+  addToCart: (item: AddToCartItem) => Promise<void>;
   removeFromCart: (cartItemId: string) => Promise<void>;
   updateQuantity: (cartItemId: string, quantity: number) => Promise<void>;
   clearCart: () => Promise<void>;
@@ -99,7 +111,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   }, [isAuthenticated, user?.id]);
 
   // Add item to cart
-  const addToCart = async (item: Omit<CartItem, 'id'|'totalPrice'>) => {
+  const addToCart = async (item: AddToCartItem) => {
     if (!cartId) return;
     setIsFetching(true);
     // Find if there is an existing cart item
@@ -181,4 +193,3 @@ export const useCart = (): CartContextType => {
   if (!ctx) throw new Error('useCart must be used within a CartProvider');
   return ctx;
 };
-
