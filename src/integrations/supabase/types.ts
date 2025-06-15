@@ -1700,6 +1700,47 @@ export type Database = {
         }
         Relationships: []
       }
+      seller_products: {
+        Row: {
+          catalog_product_id: string
+          created_at: string
+          id: string
+          price: number
+          seller_id: string
+          status: string
+          stock: number
+          updated_at: string
+        }
+        Insert: {
+          catalog_product_id: string
+          created_at?: string
+          id?: string
+          price: number
+          seller_id: string
+          status?: string
+          stock?: number
+          updated_at?: string
+        }
+        Update: {
+          catalog_product_id?: string
+          created_at?: string
+          id?: string
+          price?: number
+          seller_id?: string
+          status?: string
+          stock?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seller_products_catalog_product_id_fkey"
+            columns: ["catalog_product_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shopping_carts: {
         Row: {
           buyer_id: string
