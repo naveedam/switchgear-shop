@@ -7,6 +7,7 @@ import AuthModal from '../auth/AuthModal';
 import NavCartButton from "./NavCartButton";
 import NavUserMenu from "./NavUserMenu";
 import NavProductsMenu from "./NavProductsMenu";
+import { useAuth } from '@/contexts/AuthContext';
 
 const NavBar: React.FC = () => {
   const { logout } = useAuth();
