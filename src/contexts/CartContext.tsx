@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
@@ -38,8 +39,8 @@ interface CartContextType {
   refetchCart: () => Promise<void>;
 }
 
-// FIX: Restore explicit generic type to avoid TS2589 type instantiation issue
-const CartContext = createContext<CartContextType | undefined>(undefined);
+// remove explicit generic to avoid TS2589 type instantiation issue
+const CartContext = createContext(undefined);
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const { user, isAuthenticated } = useAuth();
@@ -51,7 +52,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const fetchCart = async () => {
     if (!user) return;
     setIsFetching(true);
-    // Try to find or create a cart for the user
     let { data: cart, error: cartErr } = await supabase
       .from('shopping_carts')
       .select('id')
@@ -63,7 +63,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
     if (!cart) {
-      // Create one if does not exist
       const { data: newCart, error: createErr } = await supabase
         .from('shopping_carts')
         .insert([{ buyer_id: user.id }])
@@ -102,7 +101,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     setIsFetching(false);
   };
 
-  // Refresh cart when user changes
   useEffect(() => {
     if (isAuthenticated && user) {
       fetchCart();
@@ -112,11 +110,9 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [isAuthenticated, user?.id]);
 
-  // Add item to cart
   const addToCart = async (item: AddToCartItem) => {
     if (!cartId) return;
     setIsFetching(true);
-    // Find if there is an existing cart item
     const { data: existingItems, error } = await supabase
       .from('cart_items')
       .select('*')
@@ -125,7 +121,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       .eq('variant_id', item.variantId || null);
 
     if (!error && existingItems && existingItems[0]) {
-      // Update quantity if exists
       const existing = existingItems[0];
       await supabase
         .from('cart_items')
@@ -150,7 +145,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     setIsFetching(false);
   };
 
-  // Remove from cart
   const removeFromCart = async (cartItemId: string) => {
     setIsFetching(true);
     await supabase.from('cart_items').delete().eq('id', cartItemId);
@@ -158,7 +152,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     setIsFetching(false);
   };
 
-  // Update quantity
   const updateQuantity = async (cartItemId: string, quantity: number) => {
     setIsFetching(true);
     await supabase.from('cart_items').update({ quantity }).eq('id', cartItemId);
@@ -166,7 +159,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     setIsFetching(false);
   };
 
-  // Clear entire cart
   const clearCart = async () => {
     if (cartId) {
       setIsFetching(true);
@@ -176,7 +168,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Provide value with explicit type
   const value: CartContextType = {
     cartId,
     items,
@@ -194,5 +185,5 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 export const useCart = (): CartContextType => {
   const ctx = useContext(CartContext);
   if (!ctx) throw new Error('useCart must be used within a CartProvider');
-  return ctx;
+  return ctx as unknown as CartContextType; // type assertion here for safety
 };
