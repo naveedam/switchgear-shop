@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
 
+// Put all type definitions at the top
 export interface CartItem {
   id: string;
   productId: string;
@@ -16,7 +17,6 @@ export interface CartItem {
   totalPrice: number;
 }
 
-// Define a simpler type to use for addToCart
 export type AddToCartItem = {
   productId: string;
   productName: string;
@@ -39,6 +39,7 @@ interface CartContextType {
   refetchCart: () => Promise<void>;
 }
 
+// Create the context
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
@@ -96,6 +97,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         unitPrice: ci.unit_price,
         totalPrice: ci.unit_price * ci.quantity,
       })));
+    } else {
+      setItems([]);
     }
     setIsFetching(false);
   };
@@ -148,7 +151,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     setIsFetching(false);
   };
 
-  // Remove
+  // Remove from cart
   const removeFromCart = async (cartItemId: string) => {
     setIsFetching(true);
     await supabase.from('cart_items').delete().eq('id', cartItemId);
@@ -174,7 +177,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const value: CartContextType = {
+  // EXPLICIT CAST as CartContextType
+  const value = {
     cartId,
     items,
     isFetching,
@@ -183,7 +187,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     updateQuantity,
     clearCart,
     refetchCart: fetchCart,
-  };
+  } as CartContextType;
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 };
