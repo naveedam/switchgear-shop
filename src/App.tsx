@@ -15,6 +15,7 @@ import EditUser from './pages/admin/EditUser';
 import EditSeller from './pages/admin/EditSeller';
 import SellerDashboard from './pages/SellerDashboard';
 import ProductListingPage from './pages/ProductListingPage';
+import ProductDetailPage from './pages/ProductDetailPage';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import AllCategories from './pages/AllCategories';
@@ -70,6 +71,7 @@ function App() {
             <Route index element={<Index />} />
             <Route path="categories" element={<AllCategories />} />
             <Route path="categories/:categorySlug" element={<ProductListingPage />} />
+            <Route path="products/:productSlug" element={<ProductDetailPage />} />
           </Route>
           
           {/* Auth routes */}
