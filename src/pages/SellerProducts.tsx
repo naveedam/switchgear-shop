@@ -13,7 +13,7 @@ interface SellerProduct {
   stock: number;
   status: string;
   catalog_product_id: string;
-  catalog_product?: { name: string };
+  catalog_products?: { name: string }; // changed for correct TS + correct join
 }
 
 const SellerProducts: React.FC = () => {
@@ -25,10 +25,10 @@ const SellerProducts: React.FC = () => {
   useEffect(() => {
     if (!user) return;
     setLoading(true);
-    // Load seller's products with catalog product name
+    // Fix join: use "catalog_products(name)"
     supabase
       .from("seller_products")
-      .select("id, price, stock, status, catalog_product_id, catalog_product(name)")
+      .select("id, price, stock, status, catalog_product_id, catalog_products(name)")
       .eq("seller_id", user.id)
       .then(({ data, error }) => {
         setProducts(data || []);
@@ -60,7 +60,7 @@ const SellerProducts: React.FC = () => {
           products.map((prod) => (
             <Card key={prod.id} className="p-4 flex flex-col gap-2">
               <div className="flex justify-between items-center">
-                <span className="font-semibold">{prod.catalog_product?.name ?? "Unknown product"}</span>
+                <span className="font-semibold">{prod.catalog_products?.name ?? "Unknown product"}</span>
                 <span className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-600">{prod.status}</span>
               </div>
               <div className="text-sm">
