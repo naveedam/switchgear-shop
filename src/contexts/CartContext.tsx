@@ -39,8 +39,8 @@ interface CartContextType {
   refetchCart: () => Promise<void>;
 }
 
-// Create the context
-const CartContext = createContext<CartContextType | undefined>(undefined);
+// Do NOT use generic; initialize as undefined
+const CartContext = createContext(undefined);
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const { user, isAuthenticated } = useAuth();
@@ -177,8 +177,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // EXPLICIT CAST as CartContextType
-  const value = {
+  // Provide value with explicit type
+  const value: CartContextType = {
     cartId,
     items,
     isFetching,
@@ -187,7 +187,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     updateQuantity,
     clearCart,
     refetchCart: fetchCart,
-  } as CartContextType;
+  };
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 };
