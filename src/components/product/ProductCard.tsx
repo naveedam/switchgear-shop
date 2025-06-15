@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
@@ -7,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Currency } from '@/components/ui/currency';
 import { Product } from '@/types/product';
 import { ShoppingCart, Star } from 'lucide-react';
+import AddToCartButton from '../product/AddToCartButton';
 
 interface ProductCardProps {
   product: Product;
@@ -102,10 +102,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       </CardContent>
       
       <CardFooter className="px-4 pb-4 pt-0">
-        <Button className="w-full">
-          <ShoppingCart className="h-4 w-4 mr-2" />
-          Add to Cart
-        </Button>
+        <AddToCartButton product={product} />
       </CardFooter>
     </Card>
   );
