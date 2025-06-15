@@ -116,15 +116,17 @@ const CheckoutPage: React.FC = () => {
     }
 
     // Create invoice
-    const { error: invErr } = await supabase.from("invoices").insert([{
-      order_id: newOrder.id,
-      buyer_id: user.id,
-      amount: newOrder.total_amount,
-      total_amount: newOrder.total_amount,
-      status: "draft",
-      due_date: new Date(),
-      invoice_number: `INV-${Date.now()}`,
-    }]);
+    const { error: invErr } = await supabase.from("invoices").insert([
+      {
+        order_id: newOrder.id,
+        buyer_id: user.id,
+        amount: newOrder.total_amount,
+        total_amount: newOrder.total_amount,
+        status: "draft",
+        due_date: new Date().toISOString(), // <-- fix: pass as string
+        invoice_number: `INV-${Date.now()}`,
+      }
+    ]);
     if (invErr) {
       setSaving(false);
       setError("Could not create invoice.");
