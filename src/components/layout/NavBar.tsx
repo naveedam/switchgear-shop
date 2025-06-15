@@ -25,9 +25,12 @@ import AuthModal from '../auth/AuthModal';
 import { fetchCategories } from '@/services/categoryService';
 import { Category } from '@/types/category';
 import { cn } from '@/lib/utils';
+import { useCart } from '@/contexts/CartContext';
+import { cart as CartIcon } from "lucide-react";
 
 const NavBar: React.FC = () => {
   const { user, logout, isAuthenticated } = useAuth();
+  const { cart } = useCart();
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);

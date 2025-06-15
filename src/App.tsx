@@ -27,6 +27,8 @@ import AdminReports from './pages/admin/AdminReports';
 import { Toaster } from './components/ui/toaster';
 import './App.css';
 import { useAuth } from './contexts/AuthContext';
+import { CartProvider } from './contexts/CartContext';
+import CartPage from './pages/CartPage';
 
 // Protected route component
 const ProtectedRoute = ({ 
@@ -59,63 +61,68 @@ const ProtectedRoute = ({
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        {/* Public routes */}
-        <Route path="/" element={<MainLayout><Outlet /></MainLayout>}>
-          <Route index element={<Index />} />
-          <Route path="categories" element={<AllCategories />} />
-          <Route path="categories/:categorySlug" element={<ProductListingPage />} />
-        </Route>
-        
-        {/* Auth routes */}
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        
-        {/* Admin routes - protected */}
-        <Route 
-          path="admin" 
-          element={
-            <ProtectedRoute requiredRole="admin">
-              <MainLayout><Outlet /></MainLayout>
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<AdminDashboard />} />
-          <Route path="products" element={<AdminProducts />} />
-          <Route path="products/:id" element={<EditProduct />} />
-          <Route path="categories" element={<AdminCategories />} />
-          <Route path="categories/:id" element={<EditCategory />} />
-          <Route path="subcategories" element={<AdminSubcategories />} />
-          <Route path="subcategories/:id" element={<EditSubcategory />} />
-          <Route path="orders" element={<AdminOrders />} />
-          <Route path="users" element={<AdminUsers />} />
-          <Route path="users/:id" element={<EditUser />} />
-          <Route path="sellers" element={<AdminSellers />} />
-          <Route path="sellers/:id" element={<EditSeller />} />
-          <Route path="analytics" element={<AdminAnalytics />} />
-          <Route path="settings" element={<AdminSettings />} />
-          <Route path="permissions" element={<AdminPermissions />} />
-          <Route path="reports" element={<AdminReports />} />
-        </Route>
-        
-        {/* Seller routes - protected */}
-        <Route 
-          path="seller" 
-          element={
-            <ProtectedRoute requiredRole="seller">
-              <MainLayout><Outlet /></MainLayout>
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<SellerDashboard />} />
-        </Route>
+    <CartProvider>
+      <Router>
+        <Routes>
+          {/* Public routes */}
+          <Route path="/" element={<MainLayout><Outlet /></MainLayout>}>
+            <Route index element={<Index />} />
+            <Route path="categories" element={<AllCategories />} />
+            <Route path="categories/:categorySlug" element={<ProductListingPage />} />
+          </Route>
+          
+          {/* Auth routes */}
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          
+          {/* Add Cart route outside protected routes */}
+          <Route path="/cart" element={<CartPage />} />
+          
+          {/* Admin routes - protected */}
+          <Route 
+            path="admin" 
+            element={
+              <ProtectedRoute requiredRole="admin">
+                <MainLayout><Outlet /></MainLayout>
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<AdminDashboard />} />
+            <Route path="products" element={<AdminProducts />} />
+            <Route path="products/:id" element={<EditProduct />} />
+            <Route path="categories" element={<AdminCategories />} />
+            <Route path="categories/:id" element={<EditCategory />} />
+            <Route path="subcategories" element={<AdminSubcategories />} />
+            <Route path="subcategories/:id" element={<EditSubcategory />} />
+            <Route path="orders" element={<AdminOrders />} />
+            <Route path="users" element={<AdminUsers />} />
+            <Route path="users/:id" element={<EditUser />} />
+            <Route path="sellers" element={<AdminSellers />} />
+            <Route path="sellers/:id" element={<EditSeller />} />
+            <Route path="analytics" element={<AdminAnalytics />} />
+            <Route path="settings" element={<AdminSettings />} />
+            <Route path="permissions" element={<AdminPermissions />} />
+            <Route path="reports" element={<AdminReports />} />
+          </Route>
+          
+          {/* Seller routes - protected */}
+          <Route 
+            path="seller" 
+            element={
+              <ProtectedRoute requiredRole="seller">
+                <MainLayout><Outlet /></MainLayout>
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<SellerDashboard />} />
+          </Route>
 
-        {/* Catch all */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-      <Toaster />
-    </Router>
+          {/* Catch all */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+        <Toaster />
+      </Router>
+    </CartProvider>
   );
 }
 

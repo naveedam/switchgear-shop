@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Currency } from '@/components/ui/currency';
 import { Product } from '@/types/product';
 import { ShoppingCart, Star } from 'lucide-react';
+import { useCart } from '@/contexts/CartContext';
 
 interface ProductCardProps {
   product: Product;
@@ -39,6 +40,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     return product.variants.reduce((total, variant) => total + variant.stock, 0);
   };
   
+  const { addToCart } = useCart();
+
   return (
     <Card className="overflow-hidden h-full card-hover">
       <div className="relative">
@@ -100,7 +103,21 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         </div>
       </CardContent>
       
-      <CardFooter className="px-4 pb-4 pt-0">
+      <CardFooter className="px-4 pb-4 pt-0 flex justify-end">
+        <Button
+          variant="default"
+          onClick={() =>
+            addToCart({
+              productId: product.id,
+              name: product.name,
+              price: product.variants[0]?.price || 0,
+              featuredImage: product.featuredImage
+            })
+          }
+          disabled={product.variants.every(v => v.stock === 0)}
+        >
+          Add to Cart
+        </Button>
       </CardFooter>
     </Card>
   );
