@@ -179,11 +179,6 @@ const NavBar: React.FC = () => {
             
             {/* User Menu */}
             <div className="hidden md:flex items-center space-x-4">
-              <Link to="/cart">
-                <Button variant="ghost" size="icon">
-                  <ShoppingCart className="h-5 w-5" />
-                </Button>
-              </Link>
               
               {isAuthenticated ? (
                 <DropdownMenu>
@@ -279,16 +274,6 @@ const NavBar: React.FC = () => {
                   </Link>
                 </div>
                 
-                <div className="pt-4 border-t border-gray-200">
-                  <Link 
-                    to="/cart" 
-                    className="flex items-center text-gray-700 hover:text-brand-600"
-                    onClick={toggleMobileMenu}
-                  >
-                    <ShoppingCart className="h-5 w-5 mr-2" />
-                    Cart
-                  </Link>
-                </div>
                 
                 {isAuthenticated ? (
                   <div className="space-y-3 pt-4 border-t border-gray-200">

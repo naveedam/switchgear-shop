@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Currency } from '@/components/ui/currency';
 import { Product } from '@/types/product';
 import { ShoppingCart, Star } from 'lucide-react';
-import AddToCartButton from '../product/AddToCartButton';
 
 interface ProductCardProps {
   product: Product;
@@ -102,7 +101,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       </CardContent>
       
       <CardFooter className="px-4 pb-4 pt-0">
-        <AddToCartButton product={product} />
       </CardFooter>
     </Card>
   );
