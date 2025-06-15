@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
@@ -39,8 +38,8 @@ interface CartContextType {
   refetchCart: () => Promise<void>;
 }
 
-// Do NOT use generic; initialize as undefined
-const CartContext = createContext(undefined);
+// FIX: Restore explicit generic type to avoid TS2589 type instantiation issue
+const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const { user, isAuthenticated } = useAuth();
