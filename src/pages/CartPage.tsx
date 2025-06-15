@@ -1,11 +1,12 @@
-
 import React from "react";
 import { useCart } from "@/contexts/CartContext";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 const CartPage: React.FC = () => {
   const { cart, removeFromCart, clearCart } = useCart();
+  const navigate = useNavigate();
 
   const handleCheckout = () => {
     if (cart.length === 0) return;
@@ -49,8 +50,8 @@ const CartPage: React.FC = () => {
           Clear Cart
         </Button>
       </div>
-      <Button size="lg" className="w-full" onClick={handleCheckout}>
-        Checkout
+      <Button size="lg" className="w-full mb-2" onClick={() => navigate("/checkout")}>
+        Proceed to Checkout
       </Button>
     </div>
   );

@@ -23,6 +23,7 @@ import AdminUsers from './pages/admin/AdminUsers';
 import AdminAnalytics from './pages/admin/AdminAnalytics';
 import AdminPermissions from './pages/admin/AdminPermissions';
 import AdminReports from './pages/admin/AdminReports';
+import CheckoutPage from './pages/CheckoutPage';
 
 import { Toaster } from './components/ui/toaster';
 import './App.css';
@@ -77,6 +78,7 @@ function App() {
           
           {/* Add Cart route outside protected routes */}
           <Route path="/cart" element={<CartPage />} />
+          <Route path="/checkout" element={<CheckoutPage />} />
           
           {/* Admin routes - protected */}
           <Route 

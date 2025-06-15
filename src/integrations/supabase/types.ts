@@ -563,6 +563,8 @@ export type Database = {
           fulfillment_status: string | null
           id: string
           notes: string | null
+          payment_proof_url: string | null
+          payment_reference: string | null
           payment_status: string | null
           shipping_address: Json | null
           status: string | null
@@ -576,6 +578,8 @@ export type Database = {
           fulfillment_status?: string | null
           id?: string
           notes?: string | null
+          payment_proof_url?: string | null
+          payment_reference?: string | null
           payment_status?: string | null
           shipping_address?: Json | null
           status?: string | null
@@ -589,6 +593,8 @@ export type Database = {
           fulfillment_status?: string | null
           id?: string
           notes?: string | null
+          payment_proof_url?: string | null
+          payment_reference?: string | null
           payment_status?: string | null
           shipping_address?: Json | null
           status?: string | null
