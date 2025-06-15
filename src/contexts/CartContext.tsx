@@ -3,7 +3,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
 
-// Put all type definitions at the top
+// --- Type Definitions ---
 export interface CartItem {
   id: string;
   productId: string;
@@ -39,8 +39,8 @@ interface CartContextType {
   refetchCart: () => Promise<void>;
 }
 
-// remove explicit generic to avoid TS2589 type instantiation issue
-const CartContext = createContext(undefined);
+// --- "Safe Context" Pattern ---
+const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const { user, isAuthenticated } = useAuth();
@@ -185,5 +185,5 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 export const useCart = (): CartContextType => {
   const ctx = useContext(CartContext);
   if (!ctx) throw new Error('useCart must be used within a CartProvider');
-  return ctx as unknown as CartContextType; // type assertion here for safety
+  return ctx;
 };
