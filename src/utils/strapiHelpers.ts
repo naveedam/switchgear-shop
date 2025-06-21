@@ -1,4 +1,4 @@
-const STRAPI_URL = process.env.REACT_APP_STRAPI_URL || 'http://localhost:1337';
+const STRAPI_URL = import.meta.env.VITE_STRAPI_URL || 'http://localhost:1337';
 
 export const getStrapiImageUrl = (image: any): string => {
   if (!image?.data?.attributes?.url) return '';

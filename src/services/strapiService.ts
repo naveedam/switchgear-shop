@@ -1,8 +1,8 @@
 
 import axios from 'axios';
 
-// You'll need to replace this with your actual Strapi URL
-const STRAPI_URL = process.env.REACT_APP_STRAPI_URL || 'http://localhost:1337';
+// Use Vite's import.meta.env instead of process.env
+const STRAPI_URL = import.meta.env.VITE_STRAPI_URL || 'http://localhost:1337';
 
 const strapiApi = axios.create({
   baseURL: `${STRAPI_URL}/api`,
