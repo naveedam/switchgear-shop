@@ -1,11 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { Product } from '@/types/product';
-import ProductCard from '@/components/product/ProductCard';
-import { ArrowRight, ShieldCheck, Truck, Clock, Award, RefreshCw } from 'lucide-react';
 import { Category } from '@/types/category';
 import { fetchCategories } from '@/services/categoryService';
 import HeroCarousel from '@/components/home/HeroCarousel';
@@ -14,9 +9,10 @@ import CategoriesSection from '@/components/home/CategoriesSection';
 import FeaturedProductsSection from '@/components/home/FeaturedProductsSection';
 import CtaSection from '@/components/home/CtaSection';
 import TestimonialsSection from '@/components/home/TestimonialsSection';
+import { useHeroSlides } from '@/hooks/useStrapiContent';
 
-// Carousel slides
-const slides = [
+// Fallback slides (existing hardcoded data)
+const fallbackSlides = [
   {
     id: 1,
     title: 'Premium Switchgear Solutions',
@@ -79,7 +75,7 @@ const mockFeaturedProducts: Product[] = Array.from({ length: 8 }, (_, i) => ({
   status: 'published',
 }));
 
-// Helper to get a relevant default image per category name (case-insensitive, more robust)
+// Helper to get a relevant default image per category name
 const getDefaultCategoryImage = (categoryName: string) => {
   const normalized = categoryName.toLowerCase().replace(/&/g, 'and').replace(/[-_]/g, ' ').trim();
   switch (normalized) {
@@ -92,7 +88,6 @@ const getDefaultCategoryImage = (categoryName: string) => {
     case "wires and cables":
       return "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=600&q=80";
     default:
-      // fallback image
       return "https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&w=600&q=80";
   }
 };
@@ -103,11 +98,12 @@ const Home: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   
+  // Fetch hero slides from Strapi
+  const { slides: strapiSlides, loading: slidesLoading, error: slidesError } = useHeroSlides();
+  
   useEffect(() => {
-    // In a real app, fetch products from API
     setFeaturedProducts(mockFeaturedProducts);
     
-    // Fetch categories from database
     const loadCategories = async () => {
       try {
         setLoading(true);
@@ -144,6 +140,16 @@ const Home: React.FC = () => {
     
     loadCategories();
   };
+
+  // Convert Strapi slides to the format expected by HeroCarousel
+  const slides = strapiSlides.length > 0 ? strapiSlides.map(slide => ({
+    id: slide.id,
+    title: slide.attributes.title,
+    description: slide.attributes.description,
+    image: slide.attributes.image?.data?.attributes?.url || fallbackSlides[0].image,
+    ctaText: slide.attributes.ctaText,
+    ctaLink: slide.attributes.ctaLink,
+  })) : fallbackSlides;
   
   return (
     <div className="min-h-screen">
