@@ -7,6 +7,8 @@ import { Database } from '@/integrations/supabase/types';
 import { toast } from '@/hooks/use-toast';
 import { fetchCategories } from '@/services/categoryService';
 import { fetchSubcategories } from '@/services/subcategoryService';
+import { getCategoryFields } from '@/config/categoryFields';
+import { CategoryFields } from './CategoryFields';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,7 +35,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select';
-import { IndianRupee, Image as ImageIcon, Zap, Power, Ruler, PackagePlus } from 'lucide-react';
+import { IndianRupee, Image as ImageIcon, PackagePlus } from 'lucide-react';
 
 interface ProductFormValues {
   name: string;
@@ -45,14 +47,14 @@ interface ProductFormValues {
   subcategory: string;
   sku: string;
   image?: FileList;
-  rated_voltage?: string;
-  power_rating?: string;
-  dimensions?: string;
+  // Dynamic fields will be added based on category
+  [key: string]: any;
 }
 
 export const AddProductDialog: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [categoryFieldGroups, setCategoryFieldGroups] = useState<any[]>([]);
   const queryClient = useQueryClient();
 
   const { data: categories = [], isLoading: categoriesLoading } = useQuery({
@@ -93,9 +95,6 @@ export const AddProductDialog: React.FC = () => {
       category: '',
       subcategory: '',
       sku: '',
-      rated_voltage: '',
-      power_rating: '',
-      dimensions: '',
     },
   });
 
@@ -105,6 +104,28 @@ export const AddProductDialog: React.FC = () => {
     if (watchedCategory) {
       setSelectedCategory(watchedCategory);
       form.setValue('subcategory', '');
+      
+      // Get category-specific fields
+      const fieldGroups = getCategoryFields(watchedCategory);
+      setCategoryFieldGroups(fieldGroups);
+      
+      // Reset category-specific form values
+      const currentValues = form.getValues();
+      const resetValues: any = {};
+      
+      fieldGroups.forEach(group => {
+        group.fields.forEach((field: any) => {
+          if (field.type === 'boolean') {
+            resetValues[field.name] = false;
+          } else if (field.type === 'number') {
+            resetValues[field.name] = 0;
+          } else {
+            resetValues[field.name] = '';
+          }
+        });
+      });
+      
+      form.reset({ ...currentValues, ...resetValues });
     }
   }, [watchedCategory, form]);
 
@@ -125,7 +146,8 @@ export const AddProductDialog: React.FC = () => {
         imageUrl = urlData.publicUrl;
       }
       
-      const newProduct: Database['public']['Tables']['products']['Insert'] = {
+      // Separate core fields from category-specific fields
+      const coreFields = {
         name: data.name,
         description: data.description,
         price: data.price,
@@ -135,11 +157,23 @@ export const AddProductDialog: React.FC = () => {
         category: data.category.replace(/-/g, '_') as Database['public']['Enums']['product_category'],
         sku: data.sku,
         Images: imageUrl,
-        rated_voltage: data.rated_voltage,
-        power_rating: data.power_rating,
-        dimensions: data.dimensions,
         status: 'active',
         currency: 'INR',
+      };
+
+      // Add category-specific fields
+      const categoryFields: any = {};
+      categoryFieldGroups.forEach(group => {
+        group.fields.forEach((field: any) => {
+          if (data[field.name] !== undefined && data[field.name] !== '') {
+            categoryFields[field.name] = data[field.name];
+          }
+        });
+      });
+
+      const newProduct: Database['public']['Tables']['products']['Insert'] = {
+        ...coreFields,
+        ...categoryFields,
       };
 
       const { error } = await supabase.from('products').insert(newProduct);
@@ -154,6 +188,7 @@ export const AddProductDialog: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       setIsOpen(false);
       form.reset();
+      setCategoryFieldGroups([]);
     } catch (error: any) {
       console.error("Error creating product:", error);
       toast({
@@ -172,12 +207,13 @@ export const AddProductDialog: React.FC = () => {
           Add Product
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-hidden">
         <DialogHeader>
           <DialogTitle>Add New Product</DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleAddProduct)} className="space-y-4 py-4 max-h-[80vh] overflow-y-auto pr-2">
+          <form onSubmit={form.handleSubmit(handleAddProduct)} className="space-y-4 py-4 max-h-[70vh] overflow-y-auto pr-2">
+            {/* Core Product Fields */}
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -277,7 +313,7 @@ export const AddProductDialog: React.FC = () => {
                           <SelectValue placeholder="Select Category" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
+                      <SelectContent className="bg-white z-50">
                         {categoriesLoading ? (
                           <SelectItem value="loading" disabled>Loading categories...</SelectItem>
                         ) : (
@@ -309,7 +345,7 @@ export const AddProductDialog: React.FC = () => {
                           <SelectValue placeholder="Select Subcategory" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
+                      <SelectContent className="bg-white z-50">
                         {subcategoriesLoading ? (
                           <SelectItem value="loading" disabled>Loading subcategories...</SelectItem>
                         ) : subcategories.length === 0 ? (
@@ -354,60 +390,6 @@ export const AddProductDialog: React.FC = () => {
               )}
             />
             
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="rated_voltage"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Voltage</FormLabel>
-                     <FormControl>
-                      <div className="relative">
-                        <Zap className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
-                        <Input placeholder="e.g. 220V" {...field} className="pl-8" />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="power_rating"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Power Rating</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Power className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
-                        <Input placeholder="e.g. 100W" {...field} className="pl-8" />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            
-            <div className="grid grid-cols-3 gap-4">
-               <FormField
-                control={form.control}
-                name="dimensions"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Dimensions</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Ruler className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
-                        <Input placeholder="e.g. 10x5x3 cm" {...field} className="pl-8" />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            
             <FormField
               control={form.control}
               name="seller"
@@ -420,7 +402,7 @@ export const AddProductDialog: React.FC = () => {
                         <SelectValue placeholder="Select Seller" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent>
+                    <SelectContent className="bg-white z-50">
                       {sellersLoading ? (
                         <SelectItem value="loading" disabled>Loading sellers...</SelectItem>
                       ) : (
@@ -436,6 +418,9 @@ export const AddProductDialog: React.FC = () => {
                 </FormItem>
               )}
             />
+
+            {/* Dynamic Category-Specific Fields */}
+            <CategoryFields form={form} fieldGroups={categoryFieldGroups} />
             
             <DialogFooter>
               <Button type="submit" className="mt-4" disabled={form.formState.isSubmitting}>
