@@ -22,54 +22,148 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
+  const fetchUserProfile = async (userId: string): Promise<User | null> => {
+    console.log('Fetching profile for user:', userId);
+    
+    try {
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Profile fetch timeout')), 10000)
+      );
+      
+      const fetchPromise = supabase
+        .from('companies')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      const { data: companyProfile, error: profileError } = await Promise.race([
+        fetchPromise,
+        timeoutPromise
+      ]);
+
+      if (profileError) {
+        console.error('Error fetching user profile:', profileError);
+        
+        // If profile doesn't exist, create a basic one for authenticated users
+        if (profileError.code === 'PGRST116') {
+          console.log('No profile found, user may need to complete registration');
+          return null;
+        }
+        throw profileError;
+      }
+
+      if (companyProfile) {
+        console.log('Company profile fetched successfully:', companyProfile);
+        return {
+          id: userId,
+          email: companyProfile.email,
+          name: companyProfile.name,
+          role: companyProfile.role as UserRole,
+          companyName: companyProfile.name,
+          phoneNumber: companyProfile.phone || '',
+          createdAt: new Date(),
+        };
+      }
+
+      return null;
+    } catch (err: any) {
+      console.error('Profile fetch failed:', err.message);
+      throw err;
+    }
+  };
+
   useEffect(() => {
+    let mounted = true;
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        console.log('onAuthStateChange triggered. Session:', session);
+      async (event, session) => {
+        if (!mounted) return;
+
+        console.log('Auth state change event:', event, 'Session exists:', !!session);
         setSession(session);
+        
         if (session?.user) {
-          console.log('Fetching profile for user:', session.user.id);
-          const { data: companyProfile, error: profileError } = await supabase
-            .from('companies')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-
-          console.log('Company profile fetched:', companyProfile);
-          console.error('Profile fetch error:', profileError);
-
-          if (profileError) {
-            console.error('Error fetching user profile:', profileError);
-            setUser(null);
-          } else if (companyProfile) {
-            const fullUser: User = {
-              id: session.user.id,
-              email: session.user.email || '',
-              name: session.user.user_metadata?.name || companyProfile.name,
-              role: companyProfile.role as UserRole,
-              companyName: companyProfile.name,
-              phoneNumber: companyProfile.phone || '',
-              createdAt: new Date(session.user.created_at),
-            };
-            console.log('Setting full user object:', fullUser);
-            setUser(fullUser);
+          console.log('User authenticated, fetching profile...');
+          setIsLoading(true);
+          
+          try {
+            const fullUser = await fetchUserProfile(session.user.id);
+            if (mounted) {
+              if (fullUser) {
+                console.log('Setting full user object:', fullUser);
+                setUser(fullUser);
+                setError(null);
+              } else {
+                console.log('No profile found, setting basic user');
+                // Set basic user info even if profile fetch fails
+                setUser({
+                  id: session.user.id,
+                  email: session.user.email || '',
+                  name: session.user.user_metadata?.name || 'User',
+                  role: 'buyer', // Default role
+                  companyName: '',
+                  phoneNumber: '',
+                  createdAt: new Date(session.user.created_at),
+                });
+              }
+            }
+          } catch (err: any) {
+            console.error('Failed to fetch user profile:', err.message);
+            if (mounted) {
+              // Still set basic user info on profile fetch failure
+              setUser({
+                id: session.user.id,
+                email: session.user.email || '',
+                name: session.user.user_metadata?.name || 'User',
+                role: 'buyer', // Default role
+                companyName: '',
+                phoneNumber: '',
+                createdAt: new Date(session.user.created_at),
+              });
+              setError('Failed to load user profile, using basic info');
+            }
           }
         } else {
-          console.log('No session, setting user to null.');
-          setUser(null);
+          console.log('No session, clearing user state');
+          if (mounted) {
+            setUser(null);
+            setError(null);
+          }
         }
-        setIsLoading(false);
+        
+        if (mounted) {
+          setIsLoading(false);
+        }
       }
     );
 
-    // Check for initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) {
-        setIsLoading(false);
+    // Check for initial session with timeout
+    const initializeAuth = async () => {
+      try {
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Session check timeout')), 5000)
+        );
+        
+        const sessionPromise = supabase.auth.getSession();
+        const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]);
+        
+        if (!session && mounted) {
+          console.log('No initial session found');
+          setIsLoading(false);
+        }
+      } catch (err) {
+        console.error('Session initialization failed:', err);
+        if (mounted) {
+          setIsLoading(false);
+        }
       }
-    });
+    };
+
+    initializeAuth();
 
     return () => {
+      mounted = false;
       subscription?.unsubscribe();
     };
   }, []);
@@ -118,6 +212,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = async (): Promise<void> => {
     await supabase.auth.signOut();
     setUser(null);
+    setSession(null);
+    setError(null);
   };
 
   return (
