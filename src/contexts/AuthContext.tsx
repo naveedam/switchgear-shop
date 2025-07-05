@@ -27,7 +27,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     try {
       // Add timeout to prevent hanging
-      const timeoutPromise = new Promise((_, reject) => 
+      const timeoutPromise = new Promise<never>((_, reject) => 
         setTimeout(() => reject(new Error('Profile fetch timeout')), 10000)
       );
       
@@ -37,10 +37,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .eq('id', userId)
         .single();
 
-      const { data: companyProfile, error: profileError } = await Promise.race([
+      const result = await Promise.race([
         fetchPromise,
         timeoutPromise
       ]);
+
+      const { data: companyProfile, error: profileError } = result;
 
       if (profileError) {
         console.error('Error fetching user profile:', profileError);
@@ -141,12 +143,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Check for initial session with timeout
     const initializeAuth = async () => {
       try {
-        const timeoutPromise = new Promise((_, reject) => 
+        const timeoutPromise = new Promise<never>((_, reject) => 
           setTimeout(() => reject(new Error('Session check timeout')), 5000)
         );
         
         const sessionPromise = supabase.auth.getSession();
-        const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]);
+        const result = await Promise.race([sessionPromise, timeoutPromise]);
+        
+        const { data: { session } } = result;
         
         if (!session && mounted) {
           console.log('No initial session found');
