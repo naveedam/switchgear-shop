@@ -28,18 +28,20 @@ const getInitials = (name: string) =>
 const getDashboardLink = (role: string | undefined) => {
   switch (role) {
     case "seller":
-      return "/seller/dashboard";
+      return "/seller";
     case "admin":
-      return "/admin/dashboard";
+      return "/admin";
     case "buyer":
     default:
-      return "/buyer/dashboard";
+      return "/";
   }
 };
 
 const NavUserMenu: React.FC<NavUserMenuProps> = ({ onSignIn, onLogout }) => {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+
+  console.log('NavUserMenu - user role:', user?.role, 'isAuthenticated:', isAuthenticated);
 
   if (!isAuthenticated)
     return (

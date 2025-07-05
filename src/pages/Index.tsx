@@ -10,7 +10,8 @@ const Index = () => {
     isLoading, 
     isAuthenticated, 
     userRole: user?.role,
-    userEmail: user?.email 
+    userEmail: user?.email,
+    userName: user?.name
   });
 
   // Show loading while checking auth state

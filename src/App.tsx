@@ -1,3 +1,4 @@
+
 import { BrowserRouter as Router, Routes, Route, Outlet, Navigate } from 'react-router-dom';
 import MainLayout from './components/layout/MainLayout';
 import Index from './pages/Index';
@@ -27,6 +28,8 @@ import AdminReports from './pages/admin/AdminReports';
 import CheckoutPage from './pages/CheckoutPage';
 import SellerProducts from './pages/SellerProducts';
 import SellerOrders from './pages/SellerOrders';
+import ProfilePage from './pages/ProfilePage';
+import OrdersPage from './pages/OrdersPage';
 
 import { Toaster } from './components/ui/toaster';
 import './App.css';
@@ -74,6 +77,16 @@ function App() {
             <Route path="categories" element={<AllCategories />} />
             <Route path="categories/:categorySlug" element={<ProductListingPage />} />
             <Route path="products/:productSlug" element={<ProductDetailPage />} />
+            <Route path="profile" element={
+              <ProtectedRoute>
+                <ProfilePage />
+              </ProtectedRoute>
+            } />
+            <Route path="orders" element={
+              <ProtectedRoute>
+                <OrdersPage />
+              </ProtectedRoute>
+            } />
           </Route>
           
           {/* Auth routes */}
