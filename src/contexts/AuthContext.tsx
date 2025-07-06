@@ -22,37 +22,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
+  const createUserFromSession = (session: Session): User => {
+    console.log('AuthContext: Creating user from session:', {
+      userId: session.user.id,
+      email: session.user.email,
+      metadata: session.user.user_metadata
+    });
+
+    return {
+      id: session.user.id,
+      email: session.user.email || '',
+      name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
+      role: (session.user.user_metadata?.role as UserRole) || 'buyer',
+      companyName: session.user.user_metadata?.companyName || '',
+      phoneNumber: session.user.user_metadata?.phoneNumber || '',
+      createdAt: new Date(session.user.created_at),
+    };
+  };
+
   const fetchUserProfile = async (userId: string): Promise<User | null> => {
     console.log('AuthContext: Fetching profile for user:', userId);
     
     try {
-      // Add timeout to prevent hanging
-      const timeoutPromise = new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('Profile fetch timeout')), 10000)
-      );
-      
-      const fetchPromise = supabase
+      const { data: companyProfile, error: profileError } = await supabase
         .from('companies')
         .select('*')
         .eq('id', userId)
         .single();
 
-      const result = await Promise.race([
-        fetchPromise,
-        timeoutPromise
-      ]);
-
-      const { data: companyProfile, error: profileError } = result;
-
       if (profileError) {
         console.error('AuthContext: Error fetching user profile:', profileError);
-        
-        // If profile doesn't exist, create a basic one for authenticated users
-        if (profileError.code === 'PGRST116') {
-          console.log('AuthContext: No profile found, user may need to complete registration');
-          return null;
-        }
-        throw profileError;
+        return null;
       }
 
       if (companyProfile) {
@@ -73,7 +73,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return null;
     } catch (err: any) {
       console.error('AuthContext: Profile fetch failed:', err.message);
-      throw err;
+      return null;
     }
   };
 
@@ -87,60 +87,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         console.log('AuthContext: Auth state change event:', event, 'Session exists:', !!session);
         console.log('AuthContext: Session user:', session?.user?.email);
+        
         setSession(session);
         
         if (session?.user) {
-          console.log('AuthContext: User authenticated, fetching profile...');
+          console.log('AuthContext: User authenticated, processing...');
           setIsLoading(true);
           
+          // First set a basic user from session data
+          const basicUser = createUserFromSession(session);
+          console.log('AuthContext: Setting basic user from session:', basicUser);
+          setUser(basicUser);
+          
+          // Then try to fetch enhanced profile
           try {
             const fullUser = await fetchUserProfile(session.user.id);
-            if (mounted) {
-              if (fullUser) {
-                console.log('AuthContext: Setting full user object:', fullUser);
-                console.log('AuthContext: User role set to:', fullUser.role);
-                setUser(fullUser);
-                setError(null);
-              } else {
-                console.log('AuthContext: No profile found, setting basic user');
-                // Set basic user info even if profile fetch fails
-                const basicUser: User = {
-                  id: session.user.id,
-                  email: session.user.email || '',
-                  name: session.user.user_metadata?.name || 'User',
-                  role: 'buyer', // Default role
-                  companyName: '',
-                  phoneNumber: '',
-                  createdAt: new Date(session.user.created_at),
-                };
-                console.log('AuthContext: Setting basic user with role:', basicUser.role);
-                setUser(basicUser);
-              }
+            if (mounted && fullUser) {
+              console.log('AuthContext: Updating with full profile:', fullUser);
+              setUser(fullUser);
             }
           } catch (err: any) {
-            console.error('AuthContext: Failed to fetch user profile:', err.message);
-            if (mounted) {
-              // Still set basic user info on profile fetch failure
-              const basicUser: User = {
-                id: session.user.id,
-                email: session.user.email || '',
-                name: session.user.user_metadata?.name || 'User',
-                role: 'buyer', // Default role
-                companyName: '',
-                phoneNumber: '',
-                createdAt: new Date(session.user.created_at),
-              };
-              console.log('AuthContext: Setting fallback user with role:', basicUser.role);
-              setUser(basicUser);
-              setError('Failed to load user profile, using basic info');
-            }
+            console.error('AuthContext: Profile fetch failed, keeping basic user:', err.message);
           }
+          
+          setError(null);
         } else {
           console.log('AuthContext: No session, clearing user state');
-          if (mounted) {
-            setUser(null);
-            setError(null);
-          }
+          setUser(null);
+          setError(null);
         }
         
         if (mounted) {
@@ -150,22 +124,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     );
 
-    // Check for initial session with timeout
+    // Check for initial session
     const initializeAuth = async () => {
-      console.log('AuthContext: Initializing auth check');
+      console.log('AuthContext: Checking for initial session');
       try {
-        const timeoutPromise = new Promise<never>((_, reject) => 
-          setTimeout(() => reject(new Error('Session check timeout')), 5000)
-        );
+        const { data: { session } } = await supabase.auth.getSession();
         
-        const sessionPromise = supabase.auth.getSession();
-        const result = await Promise.race([sessionPromise, timeoutPromise]);
-        
-        const { data: { session } } = result;
-        
-        if (!session && mounted) {
+        if (session) {
+          console.log('AuthContext: Found initial session for:', session.user?.email);
+          // The onAuthStateChange will handle the rest
+        } else {
           console.log('AuthContext: No initial session found');
-          setIsLoading(false);
+          if (mounted) {
+            setIsLoading(false);
+          }
         }
       } catch (err) {
         console.error('AuthContext: Session initialization failed:', err);
@@ -236,20 +208,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setError(null);
   };
 
+  const contextValue = {
+    user,
+    isLoading,
+    error,
+    login,
+    register,
+    logout,
+    isAuthenticated: !!user,
+  };
+
   console.log('AuthContext: Current state - user:', user?.email, 'role:', user?.role, 'isLoading:', isLoading, 'isAuthenticated:', !!user);
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isLoading,
-        error,
-        login,
-        register,
-        logout,
-        isAuthenticated: !!user,
-      }}
-    >
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );

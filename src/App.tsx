@@ -50,7 +50,14 @@ const ProtectedRoute = ({
   console.log("ProtectedRoute - isAuthenticated:", isAuthenticated, "user:", user, "requiredRole:", requiredRole);
   
   if (isLoading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
   }
   
   if (!isAuthenticated) {
@@ -93,7 +100,7 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           
-          {/* Add Cart route outside protected routes */}
+          {/* Cart and checkout routes */}
           <Route path="/cart" element={<CartPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
           
