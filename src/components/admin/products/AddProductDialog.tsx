@@ -101,12 +101,15 @@ export const AddProductDialog: React.FC = () => {
   const watchedCategory = form.watch('category');
 
   useEffect(() => {
+    console.log('Category changed to:', watchedCategory);
+    
     if (watchedCategory) {
       setSelectedCategory(watchedCategory);
       form.setValue('subcategory', '');
       
-      // Get category-specific fields
+      // Get category-specific fields using the slug directly
       const fieldGroups = getCategoryFields(watchedCategory);
+      console.log('Setting field groups:', fieldGroups);
       setCategoryFieldGroups(fieldGroups);
       
       // Reset category-specific form values
@@ -125,12 +128,20 @@ export const AddProductDialog: React.FC = () => {
         });
       });
       
-      form.reset({ ...currentValues, ...resetValues });
+      // Only reset if we actually have fields to reset
+      if (Object.keys(resetValues).length > 0) {
+        form.reset({ ...currentValues, ...resetValues });
+      }
+    } else {
+      setCategoryFieldGroups([]);
     }
   }, [watchedCategory, form]);
 
   const handleAddProduct = async (data: ProductFormValues) => {
     try {
+      console.log('Form data submitted:', data);
+      console.log('Category field groups:', categoryFieldGroups);
+      
       let imageUrl: string | undefined;
       const imageFile = data.image?.[0];
 
@@ -165,8 +176,9 @@ export const AddProductDialog: React.FC = () => {
       const categoryFields: any = {};
       categoryFieldGroups.forEach(group => {
         group.fields.forEach((field: any) => {
-          if (data[field.name] !== undefined && data[field.name] !== '') {
+          if (data[field.name] !== undefined && data[field.name] !== '' && data[field.name] !== 0) {
             categoryFields[field.name] = data[field.name];
+            console.log(`Adding category field: ${field.name} = ${data[field.name]}`);
           }
         });
       });
@@ -176,13 +188,15 @@ export const AddProductDialog: React.FC = () => {
         ...categoryFields,
       };
 
+      console.log('Final product object:', newProduct);
+
       const { error } = await supabase.from('products').insert(newProduct);
 
       if (error) throw error;
 
       toast({
         title: 'Product Created',
-        description: `${data.name} has been successfully added.`,
+        description: `${data.name} has been successfully added with ${Object.keys(categoryFields).length} category-specific fields.`,
       });
 
       queryClient.invalidateQueries({ queryKey: ['products'] });
@@ -207,7 +221,7 @@ export const AddProductDialog: React.FC = () => {
           Add Product
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-hidden">
+      <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-hidden">
         <DialogHeader>
           <DialogTitle>Add New Product</DialogTitle>
         </DialogHeader>
@@ -307,7 +321,7 @@ export const AddProductDialog: React.FC = () => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Category</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select Category" />
@@ -396,7 +410,7 @@ export const AddProductDialog: React.FC = () => {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Seller</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select Seller" />
@@ -420,7 +434,19 @@ export const AddProductDialog: React.FC = () => {
             />
 
             {/* Dynamic Category-Specific Fields */}
-            <CategoryFields form={form} fieldGroups={categoryFieldGroups} />
+            {categoryFieldGroups.length > 0 && (
+              <div className="border-t pt-4 mt-6">
+                <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+                  <p className="text-sm text-blue-700 font-medium">
+                    Category-specific fields for: {categories.find(c => c.slug === watchedCategory)?.name}
+                  </p>
+                  <p className="text-xs text-blue-600 mt-1">
+                    {categoryFieldGroups.reduce((total, group) => total + group.fields.length, 0)} additional fields available
+                  </p>
+                </div>
+                <CategoryFields form={form} fieldGroups={categoryFieldGroups} />
+              </div>
+            )}
             
             <DialogFooter>
               <Button type="submit" className="mt-4" disabled={form.formState.isSubmitting}>

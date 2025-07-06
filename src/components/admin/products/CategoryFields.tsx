@@ -13,6 +13,8 @@ interface CategoryFieldsProps {
 }
 
 export const CategoryFields: React.FC<CategoryFieldsProps> = ({ form, fieldGroups }) => {
+  console.log('CategoryFields rendering with groups:', fieldGroups.length);
+  
   const renderField = (field: CategoryField) => {
     const Icon = field.icon;
 
@@ -27,6 +29,7 @@ export const CategoryFields: React.FC<CategoryFieldsProps> = ({ form, fieldGroup
               {Icon && <Icon className="h-4 w-4" />}
               {field.label}
               {field.unit && <span className="text-sm text-gray-500">({field.unit})</span>}
+              {field.required && <span className="text-red-500">*</span>}
             </FormLabel>
             <FormControl>
               {field.type === 'select' ? (
@@ -80,22 +83,28 @@ export const CategoryFields: React.FC<CategoryFieldsProps> = ({ form, fieldGroup
   };
 
   if (fieldGroups.length === 0) {
-    return null;
+    return (
+      <div className="text-center py-4 text-gray-500">
+        <p>No category-specific fields defined for this category.</p>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
-      <div className="border-t pt-4">
-        <h3 className="text-lg font-medium mb-4">Category-Specific Fields</h3>
-        {fieldGroups.map((group, groupIndex) => (
-          <div key={groupIndex} className="mb-6">
-            <h4 className="text-md font-medium mb-3 text-gray-700">{group.title}</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {group.fields.map(renderField)}
-            </div>
+      {fieldGroups.map((group, groupIndex) => (
+        <div key={groupIndex} className="mb-6">
+          <h4 className="text-md font-medium mb-3 text-gray-700 flex items-center gap-2">
+            {group.title}
+            <span className="text-xs bg-gray-100 px-2 py-1 rounded">
+              {group.fields.length} fields
+            </span>
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {group.fields.map(renderField)}
           </div>
-        ))}
-      </div>
+        </div>
+      ))}
     </div>
   );
 };
