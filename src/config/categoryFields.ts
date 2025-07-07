@@ -1,9 +1,8 @@
-
 import { LucideIcon } from 'lucide-react';
 import { 
   Zap, Cable, Ruler, Palette, Layers, Settings, Thermometer, Shield, 
   Wrench, Lightbulb, Activity, Gauge, Database, HardDrive, 
-  Power, CircuitBoard, Tool, Fan, Battery, Clock
+  Power, CircuitBoard, Fan, Battery, Clock
 } from 'lucide-react';
 
 export interface CategoryField {
@@ -265,7 +264,7 @@ export const categoryFieldMappings: Record<string, CategoryFieldGroup[]> = {
     {
       title: 'Tool Specifications',
       fields: [
-        { name: 'tool_type', label: 'Tool Type', type: 'select', options: ['Screwdriver', 'Pliers', 'Cutters', 'Strippers', 'Crimpers'], icon: Tool },
+        { name: 'tool_type', label: 'Tool Type', type: 'select', options: ['Screwdriver', 'Pliers', 'Cutters', 'Strippers', 'Crimpers'], icon: Wrench },
         { name: 'handle_material', label: 'Handle Material', type: 'select', options: ['Plastic', 'Rubber', 'Fiber', 'Metal'] },
         { name: 'grip_type', label: 'Grip Type', type: 'select', options: ['Ergonomic', 'Anti-slip', 'Cushioned'] },
         { name: 'insulation_rating', label: 'Insulation Rating', type: 'text', placeholder: 'e.g., 1000V VDE' },
