@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { User, LoginData, RegisterData, UserRole } from '@/types/user';
 import { supabase } from '@/integrations/supabase/client';
@@ -40,8 +39,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   };
 
-  const fetchUserProfile = async (userId: string): Promise<User | null> => {
-    console.log('AuthContext: Fetching profile for user:', userId);
+  const fetchUserProfile = async (userId: string, retryCount = 0): Promise<User | null> => {
+    console.log('AuthContext: Fetching profile for user:', userId, 'Retry:', retryCount);
     
     try {
       const { data: companyProfile, error: profileError } = await supabase
@@ -52,6 +51,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (profileError) {
         console.error('AuthContext: Error fetching user profile:', profileError);
+        
+        // Retry logic for temporary database issues
+        if (retryCount < 2 && profileError.code !== 'PGRST116') { // PGRST116 is "not found"
+          console.log('AuthContext: Retrying profile fetch...');
+          await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+          return fetchUserProfile(userId, retryCount + 1);
+        }
+        
         return null;
       }
 
@@ -73,7 +80,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return null;
     } catch (err: any) {
       console.error('AuthContext: Profile fetch failed:', err.message);
+      
+      // Retry logic for network/connection issues
+      if (retryCount < 2) {
+        console.log('AuthContext: Retrying profile fetch due to error...');
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        return fetchUserProfile(userId, retryCount + 1);
+      }
+      
       return null;
+    }
+  };
+
+  const checkIfUserExists = async (userId: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase
+        .from('companies')
+        .select('id')
+        .eq('id', userId)
+        .single();
+      
+      return !error && !!data;
+    } catch {
+      return false;
     }
   };
 
@@ -102,24 +131,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 console.log('AuthContext: Setting complete user profile with role:', fullUser.role);
                 setUser(fullUser);
               } else {
-                // Fallback to session data if no database profile
-                console.log('AuthContext: No database profile, using session data');
-                const basicUser = createUserFromSession(session);
-                // If no role in metadata, default to buyer
-                if (!basicUser.role) {
+                // Check if user exists in database before applying fallback
+                const userExists = await checkIfUserExists(session.user.id);
+                console.log('AuthContext: User exists in database:', userExists);
+                
+                if (!userExists) {
+                  // Genuinely new user - can default to buyer
+                  console.log('AuthContext: New user detected, creating with buyer role');
+                  const basicUser = createUserFromSession(session);
                   basicUser.role = 'buyer';
+                  setUser(basicUser);
+                } else {
+                  // Existing user with fetch issues - don't override their role
+                  console.log('AuthContext: Existing user with fetch issues, using session data only');
+                  const basicUser = createUserFromSession(session);
+                  // Keep role as undefined if not in session metadata - don't force buyer role
+                  setUser(basicUser);
                 }
-                setUser(basicUser);
               }
             }
           } catch (err: any) {
-            console.error('AuthContext: Profile fetch failed, using session data:', err.message);
+            console.error('AuthContext: Profile fetch failed completely:', err.message);
             if (mounted) {
+              // For complete failures, create basic user but don't force buyer role for existing users
               const basicUser = createUserFromSession(session);
-              // If no role in metadata, default to buyer
-              if (!basicUser.role) {
+              const userExists = await checkIfUserExists(session.user.id);
+              
+              if (!userExists && !basicUser.role) {
+                // Only default to buyer for new users without role in metadata
+                console.log('AuthContext: New user with fetch failure, defaulting to buyer');
                 basicUser.role = 'buyer';
+              } else {
+                console.log('AuthContext: Existing user with fetch failure, keeping session role only');
               }
+              
               setUser(basicUser);
             }
           }

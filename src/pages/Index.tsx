@@ -48,14 +48,15 @@ const Index = () => {
     return <Home />;
   }
   
-  // If authenticated but no role yet (shouldn't happen with new logic), show loading
+  // If authenticated but no role yet, show loading with more specific message
   if (isAuthenticated && user && !user.role) {
-    console.log('Index: User authenticated but role not loaded yet, showing loading');
+    console.log('Index: User authenticated but role not loaded, showing loading');
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading user profile...</p>
+          <p className="text-sm text-gray-500 mt-2">Retrieving your role and permissions...</p>
         </div>
       </div>
     );
