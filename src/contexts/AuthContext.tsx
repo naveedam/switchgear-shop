@@ -33,7 +33,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       id: session.user.id,
       email: session.user.email || '',
       name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
-      role: (session.user.user_metadata?.role as UserRole) || 'buyer',
+      role: (session.user.user_metadata?.role as UserRole) || undefined, // Don't default to 'buyer'
       companyName: session.user.user_metadata?.companyName || '',
       phoneNumber: session.user.user_metadata?.phoneNumber || '',
       createdAt: new Date(session.user.created_at),
@@ -94,20 +94,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.log('AuthContext: User authenticated, processing...');
           setIsLoading(true);
           
-          // First set a basic user from session data
-          const basicUser = createUserFromSession(session);
-          console.log('AuthContext: Setting basic user from session:', basicUser);
-          setUser(basicUser);
-          
-          // Then try to fetch enhanced profile
+          // Don't set user state until we have complete profile
           try {
             const fullUser = await fetchUserProfile(session.user.id);
-            if (mounted && fullUser) {
-              console.log('AuthContext: Updating with full profile:', fullUser);
-              setUser(fullUser);
+            if (mounted) {
+              if (fullUser) {
+                console.log('AuthContext: Setting complete user profile with role:', fullUser.role);
+                setUser(fullUser);
+              } else {
+                // Fallback to session data if no database profile
+                console.log('AuthContext: No database profile, using session data');
+                const basicUser = createUserFromSession(session);
+                // If no role in metadata, default to buyer
+                if (!basicUser.role) {
+                  basicUser.role = 'buyer';
+                }
+                setUser(basicUser);
+              }
             }
           } catch (err: any) {
-            console.error('AuthContext: Profile fetch failed, keeping basic user:', err.message);
+            console.error('AuthContext: Profile fetch failed, using session data:', err.message);
+            if (mounted) {
+              const basicUser = createUserFromSession(session);
+              // If no role in metadata, default to buyer
+              if (!basicUser.role) {
+                basicUser.role = 'buyer';
+              }
+              setUser(basicUser);
+            }
           }
           
           setError(null);

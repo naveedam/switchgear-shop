@@ -48,7 +48,7 @@ const Index = () => {
     return <Home />;
   }
   
-  // If authenticated but no role yet, show loading
+  // If authenticated but no role yet (shouldn't happen with new logic), show loading
   if (isAuthenticated && user && !user.role) {
     console.log('Index: User authenticated but role not loaded yet, showing loading');
     return (
