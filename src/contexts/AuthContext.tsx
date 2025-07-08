@@ -2,6 +2,7 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import { User, LoginData, RegisterData, UserRole } from '@/types/user';
 import { supabase } from '@/integrations/supabase/client';
 import { Session } from '@supabase/supabase-js';
+import { adminRoleService, AdminVerification } from '@/services/AdminRoleService';
 
 interface AuthContextType {
   user: User | null;
@@ -21,6 +22,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
+  const logRoleAssignment = (
+    userId: string, 
+    email: string, 
+    assignedRole: UserRole | undefined, 
+    source: string, 
+    context: any
+  ) => {
+    console.log(`🔐 ROLE ASSIGNMENT [${new Date().toISOString()}]`, {
+      userId,
+      email,
+      assignedRole,
+      source,
+      context,
+      timestamp: Date.now()
+    });
+  };
+
   const createUserFromSession = (session: Session): User => {
     console.log('AuthContext: Creating user from session:', {
       userId: session.user.id,
@@ -32,67 +50,58 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       id: session.user.id,
       email: session.user.email || '',
       name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
-      role: (session.user.user_metadata?.role as UserRole) || undefined, // Don't default to 'buyer'
+      role: (session.user.user_metadata?.role as UserRole) || undefined,
       companyName: session.user.user_metadata?.companyName || '',
       phoneNumber: session.user.user_metadata?.phoneNumber || '',
       createdAt: new Date(session.user.created_at),
     };
   };
 
-  const fetchUserProfile = async (userId: string, retryCount = 0): Promise<User | null> => {
-    console.log('AuthContext: Fetching profile for user:', userId, 'Retry:', retryCount);
+  const determineUserRole = async (
+    userId: string, 
+    email: string, 
+    sessionRole: UserRole | undefined
+  ): Promise<UserRole> => {
+    console.log('AuthContext: Determining user role for:', { userId, email, sessionRole });
+
+    // Step 1: Check if user is admin (highest priority)
+    const adminVerification: AdminVerification = await adminRoleService.verifyAdminRole(userId);
     
+    if (adminVerification.isAdmin) {
+      logRoleAssignment(userId, email, 'admin', 'database-admin-verification', adminVerification);
+      return 'admin';
+    }
+
+    // Step 2: Emergency admin bypass
+    if (adminRoleService.isEmergencyAdmin(email)) {
+      logRoleAssignment(userId, email, 'admin', 'emergency-admin-bypass', { email });
+      return 'admin';
+    }
+
+    // Step 3: Check company profile for role
     try {
-      const { data: companyProfile, error: profileError } = await supabase
+      const { data: companyProfile, error } = await supabase
         .from('companies')
-        .select('*')
+        .select('role')
         .eq('id', userId)
         .single();
 
-      if (profileError) {
-        console.error('AuthContext: Error fetching user profile:', profileError);
-        
-        // Retry logic for temporary database issues
-        if (retryCount < 2 && profileError.code !== 'PGRST116') { // PGRST116 is "not found"
-          console.log('AuthContext: Retrying profile fetch...');
-          await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
-          return fetchUserProfile(userId, retryCount + 1);
-        }
-        
-        return null;
+      if (!error && companyProfile?.role) {
+        const dbRole = companyProfile.role as UserRole;
+        logRoleAssignment(userId, email, dbRole, 'database-company-profile', companyProfile);
+        return dbRole;
       }
-
-      if (companyProfile) {
-        console.log('AuthContext: Company profile fetched successfully:', companyProfile);
-        const fullUser: User = {
-          id: userId,
-          email: companyProfile.email,
-          name: companyProfile.name,
-          role: companyProfile.role as UserRole,
-          companyName: companyProfile.name,
-          phoneNumber: companyProfile.phone || '',
-          createdAt: new Date(),
-        };
-        console.log('AuthContext: Created full user object with role:', fullUser.role);
-        return fullUser;
-      }
-
-      return null;
-    } catch (err: any) {
-      console.error('AuthContext: Profile fetch failed:', err.message);
-      
-      // Retry logic for network/connection issues
-      if (retryCount < 2) {
-        console.log('AuthContext: Retrying profile fetch due to error...');
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        return fetchUserProfile(userId, retryCount + 1);
-      }
-      
-      return null;
+    } catch (err) {
+      console.warn('AuthContext: Failed to fetch company profile:', err);
     }
-  };
 
-  const checkIfUserExists = async (userId: string): Promise<boolean> => {
+    // Step 4: Use session metadata role
+    if (sessionRole) {
+      logRoleAssignment(userId, email, sessionRole, 'session-metadata', { sessionRole });
+      return sessionRole;
+    }
+
+    // Step 5: Check if user exists in database
     try {
       const { data, error } = await supabase
         .from('companies')
@@ -100,9 +109,54 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .eq('id', userId)
         .single();
       
-      return !error && !!data;
-    } catch {
-      return false;
+      if (!error && data) {
+        // Existing user without role - don't force buyer role
+        logRoleAssignment(userId, email, undefined, 'existing-user-no-role', { exists: true });
+        return 'buyer'; // Conservative fallback for existing users
+      }
+    } catch (err) {
+      console.warn('AuthContext: Failed to check user existence:', err);
+    }
+
+    // Step 6: New user default
+    logRoleAssignment(userId, email, 'buyer', 'new-user-default', { isNewUser: true });
+    return 'buyer';
+  };
+
+  const processAuthenticatedUser = async (session: Session) => {
+    console.log('AuthContext: Processing authenticated user:', session.user.email);
+    setIsLoading(true);
+
+    try {
+      const basicUser = createUserFromSession(session);
+      const finalRole = await determineUserRole(
+        session.user.id, 
+        session.user.email || '', 
+        basicUser.role
+      );
+
+      const finalUser: User = {
+        ...basicUser,
+        role: finalRole
+      };
+
+      console.log('AuthContext: Setting final user with role:', {
+        email: finalUser.email,
+        role: finalUser.role,
+        source: 'role-determination-complete'
+      });
+
+      setUser(finalUser);
+      setError(null);
+    } catch (err: any) {
+      console.error('AuthContext: Failed to process authenticated user:', err);
+      setError('Failed to load user profile');
+      
+      // Fallback: set basic user without database role
+      const basicUser = createUserFromSession(session);
+      setUser(basicUser);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -111,74 +165,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     console.log('AuthContext: Setting up auth state listener');
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         if (!mounted) return;
 
         console.log('AuthContext: Auth state change event:', event, 'Session exists:', !!session);
-        console.log('AuthContext: Session user:', session?.user?.email);
-        
         setSession(session);
         
         if (session?.user) {
-          console.log('AuthContext: User authenticated, processing...');
-          setIsLoading(true);
-          
-          // Don't set user state until we have complete profile
-          try {
-            const fullUser = await fetchUserProfile(session.user.id);
-            if (mounted) {
-              if (fullUser) {
-                console.log('AuthContext: Setting complete user profile with role:', fullUser.role);
-                setUser(fullUser);
-              } else {
-                // Check if user exists in database before applying fallback
-                const userExists = await checkIfUserExists(session.user.id);
-                console.log('AuthContext: User exists in database:', userExists);
-                
-                if (!userExists) {
-                  // Genuinely new user - can default to buyer
-                  console.log('AuthContext: New user detected, creating with buyer role');
-                  const basicUser = createUserFromSession(session);
-                  basicUser.role = 'buyer';
-                  setUser(basicUser);
-                } else {
-                  // Existing user with fetch issues - don't override their role
-                  console.log('AuthContext: Existing user with fetch issues, using session data only');
-                  const basicUser = createUserFromSession(session);
-                  // Keep role as undefined if not in session metadata - don't force buyer role
-                  setUser(basicUser);
-                }
-              }
-            }
-          } catch (err: any) {
-            console.error('AuthContext: Profile fetch failed completely:', err.message);
-            if (mounted) {
-              // For complete failures, create basic user but don't force buyer role for existing users
-              const basicUser = createUserFromSession(session);
-              const userExists = await checkIfUserExists(session.user.id);
-              
-              if (!userExists && !basicUser.role) {
-                // Only default to buyer for new users without role in metadata
-                console.log('AuthContext: New user with fetch failure, defaulting to buyer');
-                basicUser.role = 'buyer';
-              } else {
-                console.log('AuthContext: Existing user with fetch failure, keeping session role only');
-              }
-              
-              setUser(basicUser);
-            }
-          }
-          
-          setError(null);
+          // Process authenticated user
+          processAuthenticatedUser(session);
         } else {
           console.log('AuthContext: No session, clearing user state');
           setUser(null);
           setError(null);
-        }
-        
-        if (mounted) {
           setIsLoading(false);
-          console.log('AuthContext: Auth loading complete');
+          
+          // Clear admin cache on logout
+          adminRoleService.clearCache();
         }
       }
     );
@@ -189,15 +192,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         const { data: { session } } = await supabase.auth.getSession();
         
-        if (session) {
-          console.log('AuthContext: Found initial session for:', session.user?.email);
-          // The onAuthStateChange will handle the rest
-        } else {
-          console.log('AuthContext: No initial session found');
-          if (mounted) {
-            setIsLoading(false);
-          }
+        if (!session && mounted) {
+          setIsLoading(false);
         }
+        // If session exists, onAuthStateChange will handle it
       } catch (err) {
         console.error('AuthContext: Session initialization failed:', err);
         if (mounted) {
@@ -219,6 +217,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     console.log('AuthContext: Attempting login for:', credentials.email);
     setIsLoading(true);
     setError(null);
+    
+    // Clear any existing admin cache
+    adminRoleService.clearCache();
+    
     try {
       const { error } = await supabase.auth.signInWithPassword(credentials);
       if (error) throw error;
@@ -227,9 +229,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (err: any) {
       console.error('AuthContext: Login failed:', err.message);
       setError(err.message || 'An error occurred during login.');
-      throw err;
-    } finally {
       setIsLoading(false);
+      throw err;
     }
   };
 
@@ -261,6 +262,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async (): Promise<void> => {
     console.log('AuthContext: Logging out');
+    adminRoleService.clearCache();
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
