@@ -11,7 +11,8 @@ import {
   Shield, 
   FileText,
   BarChart,
-  Box
+  Box,
+  Wand2
 } from 'lucide-react';
 
 const menuItems = [
@@ -39,6 +40,11 @@ const menuItems = [
     name: 'Subcategories',
     href: '/admin/subcategories',
     icon: FileText,
+  },
+  {
+    name: 'AI Image Generation',
+    href: '/admin/image-generation',
+    icon: Wand2,
   },
   {
     name: 'Users',

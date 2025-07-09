@@ -9,7 +9,8 @@ import {
   FolderPlus, 
   Settings, 
   BarChart, 
-  FileText 
+  FileText,
+  Wand2
 } from 'lucide-react';
 
 const AdminQuickActions = () => {
@@ -34,6 +35,13 @@ const AdminQuickActions = () => {
       href: '/admin/categories',
       color: 'text-amber-500',
       description: 'Organize your product categories',
+    },
+    {
+      title: 'AI Image Generation',
+      icon: Wand2,
+      href: '/admin/image-generation',
+      color: 'text-violet-500',
+      description: 'Generate professional category images with AI',
     },
     {
       title: 'Settings',

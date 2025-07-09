@@ -9,6 +9,7 @@ import AdminCategories from './pages/admin/AdminCategories';
 import AdminSubcategories from './pages/admin/AdminSubcategories';
 import AdminSellers from './pages/admin/AdminSellers';
 import AdminSettings from './pages/admin/AdminSettings';
+import AdminImageGeneration from './pages/admin/AdminImageGeneration';
 import EditProduct from './pages/admin/EditProduct';
 import EditCategory from './pages/admin/EditCategory';
 import EditSubcategory from './pages/admin/EditSubcategory';
@@ -129,6 +130,7 @@ function App() {
             <Route path="settings" element={<AdminSettings />} />
             <Route path="permissions" element={<AdminPermissions />} />
             <Route path="reports" element={<AdminReports />} />
+            <Route path="image-generation" element={<AdminImageGeneration />} />
           </Route>
           
           {/* Seller routes - protected */}
