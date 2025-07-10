@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
@@ -37,11 +36,11 @@ const AdminQuickActions = () => {
       description: 'Organize your product categories',
     },
     {
-      title: 'AI Image Generation',
+      title: 'AI Generation Center',
       icon: Wand2,
-      href: '/admin/image-generation',
+      href: '/admin/ai-generation',
       color: 'text-violet-500',
-      description: 'Generate professional category images with AI',
+      description: 'Generate images and populate products with AI',
     },
     {
       title: 'Settings',

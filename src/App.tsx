@@ -1,4 +1,3 @@
-
 import { BrowserRouter as Router, Routes, Route, Outlet, Navigate } from 'react-router-dom';
 import MainLayout from './components/layout/MainLayout';
 import Index from './pages/Index';
@@ -10,6 +9,7 @@ import AdminSubcategories from './pages/admin/AdminSubcategories';
 import AdminSellers from './pages/admin/AdminSellers';
 import AdminSettings from './pages/admin/AdminSettings';
 import AdminImageGeneration from './pages/admin/AdminImageGeneration';
+import AdminAIGeneration from './pages/admin/AdminAIGeneration';
 import EditProduct from './pages/admin/EditProduct';
 import EditCategory from './pages/admin/EditCategory';
 import EditSubcategory from './pages/admin/EditSubcategory';
@@ -131,6 +131,7 @@ function App() {
             <Route path="permissions" element={<AdminPermissions />} />
             <Route path="reports" element={<AdminReports />} />
             <Route path="image-generation" element={<AdminImageGeneration />} />
+            <Route path="ai-generation" element={<AdminAIGeneration />} />
           </Route>
           
           {/* Seller routes - protected */}

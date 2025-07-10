@@ -39,7 +39,14 @@ serve(async (req) => {
   }
 
   try {
+    console.log('Request received:', req.method);
+    
+    if (!openAIApiKey) {
+      throw new Error('OpenAI API key not configured');
+    }
+
     const { action, categorySlug } = await req.json();
+    console.log('Action:', action, 'Category:', categorySlug);
 
     if (action === 'generate-single' && categorySlug) {
       return await generateSingleCategoryImage(categorySlug);
@@ -70,75 +77,89 @@ async function generateSingleCategoryImage(categorySlug: string) {
 
   console.log(`Generating image for category: ${categorySlug}`);
   
-  // Generate image with OpenAI
-  const imageResponse = await fetch('https://api.openai.com/v1/images/generations', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${openAIApiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'gpt-image-1',
-      prompt: prompt,
-      size: '1024x1024',
-      quality: 'high',
-      output_format: 'webp',
-      n: 1
-    }),
-  });
-
-  if (!imageResponse.ok) {
-    const error = await imageResponse.text();
-    throw new Error(`OpenAI image generation failed: ${error}`);
-  }
-
-  const imageData = await imageResponse.json();
-  const base64Image = imageData.data[0].b64_json;
-  
-  // Convert base64 to blob
-  const imageBuffer = Uint8Array.from(atob(base64Image), c => c.charCodeAt(0));
-  
-  // Upload to Supabase Storage
-  const fileName = `category-${categorySlug}.webp`;
-  const { data: uploadData, error: uploadError } = await supabase.storage
-    .from('product-images')
-    .upload(fileName, imageBuffer, {
-      contentType: 'image/webp',
-      upsert: true
+  try {
+    // Generate image with OpenAI using dall-e-3 for better reliability
+    const imageResponse = await fetch('https://api.openai.com/v1/images/generations', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'dall-e-3',
+        prompt: prompt,
+        size: '1024x1024',
+        quality: 'standard',
+        n: 1
+      }),
     });
 
-  if (uploadError) {
-    throw new Error(`Storage upload failed: ${uploadError.message}`);
+    if (!imageResponse.ok) {
+      const errorText = await imageResponse.text();
+      console.error('OpenAI API error:', errorText);
+      throw new Error(`OpenAI image generation failed: ${errorText}`);
+    }
+
+    const imageData = await imageResponse.json();
+    const imageUrl = imageData.data[0].url;
+    
+    console.log('Image generated successfully:', imageUrl);
+
+    // Download the image
+    const downloadResponse = await fetch(imageUrl);
+    if (!downloadResponse.ok) {
+      throw new Error('Failed to download generated image');
+    }
+    
+    const imageBuffer = await downloadResponse.arrayBuffer();
+    
+    // Upload to Supabase Storage
+    const fileName = `category-${categorySlug}.png`;
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('product-images')
+      .upload(fileName, imageBuffer, {
+        contentType: 'image/png',
+        upsert: true
+      });
+
+    if (uploadError) {
+      console.error('Storage upload error:', uploadError);
+      throw new Error(`Storage upload failed: ${uploadError.message}`);
+    }
+
+    // Get public URL
+    const { data: publicUrlData } = supabase.storage
+      .from('product-images')
+      .getPublicUrl(fileName);
+
+    const finalImageUrl = publicUrlData.publicUrl;
+
+    // Update category in database
+    const { error: updateError } = await supabase
+      .from('product_categories')
+      .update({ image_url: finalImageUrl })
+      .eq('slug', categorySlug);
+
+    if (updateError) {
+      console.error('Database update error:', updateError);
+      throw new Error(`Database update failed: ${updateError.message}`);
+    }
+
+    console.log(`Successfully generated and uploaded image for: ${categorySlug}`);
+    
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        categorySlug,
+        imageUrl: finalImageUrl,
+        message: 'Image generated and updated successfully'
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  } catch (error) {
+    console.error(`Error generating image for ${categorySlug}:`, error);
+    throw error;
   }
-
-  // Get public URL
-  const { data: publicUrlData } = supabase.storage
-    .from('product-images')
-    .getPublicUrl(fileName);
-
-  const imageUrl = publicUrlData.publicUrl;
-
-  // Update category in database
-  const { error: updateError } = await supabase
-    .from('product_categories')
-    .update({ image_url: imageUrl })
-    .eq('slug', categorySlug);
-
-  if (updateError) {
-    throw new Error(`Database update failed: ${updateError.message}`);
-  }
-
-  console.log(`Successfully generated and uploaded image for: ${categorySlug}`);
-  
-  return new Response(
-    JSON.stringify({ 
-      success: true, 
-      categorySlug,
-      imageUrl,
-      message: 'Image generated and updated successfully'
-    }),
-    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-  );
 }
 
 async function generateAllCategoryImages() {
@@ -159,31 +180,31 @@ async function generateAllCategoryImages() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-image-1',
+          model: 'dall-e-3',
           prompt: prompt,
           size: '1024x1024',
-          quality: 'high',
-          output_format: 'webp',
+          quality: 'standard',
           n: 1
         }),
       });
 
       if (!imageResponse.ok) {
-        const error = await imageResponse.text();
-        throw new Error(`OpenAI failed: ${error}`);
+        const errorText = await imageResponse.text();
+        throw new Error(`OpenAI failed: ${errorText}`);
       }
 
       const imageData = await imageResponse.json();
-      const base64Image = imageData.data[0].b64_json;
+      const imageUrl = imageData.data[0].url;
       
-      // Convert and upload
-      const imageBuffer = Uint8Array.from(atob(base64Image), c => c.charCodeAt(0));
-      const fileName = `category-${categorySlug}.webp`;
+      // Download and upload
+      const downloadResponse = await fetch(imageUrl);
+      const imageBuffer = await downloadResponse.arrayBuffer();
+      const fileName = `category-${categorySlug}.png`;
       
       const { error: uploadError } = await supabase.storage
         .from('product-images')
         .upload(fileName, imageBuffer, {
-          contentType: 'image/webp',
+          contentType: 'image/png',
           upsert: true
         });
 
@@ -196,11 +217,11 @@ async function generateAllCategoryImages() {
         .from('product-images')
         .getPublicUrl(fileName);
 
-      const imageUrl = publicUrlData.publicUrl;
+      const finalImageUrl = publicUrlData.publicUrl;
 
       const { error: updateError } = await supabase
         .from('product_categories')
-        .update({ image_url: imageUrl })
+        .update({ image_url: finalImageUrl })
         .eq('slug', categorySlug);
 
       if (updateError) {
@@ -209,32 +230,32 @@ async function generateAllCategoryImages() {
 
       results.push({
         categorySlug,
-        imageUrl,
+        imageUrl: finalImageUrl,
         success: true
       });
 
       console.log(`✅ Successfully processed: ${categorySlug}`);
       
       // Small delay to avoid rate limits
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
     } catch (error) {
       console.error(`❌ Failed to process ${categorySlug}:`, error);
-      errors.push({
+      results.push({
         categorySlug,
+        success: false,
         error: error.message
       });
     }
   }
 
-  console.log(`Batch generation complete. Success: ${results.length}, Errors: ${errors.length}`);
+  console.log(`Batch generation complete. Success: ${results.filter(r => r.success).length}, Errors: ${results.filter(r => !r.success).length}`);
 
   return new Response(
     JSON.stringify({
       success: true,
-      message: `Generated ${results.length} images successfully`,
+      message: `Generated ${results.filter(r => r.success).length} images successfully`,
       results,
-      errors,
       total: Object.keys(categoryPrompts).length
     }),
     { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

@@ -42,8 +42,8 @@ const menuItems = [
     icon: FileText,
   },
   {
-    name: 'AI Image Generation',
-    href: '/admin/image-generation',
+    name: 'AI Generation',
+    href: '/admin/ai-generation',
     icon: Wand2,
   },
   {
