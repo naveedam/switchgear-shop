@@ -12,7 +12,9 @@ import {
   FileText,
   BarChart,
   Box,
-  Wand2
+  Image,
+  Package,
+  Building
 } from 'lucide-react';
 
 const menuItems = [
@@ -42,9 +44,19 @@ const menuItems = [
     icon: FileText,
   },
   {
-    name: 'AI Generation',
-    href: '/admin/ai-generation',
-    icon: Wand2,
+    name: 'AI Images',
+    href: '/admin/ai-images',
+    icon: Image,
+  },
+  {
+    name: 'AI Products',
+    href: '/admin/ai-products',
+    icon: Package,
+  },
+  {
+    name: 'AI Vendors',
+    href: '/admin/ai-vendors',
+    icon: Building,
   },
   {
     name: 'Users',
