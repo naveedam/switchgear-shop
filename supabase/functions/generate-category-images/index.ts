@@ -56,6 +56,10 @@ serve(async (req) => {
       return await generateAllCategoryImages();
     }
 
+    if (action === 'generate-missing') {
+      return await generateMissingCategoryImages();
+    }
+
     return new Response(
       JSON.stringify({ error: 'Invalid action' }),
       { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -69,110 +73,22 @@ serve(async (req) => {
   }
 });
 
-async function generateSingleCategoryImage(categorySlug: string) {
+async function generateSingleCategoryImageWithRetry(categorySlug: string, retries = 3): Promise<{ success: boolean; categorySlug: string; imageUrl?: string; error?: string }> {
   const prompt = categoryPrompts[categorySlug];
   if (!prompt) {
-    throw new Error(`No prompt found for category: ${categorySlug}`);
+    return { success: false, categorySlug, error: `No prompt found for category: ${categorySlug}` };
   }
 
-  console.log(`Generating image for category: ${categorySlug}`);
+  console.log(`Generating image for category: ${categorySlug} (retries left: ${retries})`);
   
-  try {
-    // Generate image with OpenAI using dall-e-3 for better reliability
-    const imageResponse = await fetch('https://api.openai.com/v1/images/generations', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'dall-e-3',
-        prompt: prompt,
-        size: '1024x1024',
-        quality: 'standard',
-        n: 1
-      }),
-    });
-
-    if (!imageResponse.ok) {
-      const errorText = await imageResponse.text();
-      console.error('OpenAI API error:', errorText);
-      throw new Error(`OpenAI image generation failed: ${errorText}`);
-    }
-
-    const imageData = await imageResponse.json();
-    const imageUrl = imageData.data[0].url;
-    
-    console.log('Image generated successfully:', imageUrl);
-
-    // Download the image
-    const downloadResponse = await fetch(imageUrl);
-    if (!downloadResponse.ok) {
-      throw new Error('Failed to download generated image');
-    }
-    
-    const imageBuffer = await downloadResponse.arrayBuffer();
-    
-    // Upload to Supabase Storage
-    const fileName = `category-${categorySlug}.png`;
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('product-images')
-      .upload(fileName, imageBuffer, {
-        contentType: 'image/png',
-        upsert: true
-      });
-
-    if (uploadError) {
-      console.error('Storage upload error:', uploadError);
-      throw new Error(`Storage upload failed: ${uploadError.message}`);
-    }
-
-    // Get public URL
-    const { data: publicUrlData } = supabase.storage
-      .from('product-images')
-      .getPublicUrl(fileName);
-
-    const finalImageUrl = publicUrlData.publicUrl;
-
-    // Update category in database
-    const { error: updateError } = await supabase
-      .from('product_categories')
-      .update({ image_url: finalImageUrl })
-      .eq('slug', categorySlug);
-
-    if (updateError) {
-      console.error('Database update error:', updateError);
-      throw new Error(`Database update failed: ${updateError.message}`);
-    }
-
-    console.log(`Successfully generated and uploaded image for: ${categorySlug}`);
-    
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        categorySlug,
-        imageUrl: finalImageUrl,
-        message: 'Image generated and updated successfully'
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  } catch (error) {
-    console.error(`Error generating image for ${categorySlug}:`, error);
-    throw error;
-  }
-}
-
-async function generateAllCategoryImages() {
-  const results = [];
-  const errors = [];
-
-  console.log('Starting batch generation for all categories...');
-
-  for (const [categorySlug, prompt] of Object.entries(categoryPrompts)) {
+  for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      console.log(`Processing category: ${categorySlug}`);
-      
-      // Generate image
+      if (attempt > 0) {
+        console.log(`Retry attempt ${attempt} for ${categorySlug}`);
+        await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000)); // Exponential backoff
+      }
+
+      // Generate image with OpenAI using dall-e-3 for better reliability
       const imageResponse = await fetch('https://api.openai.com/v1/images/generations', {
         method: 'POST',
         headers: {
@@ -190,18 +106,26 @@ async function generateAllCategoryImages() {
 
       if (!imageResponse.ok) {
         const errorText = await imageResponse.text();
-        throw new Error(`OpenAI failed: ${errorText}`);
+        console.error('OpenAI API error:', errorText);
+        throw new Error(`OpenAI image generation failed: ${errorText}`);
       }
 
       const imageData = await imageResponse.json();
       const imageUrl = imageData.data[0].url;
       
-      // Download and upload
+      console.log('Image generated successfully:', imageUrl);
+
+      // Download the image
       const downloadResponse = await fetch(imageUrl);
-      const imageBuffer = await downloadResponse.arrayBuffer();
-      const fileName = `category-${categorySlug}.png`;
+      if (!downloadResponse.ok) {
+        throw new Error('Failed to download generated image');
+      }
       
-      const { error: uploadError } = await supabase.storage
+      const imageBuffer = await downloadResponse.arrayBuffer();
+      
+      // Upload to Supabase Storage
+      const fileName = `category-${categorySlug}.png`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
         .from('product-images')
         .upload(fileName, imageBuffer, {
           contentType: 'image/png',
@@ -209,52 +133,137 @@ async function generateAllCategoryImages() {
         });
 
       if (uploadError) {
+        console.error('Storage upload error:', uploadError);
         throw new Error(`Storage upload failed: ${uploadError.message}`);
       }
 
-      // Get public URL and update database
+      // Get public URL
       const { data: publicUrlData } = supabase.storage
         .from('product-images')
         .getPublicUrl(fileName);
 
       const finalImageUrl = publicUrlData.publicUrl;
 
+      // Update category in database
       const { error: updateError } = await supabase
         .from('product_categories')
         .update({ image_url: finalImageUrl })
         .eq('slug', categorySlug);
 
       if (updateError) {
+        console.error('Database update error:', updateError);
         throw new Error(`Database update failed: ${updateError.message}`);
       }
 
-      results.push({
-        categorySlug,
-        imageUrl: finalImageUrl,
-        success: true
-      });
+      console.log(`✅ Successfully generated and uploaded image for: ${categorySlug}`);
+      
+      return { success: true, categorySlug, imageUrl: finalImageUrl };
 
-      console.log(`✅ Successfully processed: ${categorySlug}`);
+    } catch (error: any) {
+      console.error(`❌ Attempt ${attempt + 1} failed for ${categorySlug}:`, error.message);
       
-      // Small delay to avoid rate limits
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-    } catch (error) {
-      console.error(`❌ Failed to process ${categorySlug}:`, error);
-      results.push({
-        categorySlug,
-        success: false,
-        error: error.message
-      });
+      if (attempt === retries) {
+        return { success: false, categorySlug, error: error.message };
+      }
     }
   }
 
-  console.log(`Batch generation complete. Success: ${results.filter(r => r.success).length}, Errors: ${results.filter(r => !r.success).length}`);
+  return { success: false, categorySlug, error: 'All retry attempts failed' };
+}
+
+async function generateSingleCategoryImage(categorySlug: string) {
+  const result = await generateSingleCategoryImageWithRetry(categorySlug);
+  
+  return new Response(
+    JSON.stringify(result),
+    { 
+      status: result.success ? 200 : 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+    }
+  );
+}
+
+async function generateMissingCategoryImages() {
+  console.log('Finding categories with missing AI-generated images...');
+  
+  // Get all categories from database
+  const { data: categories, error: fetchError } = await supabase
+    .from('product_categories')
+    .select('slug, image_url')
+    .order('sort_order');
+
+  if (fetchError) {
+    throw new Error(`Failed to fetch categories: ${fetchError.message}`);
+  }
+
+  // Find categories that don't have AI-generated images (still using placeholder images)
+  const missingCategories = categories?.filter(cat => 
+    categoryPrompts[cat.slug] && 
+    (!cat.image_url || cat.image_url.includes('unsplash.com'))
+  ) || [];
+
+  console.log(`Found ${missingCategories.length} categories needing AI images:`, missingCategories.map(c => c.slug));
+
+  if (missingCategories.length === 0) {
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: 'All categories already have AI-generated images',
+        results: [],
+        total: 0
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  const results = [];
+  
+  for (const category of missingCategories) {
+    console.log(`Processing missing category: ${category.slug}`);
+    
+    const result = await generateSingleCategoryImageWithRetry(category.slug);
+    results.push(result);
+    
+    // Delay between generations to avoid rate limits
+    await new Promise(resolve => setTimeout(resolve, 3000));
+  }
+
+  const successCount = results.filter(r => r.success).length;
+  console.log(`Missing image generation complete. Success: ${successCount}, Failed: ${results.length - successCount}`);
 
   return new Response(
     JSON.stringify({
       success: true,
-      message: `Generated ${results.filter(r => r.success).length} images successfully`,
+      message: `Generated ${successCount} missing images successfully`,
+      results,
+      total: missingCategories.length
+    }),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  );
+}
+
+async function generateAllCategoryImages() {
+  console.log('Starting batch generation for all categories...');
+  
+  const results = [];
+  
+  for (const categorySlug of Object.keys(categoryPrompts)) {
+    console.log(`Processing category: ${categorySlug}`);
+    
+    const result = await generateSingleCategoryImageWithRetry(categorySlug);
+    results.push(result);
+    
+    // Delay between generations to avoid rate limits
+    await new Promise(resolve => setTimeout(resolve, 3000));
+  }
+
+  const successCount = results.filter(r => r.success).length;
+  console.log(`Batch generation complete. Success: ${successCount}, Failed: ${results.length - successCount}`);
+
+  return new Response(
+    JSON.stringify({
+      success: true,
+      message: `Generated ${successCount} images successfully`,
       results,
       total: Object.keys(categoryPrompts).length
     }),

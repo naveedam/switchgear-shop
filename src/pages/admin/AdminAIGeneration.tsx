@@ -48,25 +48,27 @@ const AdminAIGeneration: React.FC = () => {
     }
   }, [isAuthenticated, user, navigate]);
 
-  const generateAllImages = async () => {
+  const generateMissingImages = async () => {
     setIsGeneratingImages(true);
     setImageResults([]);
     
     try {
-      console.log('Starting AI image generation for all categories...');
+      console.log('Starting AI image generation for missing categories...');
       
       const { data, error } = await supabase.functions.invoke('generate-category-images', {
-        body: { action: 'generate-all' }
+        body: { action: 'generate-missing' }
       });
 
       if (error) throw error;
 
-      console.log('Image generation completed:', data);
+      console.log('Missing image generation completed:', data);
       setImageResults(data.results || []);
       
       toast({
         title: "Image Generation Complete",
-        description: `Successfully generated ${data.results?.filter((r: any) => r.success).length || 0} category images`,
+        description: data.total === 0 
+          ? "All categories already have AI-generated images" 
+          : `Successfully generated ${data.results?.filter((r: any) => r.success).length || 0} missing category images`,
       });
 
     } catch (error: any) {
@@ -78,6 +80,36 @@ const AdminAIGeneration: React.FC = () => {
       });
     } finally {
       setIsGeneratingImages(false);
+    }
+  };
+
+  const retryFailedImage = async (categorySlug: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-category-images', {
+        body: { action: 'generate-single', categorySlug }
+      });
+
+      if (error) throw error;
+
+      // Update the results
+      setImageResults(prev => prev.map(result => 
+        result.categorySlug === categorySlug ? data : result
+      ));
+
+      toast({
+        title: data.success ? "Image Generated" : "Generation Failed",
+        description: data.success 
+          ? `Successfully generated image for ${categoryNames[categorySlug]}` 
+          : data.error,
+        variant: data.success ? "default" : "destructive",
+      });
+
+    } catch (error: any) {
+      toast({
+        title: "Retry Failed",
+        description: error.message || "Failed to retry image generation",
+        variant: "destructive",
+      });
     }
   };
 
@@ -193,14 +225,14 @@ const AdminAIGeneration: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600 mb-2">
-                    Generate professional AI images for all product categories using OpenAI's DALL-E 3.
+                    Generate professional AI images for categories that don't have them yet using OpenAI's DALL-E 3.
                   </p>
                   <p className="text-xs text-gray-500">
-                    This will create high-quality, royalty-free images optimized for your marketplace.
+                    This will only generate images for categories missing AI-generated images.
                   </p>
                 </div>
                 <Button 
-                  onClick={generateAllImages}
+                  onClick={generateMissingImages}
                   disabled={isGeneratingImages}
                   className="flex items-center gap-2"
                 >
@@ -209,7 +241,7 @@ const AdminAIGeneration: React.FC = () => {
                   ) : (
                     <Wand2 className="h-4 w-4" />
                   )}
-                  {isGeneratingImages ? 'Generating...' : 'Generate All Images'}
+                  {isGeneratingImages ? 'Generating...' : 'Generate Missing Images'}
                 </Button>
               </div>
 
@@ -219,7 +251,7 @@ const AdminAIGeneration: React.FC = () => {
                     <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{ width: '70%' }}></div>
                   </div>
                   <p className="text-sm text-gray-600 text-center">
-                    Generating images for 15 categories... This may take a few minutes.
+                    Generating missing category images... This may take a few minutes.
                   </p>
                 </div>
               )}
@@ -245,9 +277,21 @@ const AdminAIGeneration: React.FC = () => {
                             )}
                           </div>
                         </div>
-                        <Badge variant={result.success ? "default" : "destructive"}>
-                          {result.success ? 'Success' : 'Failed'}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          {!result.success && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => retryFailedImage(result.categorySlug || '')}
+                              className="text-xs"
+                            >
+                              Retry
+                            </Button>
+                          )}
+                          <Badge variant={result.success ? "default" : "destructive"}>
+                            {result.success ? 'Success' : 'Failed'}
+                          </Badge>
+                        </div>
                       </div>
                     ))}
                   </div>
