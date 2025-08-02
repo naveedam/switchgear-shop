@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -10,87 +10,24 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
-import { Search, UserPlus, Store, Eye } from 'lucide-react';
+import { Search, UserPlus, Store, Eye, Building2, Loader2, Users } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
-// Mock sellers data with additional fields
-const mockSellers = [
-  { 
-    id: 1, 
-    name: 'ElectroTech Industries', 
-    email: 'contact@electrotech.com', 
-    status: 'active', 
-    productsCount: 45, 
-    joinedDate: '2023-05-10',
-    gstNumber: '22AAAAA0000A1Z5',
-    panNumber: 'AAAAA0000A',
-    businessType: 'Private Limited Company',
-    annualTurnover: '₹5-25 Crores',
-    yearsInBusiness: 8,
-    city: 'Mumbai',
-    state: 'Maharashtra'
-  },
-  { 
-    id: 2, 
-    name: 'PowerGrid Solutions', 
-    email: 'info@powergrid.com', 
-    status: 'active', 
-    productsCount: 32, 
-    joinedDate: '2023-06-22',
-    gstNumber: '09BBBBB1111B1Z5',
-    panNumber: 'BBBBB1111B',
-    businessType: 'Partnership Firm',
-    annualTurnover: '₹1-5 Crores',
-    yearsInBusiness: 5,
-    city: 'Delhi',
-    state: 'Delhi'
-  },
-  { 
-    id: 3, 
-    name: 'Circuit Systems Ltd', 
-    email: 'sales@circuitsystems.com', 
-    status: 'pending', 
-    productsCount: 0, 
-    joinedDate: '2023-10-05',
-    gstNumber: '19CCCCC2222C1Z5',
-    panNumber: 'CCCCC2222C',
-    businessType: 'Private Limited Company',
-    annualTurnover: 'Below ₹1 Crore',
-    yearsInBusiness: 2,
-    city: 'Bangalore',
-    state: 'Karnataka'
-  },
-  { 
-    id: 4, 
-    name: 'VoltMax Industries', 
-    email: 'support@voltmax.com', 
-    status: 'active', 
-    productsCount: 21, 
-    joinedDate: '2023-07-15',
-    gstNumber: '27DDDDD3333D1Z5',
-    panNumber: 'DDDDD3333D',
-    businessType: 'Private Limited Company',
-    annualTurnover: '₹25-100 Crores',
-    yearsInBusiness: 12,
-    city: 'Pune',
-    state: 'Maharashtra'
-  },
-  { 
-    id: 5, 
-    name: 'SwitchPro Electronics', 
-    email: 'info@switchpro.com', 
-    status: 'suspended', 
-    productsCount: 18, 
-    joinedDate: '2023-04-03',
-    gstNumber: '06EEEEE4444E1Z5',
-    panNumber: 'EEEEE4444E',
-    businessType: 'Sole Proprietorship',
-    annualTurnover: '₹1-5 Crores',
-    yearsInBusiness: 6,
-    city: 'Chennai',
-    state: 'Tamil Nadu'
-  },
-];
+interface Vendor {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  address?: string;
+  status: string;
+  is_vendor: boolean;
+  created_at: string;
+  updated_at: string;
+  description?: string;
+  role?: string;
+  products_count?: number;
+}
 
 interface SellerFormValues {
   name: string;
@@ -107,8 +44,11 @@ const AdminSellers: React.FC = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddSellerOpen, setIsAddSellerOpen] = useState(false);
-  const [selectedSeller, setSelectedSeller] = useState<any>(null);
+  const [selectedSeller, setSelectedSeller] = useState<Vendor | null>(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isCreatingVendors, setIsCreatingVendors] = useState(false);
   
   const form = useForm<SellerFormValues>({
     defaultValues: {
@@ -123,32 +63,129 @@ const AdminSellers: React.FC = () => {
   });
   
   // Check if user is admin and redirect if not
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isAuthenticated || (user && user.role !== 'admin')) {
       navigate('/login');
     }
   }, [isAuthenticated, user, navigate]);
-  
-  // Filter sellers based on search term
-  const filteredSellers = searchTerm 
-    ? mockSellers.filter(seller => 
-        seller.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        seller.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        seller.gstNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        seller.city.toLowerCase().includes(searchTerm.toLowerCase()))
-    : mockSellers;
-  
-  const handleAddSeller = (data: SellerFormValues) => {
-    console.log('Adding new seller:', data);
-    toast({
-      title: 'Seller Created',
-      description: `${data.companyName} has been successfully added as a seller.`,
-    });
-    setIsAddSellerOpen(false);
-    form.reset();
+
+  // Fetch vendors from database
+  const fetchVendors = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Get companies that are vendors
+      const { data: companiesData, error: companiesError } = await supabase
+        .from('companies')
+        .select('*')
+        .eq('is_vendor', true)
+        .order('created_at', { ascending: false });
+
+      if (companiesError) throw companiesError;
+
+      // Get product counts for each vendor
+      const vendorsWithCounts = await Promise.all(
+        (companiesData || []).map(async (vendor) => {
+          const { count } = await supabase
+            .from('products')
+            .select('*', { count: 'exact', head: true })
+            .eq('vendor_id', vendor.id);
+          
+          return {
+            ...vendor,
+            products_count: count || 0
+          };
+        })
+      );
+
+      setVendors(vendorsWithCounts);
+    } catch (error) {
+      console.error('Error fetching vendors:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch vendor data',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleViewSeller = (seller: any) => {
+  useEffect(() => {
+    fetchVendors();
+  }, []);
+  
+  // Filter vendors based on search term
+  const filteredVendors = searchTerm 
+    ? vendors.filter(vendor => 
+        vendor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        vendor.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (vendor.address && vendor.address.toLowerCase().includes(searchTerm.toLowerCase())))
+    : vendors;
+  
+  const handleAddSeller = async (data: SellerFormValues) => {
+    try {
+      // Create new vendor company
+      const { error } = await supabase
+        .from('companies')
+        .insert({
+          name: data.companyName,
+          email: data.email,
+          phone: data.phoneNumber,
+          is_vendor: true,
+          status: 'active',
+          description: `${data.businessType} - Contact: ${data.name}`
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Seller Created',
+        description: `${data.companyName} has been successfully added as a seller.`,
+      });
+      
+      setIsAddSellerOpen(false);
+      form.reset();
+      fetchVendors(); // Refresh the list
+    } catch (error) {
+      console.error('Error creating seller:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to create seller',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const createAIVendors = async () => {
+    try {
+      setIsCreatingVendors(true);
+      
+      const { data, error } = await supabase.functions.invoke('generate-products', {
+        body: { action: 'create-vendors' }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: 'AI Vendors Created',
+        description: `Successfully created ${data.vendorsCreated} AI-generated vendors`,
+      });
+      
+      fetchVendors(); // Refresh the list
+    } catch (error) {
+      console.error('Error creating AI vendors:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to create AI vendors',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsCreatingVendors(false);
+    }
+  };
+
+  const handleViewSeller = (seller: Vendor) => {
     setSelectedSeller(seller);
     setIsViewModalOpen(true);
   };
@@ -169,136 +206,159 @@ const AdminSellers: React.FC = () => {
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Manage Sellers</h1>
-        <Dialog open={isAddSellerOpen} onOpenChange={setIsAddSellerOpen}>
-          <DialogTrigger asChild>
-            <Button className="flex items-center">
-              <UserPlus className="mr-2 h-4 w-4" />
-              Add Seller
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[625px]">
-            <DialogHeader>
-              <DialogTitle>Add New Seller</DialogTitle>
-            </DialogHeader>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(handleAddSeller)} className="space-y-4 py-4">
-                <div className="grid grid-cols-2 gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">Manage Sellers</h1>
+          <p className="text-muted-foreground">
+            Manage vendor companies and their marketplace presence
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline"
+            onClick={createAIVendors}
+            disabled={isCreatingVendors}
+            className="flex items-center"
+          >
+            {isCreatingVendors ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Building2 className="mr-2 h-4 w-4" />
+            )}
+            Generate AI Vendors
+          </Button>
+          <Dialog open={isAddSellerOpen} onOpenChange={setIsAddSellerOpen}>
+            <DialogTrigger asChild>
+              <Button className="flex items-center">
+                <UserPlus className="mr-2 h-4 w-4" />
+                Add Seller
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[625px]">
+              <DialogHeader>
+                <DialogTitle>Add New Seller</DialogTitle>
+              </DialogHeader>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(handleAddSeller)} className="space-y-4 py-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Contact Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Full Name" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email</FormLabel>
+                          <FormControl>
+                            <Input type="email" placeholder="Email Address" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="companyName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Company Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Company Name" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="phoneNumber"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Phone Number</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Phone Number" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="gstNumber"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>GST Number</FormLabel>
+                          <FormControl>
+                            <Input placeholder="22AAAAA0000A1Z5" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="panNumber"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>PAN Number</FormLabel>
+                          <FormControl>
+                            <Input placeholder="AAAAA0000A" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                   <FormField
                     control={form.control}
-                    name="name"
+                    name="businessType"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Contact Name</FormLabel>
+                        <FormLabel>Business Type</FormLabel>
                         <FormControl>
-                          <Input placeholder="Full Name" {...field} />
+                          <Input placeholder="Private Limited Company" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input type="email" placeholder="Email Address" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="companyName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Company Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Company Name" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="phoneNumber"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Phone Number</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Phone Number" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="gstNumber"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>GST Number</FormLabel>
-                        <FormControl>
-                          <Input placeholder="22AAAAA0000A1Z5" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="panNumber"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>PAN Number</FormLabel>
-                        <FormControl>
-                          <Input placeholder="AAAAA0000A" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                <FormField
-                  control={form.control}
-                  name="businessType"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Business Type</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Private Limited Company" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <DialogFooter>
-                  <Button type="submit" className="mt-4">Add Seller</Button>
-                </DialogFooter>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
+                  <DialogFooter>
+                    <Button type="submit" className="mt-4">Add Seller</Button>
+                  </DialogFooter>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
       
       <Card className="mb-8">
         <CardHeader className="pb-2">
-          <CardTitle>Sellers</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Vendors ({vendors.length})
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center mb-4">
             <div className="relative flex-grow">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search sellers by name, email, GST number, or city..."
+                placeholder="Search vendors by name, email, or address..."
                 className="pl-8"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -306,90 +366,131 @@ const AdminSellers: React.FC = () => {
             </div>
           </div>
           
-          <div className="rounded-md border overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Company</TableHead>
-                  <TableHead>Contact</TableHead>
-                  <TableHead>GST Number</TableHead>
-                  <TableHead>Location</TableHead>
-                  <TableHead>Business Type</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Products</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredSellers.map(seller => (
-                  <TableRow key={seller.id}>
-                    <TableCell>
-                      <div className="flex items-center">
-                        <Store className="h-5 w-5 text-gray-400 mr-2" />
-                        <div>
-                          <div className="font-medium">{seller.name}</div>
-                          <div className="text-sm text-gray-500">
-                            {seller.annualTurnover} • {seller.yearsInBusiness} years
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin mr-2" />
+              Loading vendors...
+            </div>
+          ) : filteredVendors.length === 0 ? (
+            <div className="text-center py-8">
+              <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-medium mb-2">No vendors found</h3>
+              <p className="text-muted-foreground mb-4">
+                {searchTerm ? 'No vendors match your search criteria.' : 'No vendors have been created yet.'}
+              </p>
+              {!searchTerm && (
+                <Button onClick={createAIVendors} disabled={isCreatingVendors}>
+                  {isCreatingVendors ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Building2 className="mr-2 h-4 w-4" />
+                  )}
+                  Generate AI Vendors
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div className="rounded-md border overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Company</TableHead>
+                    <TableHead>Contact</TableHead>
+                    <TableHead>Address</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Products</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredVendors.map(vendor => (
+                    <TableRow key={vendor.id}>
+                      <TableCell>
+                        <div className="flex items-center">
+                          <Store className="h-5 w-5 text-muted-foreground mr-2" />
+                          <div>
+                            <div className="font-medium">{vendor.name}</div>
+                            {vendor.description && (
+                              <div className="text-sm text-muted-foreground truncate max-w-[200px]">
+                                {vendor.description}
+                              </div>
+                            )}
                           </div>
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{seller.email}</div>
-                        <div className="text-sm text-gray-500">
-                          Joined {seller.joinedDate}
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{vendor.email}</div>
+                          {vendor.phone && (
+                            <div className="text-sm text-muted-foreground">
+                              {vendor.phone}
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="font-mono text-sm">{seller.gstNumber}</div>
-                      <div className="text-sm text-gray-500">PAN: {seller.panNumber}</div>
-                    </TableCell>
-                    <TableCell>
-                      <div>{seller.city}</div>
-                      <div className="text-sm text-gray-500">{seller.state}</div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm">{seller.businessType}</div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={getBadgeVariant(seller.status) as any}>
-                        {seller.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{seller.productsCount}</TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => handleViewSeller(seller)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => navigate(`/admin/sellers/${seller.id}`)}
-                        >
-                          Manage
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm max-w-[150px] truncate">
+                          {vendor.address || 'Not specified'}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={getBadgeVariant(vendor.status) as any}>
+                          {vendor.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <span>{vendor.products_count || 0}</span>
+                          {(vendor.products_count || 0) > 0 && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => navigate(`/admin/products?vendor=${vendor.id}`)}
+                              className="h-6 px-2 text-xs"
+                            >
+                              View
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm text-muted-foreground">
+                          {new Date(vendor.created_at).toLocaleDateString()}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => handleViewSeller(vendor)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => navigate(`/admin/sellers/${vendor.id}`)}
+                          >
+                            Manage
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* Seller Details Modal */}
+      {/* Vendor Details Modal */}
       <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
         <DialogContent className="sm:max-w-[700px]">
           <DialogHeader>
-            <DialogTitle>Seller Details</DialogTitle>
+            <DialogTitle>Vendor Details</DialogTitle>
           </DialogHeader>
           {selectedSeller && (
             <div className="space-y-6">
@@ -399,40 +500,57 @@ const AdminSellers: React.FC = () => {
                   <div className="space-y-2 text-sm">
                     <div><strong>Name:</strong> {selectedSeller.name}</div>
                     <div><strong>Email:</strong> {selectedSeller.email}</div>
-                    <div><strong>Business Type:</strong> {selectedSeller.businessType}</div>
-                    <div><strong>Location:</strong> {selectedSeller.city}, {selectedSeller.state}</div>
+                    {selectedSeller.phone && (
+                      <div><strong>Phone:</strong> {selectedSeller.phone}</div>
+                    )}
+                    {selectedSeller.address && (
+                      <div><strong>Address:</strong> {selectedSeller.address}</div>
+                    )}
                   </div>
                 </div>
                 <div>
-                  <h3 className="font-semibold mb-2">Tax Information</h3>
+                  <h3 className="font-semibold mb-2">Platform Information</h3>
                   <div className="space-y-2 text-sm">
-                    <div><strong>GST Number:</strong> {selectedSeller.gstNumber}</div>
-                    <div><strong>PAN Number:</strong> {selectedSeller.panNumber}</div>
+                    <div><strong>Status:</strong> 
+                      <Badge variant={getBadgeVariant(selectedSeller.status) as any} className="ml-2">
+                        {selectedSeller.status}
+                      </Badge>
+                    </div>
+                    <div><strong>Vendor Type:</strong> {selectedSeller.is_vendor ? 'Active Vendor' : 'Regular User'}</div>
+                    <div><strong>Products:</strong> {selectedSeller.products_count || 0} items</div>
                   </div>
                 </div>
               </div>
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <h3 className="font-semibold mb-2">Business Profile</h3>
+                  <h3 className="font-semibold mb-2">Account Timeline</h3>
                   <div className="space-y-2 text-sm">
-                    <div><strong>Annual Turnover:</strong> {selectedSeller.annualTurnover}</div>
-                    <div><strong>Years in Business:</strong> {selectedSeller.yearsInBusiness} years</div>
-                    <div><strong>Products:</strong> {selectedSeller.productsCount} items</div>
+                    <div><strong>Created:</strong> {new Date(selectedSeller.created_at).toLocaleDateString()}</div>
+                    <div><strong>Last Updated:</strong> {new Date(selectedSeller.updated_at).toLocaleDateString()}</div>
                   </div>
                 </div>
                 <div>
-                  <h3 className="font-semibold mb-2">Status</h3>
-                  <div className="space-y-2 text-sm">
-                    <div>
-                      <Badge variant={getBadgeVariant(selectedSeller.status) as any}>
-                        {selectedSeller.status}
-                      </Badge>
-                    </div>
-                    <div><strong>Joined:</strong> {selectedSeller.joinedDate}</div>
+                  <h3 className="font-semibold mb-2">Description</h3>
+                  <div className="text-sm">
+                    {selectedSeller.description || 'No description available'}
                   </div>
                 </div>
               </div>
+
+              {selectedSeller.products_count && selectedSeller.products_count > 0 && (
+                <div className="pt-4 border-t">
+                  <Button 
+                    onClick={() => {
+                      navigate(`/admin/products?vendor=${selectedSeller.id}`);
+                      setIsViewModalOpen(false);
+                    }}
+                    className="w-full"
+                  >
+                    View Products ({selectedSeller.products_count})
+                  </Button>
+                </div>
+              )}
             </div>
           )}
           <DialogFooter>
