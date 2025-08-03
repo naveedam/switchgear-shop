@@ -35,6 +35,9 @@ const NavBar: React.FC = () => {
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-4">
               <NavProductsMenu />
+              <Link to="/sellers" className="text-gray-700 hover:text-brand-700 transition-colors">
+                Sellers
+              </Link>
             </div>
 
             {/* Search Bar */}
