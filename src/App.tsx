@@ -32,6 +32,7 @@ import SellerProducts from './pages/SellerProducts';
 import SellerOrders from './pages/SellerOrders';
 import ProfilePage from './pages/ProfilePage';
 import OrdersPage from './pages/OrdersPage';
+import SellersPage from './pages/SellersPage';
 
 import { Toaster } from './components/ui/toaster';
 import './App.css';
@@ -83,6 +84,7 @@ function App() {
           {/* Public routes */}
           <Route path="/" element={<MainLayout><Outlet /></MainLayout>}>
             <Route index element={<Index />} />
+            <Route path="sellers" element={<SellersPage />} />
             <Route path="categories" element={<AllCategories />} />
             <Route path="categories/:categorySlug" element={<ProductListingPage />} />
             <Route path="products/:productSlug" element={<ProductDetailPage />} />
