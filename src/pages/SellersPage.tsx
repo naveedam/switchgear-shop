@@ -32,40 +32,58 @@ const SellersPage: React.FC = () => {
     try {
       setLoading(true);
       
-      // Fetch vendors (companies where is_vendor = true)
-      const { data: companies, error: companiesError } = await supabase
-        .from('companies')
-        .select('*')
-        .eq('is_vendor', true)
-        .eq('status', 'active')
+      // Fetch only registered sellers who have completed onboarding
+      const { data: onboardedSellers, error: onboardingError } = await supabase
+        .from('seller_onboarding')
+        .select(`
+          id,
+          user_id,
+          company_name,
+          company_description,
+          contact_email,
+          contact_phone,
+          address,
+          city,
+          state,
+          country,
+          website,
+          created_at,
+          status
+        `)
+        .eq('status', 'approved')
         .order('created_at', { ascending: false });
 
-      if (companiesError) throw companiesError;
+      if (onboardingError) throw onboardingError;
 
-      // Get product counts for each vendor
-      const sellersWithProductCount = await Promise.all(
-        (companies || []).map(async (company) => {
+      if (!onboardedSellers || onboardedSellers.length === 0) {
+        setSellers([]);
+        return;
+      }
+
+      // Get product counts for each seller based on their user_id
+      const sellersWithProducts = await Promise.all(
+        onboardedSellers.map(async (seller) => {
           const { count } = await supabase
             .from('products')
             .select('*', { count: 'exact', head: true })
-            .eq('vendor_id', company.id)
+            .eq('vendor_id', seller.user_id)
             .eq('status', 'active');
 
           return {
-            id: company.id,
-            name: company.name,
-            description: company.description,
-            email: company.email,
-            phone: company.phone,
-            address: company.address,
-            status: company.status,
-            created_at: company.created_at,
-            productCount: count || 0,
+            id: seller.user_id, // Use user_id for product linking
+            name: seller.company_name,
+            description: seller.company_description,
+            email: seller.contact_email,
+            phone: seller.contact_phone,
+            address: `${seller.address}, ${seller.city}, ${seller.state}, ${seller.country}`,
+            status: seller.status,
+            created_at: seller.created_at,
+            productCount: count || 0
           };
         })
       );
 
-      setSellers(sellersWithProductCount);
+      setSellers(sellersWithProducts);
     } catch (error) {
       console.error('Error fetching sellers:', error);
       toast({
