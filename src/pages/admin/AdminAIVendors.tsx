@@ -32,26 +32,28 @@ const AdminAIVendors: React.FC = () => {
     setVendorResults(null);
 
     try {
-      const { data, error } = await supabase.functions.invoke('generate-products', {
-        body: { action: 'create-vendors' }
-      });
+      const { data, error } = await supabase.functions.invoke('generate-bangalore-sellers');
 
       if (error) throw error;
 
-      setVendorResults(data);
+      setVendorResults({
+        success: data.success,
+        vendorsCreated: data.sellersCreated,
+        error: data.error
+      });
       
       toast({
-        title: data.success ? "Vendors created successfully" : "Vendor creation failed",
+        title: data.success ? "Bangalore sellers created successfully" : "Seller creation failed",
         description: data.success 
-          ? `Successfully created ${data.vendorsCreated} vendor companies`
-          : `Failed to create vendors: ${data.error}`,
+          ? `Successfully created ${data.sellersCreated} Bangalore-based sellers with brand authorizations`
+          : `Failed to create sellers: ${data.error}`,
         variant: data.success ? "default" : "destructive",
       });
     } catch (error) {
-      console.error('Error creating vendors:', error);
+      console.error('Error creating sellers:', error);
       toast({
         title: "Creation failed",
-        description: "Failed to create vendor companies. Please try again.",
+        description: "Failed to create Bangalore sellers. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -64,10 +66,10 @@ const AdminAIVendors: React.FC = () => {
       <div className="mb-6">
         <h1 className="text-3xl font-bold flex items-center gap-2">
           <Building className="h-8 w-8" />
-          AI Vendor Companies
+          Bangalore Sellers
         </h1>
         <p className="text-muted-foreground mt-2">
-          Create authentic Indian electrical equipment vendor companies to populate your marketplace.
+          Generate authentic Bangalore-based electrical equipment sellers with brand authorizations.
         </p>
       </div>
 
@@ -75,11 +77,11 @@ const AdminAIVendors: React.FC = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
-            Create Vendor Companies
+            Create Bangalore Sellers
           </CardTitle>
           <CardDescription>
-            Generate a comprehensive database of realistic Indian electrical equipment vendors 
-            with complete company profiles and contact information.
+            Generate authentic Bangalore-based electrical equipment sellers with brand authorizations 
+            for SIEMENS, Legrand, Schneider, Fonolex, and BCH.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -97,7 +99,7 @@ const AdminAIVendors: React.FC = () => {
             ) : (
               <>
                 <Building className="mr-2 h-4 w-4" />
-                Create Vendor Companies
+                Create Bangalore Sellers
               </>
             )}
           </Button>
@@ -107,7 +109,7 @@ const AdminAIVendors: React.FC = () => {
               <h3 className="font-semibold">Creation Results:</h3>
               <div className="flex items-center justify-between p-3 border rounded-lg">
                 <div className="flex items-center gap-2">
-                  <span className="font-medium">Vendor Companies</span>
+                  <span className="font-medium">Bangalore Sellers</span>
                   <Badge variant={vendorResults.success ? "default" : "destructive"}>
                     {vendorResults.success ? `${vendorResults.vendorsCreated} created` : "Failed"}
                   </Badge>
@@ -124,37 +126,37 @@ const AdminAIVendors: React.FC = () => {
           <div className="bg-muted p-4 rounded-lg">
             <h4 className="font-semibold mb-2 flex items-center gap-2">
               <CheckCircle className="h-4 w-4" />
-              Vendor Database Features:
+              Bangalore Seller Features:
             </h4>
             <ul className="text-sm text-muted-foreground space-y-1">
-              <li>• 20+ authentic Indian electrical equipment companies</li>
+              <li>• 8 authentic Bangalore-based electrical equipment sellers</li>
               <li>• Complete company profiles with names, descriptions, and specializations</li>
-              <li>• Realistic contact information including emails and phone numbers</li>
-              <li>• Geographic distribution across major Indian industrial cities</li>
-              <li>• Diverse company sizes from small manufacturers to large distributors</li>
-              <li>• Industry-specific focus areas (LED lighting, panels, motors, etc.)</li>
-              <li>• Established since dates ranging from 1985 to 2020</li>
-              <li>• Professional vendor status and active account setup</li>
+              <li>• Realistic Bangalore addresses and contact information</li>
+              <li>• GST numbers, PAN details, and bank account information</li>
+              <li>• Brand authorizations for SIEMENS, Legrand, Schneider, Fonolex, BCH</li>
+              <li>• Diverse company sizes from small distributors to premium partners</li>
+              <li>• Years in business ranging from 4 to 25 years</li>
+              <li>• Pre-approved status for immediate marketplace participation</li>
             </ul>
           </div>
 
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <div className="flex items-center gap-2 text-blue-800 mb-2">
               <Info className="h-4 w-4" />
-              <span className="font-medium">Sample Vendor Companies</span>
+              <span className="font-medium">Sample Bangalore Sellers</span>
             </div>
             <div className="text-sm text-blue-700 space-y-2">
               <div>
-                <p><strong>ElectroMax Industries</strong> - LED lighting and energy-efficient solutions specialist based in Mumbai</p>
+                <p><strong>ElectroTech Solutions</strong> - Schneider & SIEMENS authorized dealer in Electronic City</p>
               </div>
               <div>
-                <p><strong>Bharat Power Systems</strong> - Industrial electrical panels and switchgear manufacturer from Chennai</p>
+                <p><strong>Karnataka Electrical Distributors</strong> - Multi-brand distributor in Peenya Industrial Area</p>
               </div>
               <div>
-                <p><strong>SafetyFirst Electricals</strong> - Circuit breakers and electrical safety equipment supplier in Delhi</p>
+                <p><strong>Bangalore Power Systems</strong> - SIEMENS & Legrand partner in Whitefield</p>
               </div>
               <div>
-                <p><strong>GreenTech Solutions</strong> - Renewable energy and solar equipment distributor from Bangalore</p>
+                <p><strong>Silicon Valley Electricals</strong> - Fonolex cables specialist in Koramangala</p>
               </div>
             </div>
           </div>
@@ -162,14 +164,14 @@ const AdminAIVendors: React.FC = () => {
           <div className="bg-green-50 border border-green-200 rounded-lg p-4">
             <div className="flex items-center gap-2 text-green-800 mb-2">
               <CheckCircle className="h-4 w-4" />
-              <span className="font-medium">Why Create Vendors First?</span>
+              <span className="font-medium">Why Bangalore Sellers?</span>
             </div>
             <div className="text-sm text-green-700 space-y-1">
-              <p>• <strong>Product Assignment:</strong> Each generated product needs a vendor relationship</p>
-              <p>• <strong>Realistic Marketplace:</strong> Creates authentic B2B marketplace experience</p>
-              <p>• <strong>Price Diversity:</strong> Different vendors offer varied pricing strategies</p>
-              <p>• <strong>Trust Building:</strong> Established vendor profiles increase buyer confidence</p>
-              <p>• <strong>Search & Filtering:</strong> Enables vendor-based product discovery</p>
+              <p>• <strong>Tech Hub:</strong> Bangalore is India's tech capital with high electrical equipment demand</p>
+              <p>• <strong>Brand Presence:</strong> Major electrical brands have strong presence in Bangalore</p>
+              <p>• <strong>Industrial Base:</strong> Strong manufacturing and IT infrastructure needs</p>
+              <p>• <strong>Realistic Market:</strong> Creates authentic local marketplace experience</p>
+              <p>• <strong>Quality Sellers:</strong> Established businesses with proper authorizations</p>
             </div>
           </div>
         </CardContent>

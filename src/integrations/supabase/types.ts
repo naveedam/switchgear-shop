@@ -1553,6 +1553,53 @@ export type Database = {
         }
         Relationships: []
       }
+      seller_brand_authorizations: {
+        Row: {
+          authorization_level: string
+          brand_id: string
+          certificate_number: string | null
+          created_at: string
+          id: string
+          issued_date: string | null
+          seller_id: string
+          status: string
+          updated_at: string
+          valid_until: string | null
+        }
+        Insert: {
+          authorization_level?: string
+          brand_id: string
+          certificate_number?: string | null
+          created_at?: string
+          id?: string
+          issued_date?: string | null
+          seller_id: string
+          status?: string
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Update: {
+          authorization_level?: string
+          brand_id?: string
+          certificate_number?: string | null
+          created_at?: string
+          id?: string
+          issued_date?: string | null
+          seller_id?: string
+          status?: string
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seller_brand_authorizations_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       seller_documents: {
         Row: {
           admin_notes: string | null
