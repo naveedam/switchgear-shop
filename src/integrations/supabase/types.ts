@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -564,6 +564,7 @@ export type Database = {
       orders: {
         Row: {
           buyer_id: string
+          cart_id: string | null
           created_at: string | null
           fulfillment_status: string | null
           id: string
@@ -579,6 +580,7 @@ export type Database = {
         }
         Insert: {
           buyer_id: string
+          cart_id?: string | null
           created_at?: string | null
           fulfillment_status?: string | null
           id?: string
@@ -594,6 +596,7 @@ export type Database = {
         }
         Update: {
           buyer_id?: string
+          cart_id?: string | null
           created_at?: string | null
           fulfillment_status?: string | null
           id?: string
@@ -613,6 +616,13 @@ export type Database = {
             columns: ["buyer_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_cart_id_fkey"
+            columns: ["cart_id"]
+            isOneToOne: false
+            referencedRelation: "shopping_carts"
             referencedColumns: ["id"]
           },
         ]
@@ -1829,6 +1839,10 @@ export type Database = {
     Functions: {
       get_current_user_role: {
         Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      get_or_create_user_cart: {
+        Args: { user_id: string }
         Returns: string
       }
       is_super_admin: {
