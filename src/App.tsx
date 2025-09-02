@@ -11,6 +11,7 @@ import AdminSettings from './pages/admin/AdminSettings';
 import AdminAIImages from './pages/admin/AdminAIImages';
 import AdminAIProducts from './pages/admin/AdminAIProducts';
 import AdminAIVendors from './pages/admin/AdminAIVendors';
+import AdminCarts from './pages/admin/AdminCarts';
 import EditProduct from './pages/admin/EditProduct';
 import EditCategory from './pages/admin/EditCategory';
 import EditSubcategory from './pages/admin/EditSubcategory';
@@ -33,6 +34,7 @@ import SellerOrders from './pages/SellerOrders';
 import ProfilePage from './pages/ProfilePage';
 import OrdersPage from './pages/OrdersPage';
 import SellersPage from './pages/SellersPage';
+import OrderSuccessPage from './pages/OrderSuccessPage';
 
 import { Toaster } from './components/ui/toaster';
 import './App.css';
@@ -107,6 +109,7 @@ function App() {
           {/* Cart and checkout routes */}
           <Route path="/cart" element={<CartPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
+          <Route path="/order-success" element={<OrderSuccessPage />} />
           
           {/* Admin routes - protected */}
           <Route 
@@ -125,6 +128,7 @@ function App() {
             <Route path="subcategories" element={<AdminSubcategories />} />
             <Route path="subcategories/:id" element={<EditSubcategory />} />
             <Route path="orders" element={<AdminOrders />} />
+            <Route path="carts" element={<AdminCarts />} />
             <Route path="users" element={<AdminUsers />} />
             <Route path="users/:id" element={<EditUser />} />
             <Route path="sellers" element={<AdminSellers />} />

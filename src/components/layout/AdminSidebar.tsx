@@ -14,7 +14,8 @@ import {
   Box,
   Image,
   Package,
-  Building
+  Building,
+  ShoppingCart
 } from 'lucide-react';
 
 const menuItems = [
@@ -32,6 +33,11 @@ const menuItems = [
     name: 'Orders',
     href: '/admin/orders',
     icon: Box,
+  },
+  {
+    name: 'Carts',
+    href: '/admin/carts',
+    icon: ShoppingCart,
   },
   {
     name: 'Categories',

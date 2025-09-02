@@ -5,13 +5,21 @@ import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 
 const CartPage: React.FC = () => {
-  const { cart, removeFromCart, clearCart } = useCart();
+  const { cart, removeFromCart, clearCart, isLoading } = useCart();
   const navigate = useNavigate();
+
+  if (isLoading) {
+    return (
+      <div className="max-w-xl mx-auto py-16 text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+        <p className="text-gray-600">Loading cart...</p>
+      </div>
+    );
+  }
 
   const handleCheckout = () => {
     if (cart.length === 0) return;
-    toast({ title: "Order placed!", description: "Thank you for your purchase." });
-    clearCart();
+    navigate("/checkout");
   };
 
   if (cart.length === 0) {

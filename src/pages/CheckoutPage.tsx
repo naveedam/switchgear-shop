@@ -136,7 +136,7 @@ const CheckoutPage: React.FC = () => {
     clearCart();
     setSaving(false);
     toast({ title: "Order submitted!", description: "Admin will review after payment is received." });
-    navigate("/");
+    navigate(`/order-success?orderId=${newOrder.id}`);
   };
 
   return (
