@@ -65,8 +65,8 @@ const CheckoutPage: React.FC = () => {
 
     let paymentProofUrl: string | null = null;
     if (paymentProof) {
-      // Save payment proof file to storage, bucket: "payment-proofs"
-      const fileName = `${user.id}_${Date.now()}_${paymentProof.name}`;
+      // Save payment proof file to storage using user_id/filename format for RLS
+      const fileName = `${user.id}/${Date.now()}_${paymentProof.name}`;
       const { error: uploadErr } = await supabase.storage
         .from("payment-proofs")
         .upload(fileName, paymentProof);
@@ -75,7 +75,8 @@ const CheckoutPage: React.FC = () => {
         setError("Failed to upload payment proof.");
         return;
       }
-      paymentProofUrl = `https://hdoefblcoavpzvfiiglm.supabase.co/storage/v1/object/public/payment-proofs/${fileName}`;
+      // Store the object key (path), not the full URL since bucket is private
+      paymentProofUrl = fileName;
     }
 
     // Create order

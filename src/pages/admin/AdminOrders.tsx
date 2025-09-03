@@ -9,6 +9,45 @@ import { Separator } from '@/components/ui/separator';
 import { Search, Eye, Package, CreditCard } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
+const PaymentProofViewer: React.FC<{ filePath: string }> = ({ filePath }) => {
+  const [loading, setLoading] = useState(false);
+
+  const handleViewProof = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.storage
+        .from('payment-proofs')
+        .createSignedUrl(filePath, 60); // 1 minute signed URL
+
+      if (error) throw error;
+      if (data?.signedUrl) {
+        window.open(data.signedUrl, '_blank');
+      }
+    } catch (error) {
+      console.error('Error generating signed URL:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load payment proof',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Button 
+      variant="outline" 
+      size="sm" 
+      onClick={handleViewProof}
+      disabled={loading}
+      className="text-blue-600 hover:text-blue-800"
+    >
+      {loading ? 'Loading...' : 'View Payment Proof'}
+    </Button>
+  );
+};
+
 interface Order {
   id: string;
   buyer_id: string;
@@ -224,16 +263,7 @@ const AdminOrders: React.FC = () => {
                   <div>
                     <h4 className="font-semibold mb-2">Payment Details</h4>
                     <p className="text-sm">UTR: {order.payment_reference}</p>
-                    {order.payment_proof_url && (
-                      <a 
-                        href={order.payment_proof_url} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:underline text-sm"
-                      >
-                        View Payment Proof
-                      </a>
-                    )}
+                    {order.payment_proof_url && <PaymentProofViewer filePath={order.payment_proof_url} />}
                   </div>
                 )}
 
