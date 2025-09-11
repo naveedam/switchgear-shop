@@ -3,6 +3,7 @@ import React from 'react';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
+import { getStrapiImageUrl } from '@/utils/strapiHelpers';
 
 interface Slide {
   id: number;
@@ -26,7 +27,7 @@ const HeroCarousel: React.FC<HeroCarouselProps> = ({ slides }) => (
             <div className="relative h-[500px] md:h-[600px] w-full overflow-hidden">
               <div 
                 className="absolute inset-0 bg-cover bg-center" 
-                style={{ backgroundImage: `url(${slide.image})` }}
+                style={{ backgroundImage: `url(${getStrapiImageUrl(slide.image) || slide.image})` }}
               >
                 <div className="absolute inset-0 bg-black bg-opacity-50" />
               </div>

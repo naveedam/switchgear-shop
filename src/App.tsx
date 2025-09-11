@@ -35,6 +35,7 @@ import ProfilePage from './pages/ProfilePage';
 import OrdersPage from './pages/OrdersPage';
 import SellersPage from './pages/SellersPage';
 import OrderSuccessPage from './pages/OrderSuccessPage';
+import ContactPage from './pages/ContactPage';
 
 import { Toaster } from './components/ui/toaster';
 import './App.css';
@@ -87,6 +88,7 @@ function App() {
           <Route path="/" element={<MainLayout><Outlet /></MainLayout>}>
             <Route index element={<Index />} />
             <Route path="sellers" element={<SellersPage />} />
+            <Route path="contact" element={<ContactPage />} />
             <Route path="categories" element={<AllCategories />} />
             <Route path="categories/:categorySlug" element={<ProductListingPage />} />
             <Route path="products/:productSlug" element={<ProductDetailPage />} />
