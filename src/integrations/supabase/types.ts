@@ -1009,7 +1009,7 @@ export type Database = {
           resolution: string | null
           rohs_compliant: boolean | null
           sampling_rate: string | null
-          search_vector: unknown | null
+          search_vector: unknown
           secondary_voltage: string | null
           selective_type: boolean | null
           series_name: string | null
@@ -1233,7 +1233,7 @@ export type Database = {
           resolution?: string | null
           rohs_compliant?: boolean | null
           sampling_rate?: string | null
-          search_vector?: unknown | null
+          search_vector?: unknown
           secondary_voltage?: string | null
           selective_type?: boolean | null
           series_name?: string | null
@@ -1457,7 +1457,7 @@ export type Database = {
           resolution?: string | null
           rohs_compliant?: boolean | null
           sampling_rate?: string | null
-          search_vector?: unknown | null
+          search_vector?: unknown
           secondary_voltage?: string | null
           selective_type?: boolean | null
           series_name?: string | null
@@ -1837,22 +1837,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      get_current_user_role: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      get_or_create_user_cart: {
-        Args: { user_id: string }
-        Returns: string
-      }
-      is_super_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      make_user_super_admin: {
-        Args: { user_email: string }
-        Returns: string
-      }
+      get_current_user_role: { Args: never; Returns: string }
+      get_or_create_user_cart: { Args: { user_id: string }; Returns: string }
+      is_super_admin: { Args: never; Returns: boolean }
+      make_user_super_admin: { Args: { user_email: string }; Returns: string }
     }
     Enums: {
       account_category:
