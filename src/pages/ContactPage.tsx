@@ -5,94 +5,99 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Mail, Phone, MapPin, Clock } from 'lucide-react';
-import { useSiteSettings } from '@/hooks/useStrapiContent';
+
+const contactInfo = {
+  email: 'info@switchgearshop.com',
+  phone: '+91 80 4567 8900',
+  address: 'Industrial Area, Peenya, Bangalore 560058, Karnataka, India',
+};
 
 const ContactPage: React.FC = () => {
-  const { settings, loading, error } = useSiteSettings();
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission
     console.log('Contact form submitted');
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-background py-12">
-      <div className="container mx-auto px-4">
-        <div className="max-w-6xl mx-auto">
-          {/* Header */}
-          <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-foreground mb-4">Get in Touch</h1>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Have questions about our switchgear marketplace? We're here to help connect you with the right solutions.
-            </p>
-          </div>
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <div className="bg-primary text-primary-foreground py-16">
+        <div className="container-wide text-center">
+          <h1 className="text-4xl md:text-5xl font-bold mb-4">Get in Touch</h1>
+          <p className="text-xl text-primary-foreground/80 max-w-2xl mx-auto">
+            Have questions about our marketplace? We're here to help connect you with the right solutions.
+          </p>
+        </div>
+      </div>
 
-          <div className="grid md:grid-cols-2 gap-8">
+      <div className="container-wide py-16">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-12">
             {/* Contact Information */}
             <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Mail className="h-5 w-5 text-primary" />
+              <div>
+                <h2 className="text-2xl font-bold text-foreground mb-6">Contact Information</h2>
+                <p className="text-muted-foreground mb-8">
+                  Our team is ready to assist you with any inquiries about products, sellers, or partnerships.
+                </p>
+              </div>
+
+              <Card className="border-border/50">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-3 text-lg">
+                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Mail className="h-5 w-5 text-primary" />
+                    </div>
                     Email Us
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-muted-foreground mb-2">Send us a message anytime</p>
-                  <p className="font-medium">
-                    {error ? 'contact@switchgearhub.com' : settings?.attributes?.contactEmail || 'contact@switchgearhub.com'}
-                  </p>
+                  <p className="text-muted-foreground text-sm mb-1">Send us a message anytime</p>
+                  <p className="font-medium text-foreground">{contactInfo.email}</p>
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Phone className="h-5 w-5 text-primary" />
+              <Card className="border-border/50">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-3 text-lg">
+                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Phone className="h-5 w-5 text-primary" />
+                    </div>
                     Call Us
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-muted-foreground mb-2">Speak with our team</p>
-                  <p className="font-medium">
-                    {error ? '+1 (555) 123-4567' : settings?.attributes?.contactPhone || '+1 (555) 123-4567'}
-                  </p>
+                  <p className="text-muted-foreground text-sm mb-1">Mon-Fri from 9am to 6pm IST</p>
+                  <p className="font-medium text-foreground">{contactInfo.phone}</p>
                 </CardContent>
               </Card>
 
-              {settings?.attributes?.address && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
+              <Card className="border-border/50">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-3 text-lg">
+                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
                       <MapPin className="h-5 w-5 text-primary" />
-                      Visit Us
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground mb-2">Our office location</p>
-                    <p className="font-medium">{settings.attributes.address}</p>
-                  </CardContent>
-                </Card>
-              )}
+                    </div>
+                    Visit Us
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground text-sm mb-1">Our office location</p>
+                  <p className="font-medium text-foreground">{contactInfo.address}</p>
+                </CardContent>
+              </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Clock className="h-5 w-5 text-primary" />
+              <Card className="border-border/50">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-3 text-lg">
+                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Clock className="h-5 w-5 text-primary" />
+                    </div>
                     Business Hours
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-1">
+                  <div className="space-y-1 text-sm">
                     <p><span className="font-medium">Monday - Friday:</span> 9:00 AM - 6:00 PM</p>
                     <p><span className="font-medium">Saturday:</span> 10:00 AM - 4:00 PM</p>
                     <p><span className="font-medium">Sunday:</span> Closed</p>
@@ -102,44 +107,44 @@ const ContactPage: React.FC = () => {
             </div>
 
             {/* Contact Form */}
-            <Card>
+            <Card className="border-border/50 shadow-soft">
               <CardHeader>
-                <CardTitle>Send us a Message</CardTitle>
+                <CardTitle className="text-2xl">Send us a Message</CardTitle>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-5">
                   <div className="grid grid-cols-2 gap-4">
-                    <div>
+                    <div className="space-y-2">
                       <Label htmlFor="firstName">First Name</Label>
                       <Input id="firstName" required />
                     </div>
-                    <div>
+                    <div className="space-y-2">
                       <Label htmlFor="lastName">Last Name</Label>
                       <Input id="lastName" required />
                     </div>
                   </div>
                   
-                  <div>
+                  <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
                     <Input id="email" type="email" required />
                   </div>
                   
-                  <div>
+                  <div className="space-y-2">
                     <Label htmlFor="company">Company</Label>
                     <Input id="company" />
                   </div>
                   
-                  <div>
+                  <div className="space-y-2">
                     <Label htmlFor="phone">Phone Number</Label>
                     <Input id="phone" type="tel" />
                   </div>
                   
-                  <div>
+                  <div className="space-y-2">
                     <Label htmlFor="subject">Subject</Label>
                     <Input id="subject" required />
                   </div>
                   
-                  <div>
+                  <div className="space-y-2">
                     <Label htmlFor="message">Message</Label>
                     <Textarea 
                       id="message" 
@@ -149,7 +154,7 @@ const ContactPage: React.FC = () => {
                     />
                   </div>
                   
-                  <Button type="submit" className="w-full">
+                  <Button type="submit" className="w-full h-12 text-base">
                     Send Message
                   </Button>
                 </form>

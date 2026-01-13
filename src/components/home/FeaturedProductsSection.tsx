@@ -1,7 +1,7 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import ProductCard from '@/components/product/ProductCard';
 import { Product } from '@/types/product';
 
@@ -10,17 +10,22 @@ interface FeaturedProductsSectionProps {
 }
 
 const FeaturedProductsSection: React.FC<FeaturedProductsSectionProps> = ({ featuredProducts }) => (
-  <section className="py-16 bg-gray-50">
-    <div className="container mx-auto px-4">
-      <div className="flex justify-between items-center mb-8">
-        <h2 className="text-2xl md:text-3xl font-bold">
-          Featured Products
-        </h2>
-        <Link to="/products" className="text-brand-600 hover:text-brand-700 flex items-center">
-          View All <ArrowRight className="ml-1 h-4 w-4" />
-        </Link>
+  <section className="section-padding bg-background">
+    <div className="container-wide">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-12">
+        <div>
+          <h2 className="section-title mb-2">Featured Products</h2>
+          <p className="text-muted-foreground">Discover our most popular switchgear products</p>
+        </div>
+        <Button asChild variant="outline" className="shrink-0">
+          <Link to="/products" className="flex items-center gap-2">
+            View All Products
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </Button>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      
+      <div className="product-grid">
         {featuredProducts.slice(0, 8).map(product => (
           <ProductCard key={product.id} product={product} />
         ))}

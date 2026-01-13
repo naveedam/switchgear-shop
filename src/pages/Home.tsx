@@ -1,43 +1,14 @@
-
 import React, { useState, useEffect } from 'react';
 import { Product } from '@/types/product';
 import { Category } from '@/types/category';
 import { fetchCategories } from '@/services/categoryService';
-import HeroCarousel from '@/components/home/HeroCarousel';
+import HeroSection from '@/components/home/HeroSection';
 import BenefitsSection from '@/components/home/BenefitsSection';
 import CategoriesSection from '@/components/home/CategoriesSection';
 import FeaturedProductsSection from '@/components/home/FeaturedProductsSection';
 import CtaSection from '@/components/home/CtaSection';
 import TestimonialsSection from '@/components/home/TestimonialsSection';
-import { useHeroSlides } from '@/hooks/useStrapiContent';
-
-// Fallback slides (existing hardcoded data)
-const fallbackSlides = [
-  {
-    id: 1,
-    title: 'Premium Switchgear Solutions',
-    description: 'Find top-quality low voltage switchgear products from trusted manufacturers.',
-    image: 'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&w=1600&h=600',
-    ctaText: 'Shop Now',
-    ctaLink: '/products',
-  },
-  {
-    id: 2,
-    title: 'Connect with Trusted Sellers',
-    description: 'Discover verified sellers offering industrial-grade switchgear components.',
-    image: 'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?auto=format&fit=crop&w=1600&h=600',
-    ctaText: 'Find Sellers',
-    ctaLink: '/sellers',
-  },
-  {
-    id: 3,
-    title: 'Become a Seller',
-    description: 'Expand your business by selling your switchgear products on our marketplace.',
-    image: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1600&h=600',
-    ctaText: 'Register Now',
-    ctaLink: '/register',
-  },
-];
+import TrustSection from '@/components/home/TrustSection';
 
 // Mock featured products
 const mockVariant = {
@@ -98,9 +69,6 @@ const Home: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Fetch hero slides from Strapi
-  const { slides: strapiSlides, loading: slidesLoading, error: slidesError } = useHeroSlides();
-  
   useEffect(() => {
     setFeaturedProducts(mockFeaturedProducts);
     
@@ -109,11 +77,10 @@ const Home: React.FC = () => {
         setLoading(true);
         setError(null);
         const data = await fetchCategories();
-        console.log('Categories loaded in Home page:', data);
         setCategories(data);
       } catch (error) {
         console.error('Failed to load categories:', error);
-        setError('Failed to load categories. Please check your connection and try again.');
+        setError('Failed to load categories. Please try again.');
       } finally {
         setLoading(false);
       }
@@ -122,38 +89,24 @@ const Home: React.FC = () => {
     loadCategories();
   }, []);
 
-  const handleRetryCategories = () => {
-    console.log('Retrying category fetch...');
-    const loadCategories = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const data = await fetchCategories();
-        setCategories(data);
-      } catch (error) {
-        console.error('Failed to load categories on retry:', error);
-        setError('Failed to load categories. Please check your connection and try again.');
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    loadCategories();
+  const handleRetryCategories = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await fetchCategories();
+      setCategories(data);
+    } catch (error) {
+      console.error('Failed to load categories on retry:', error);
+      setError('Failed to load categories. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
-
-  // Convert Strapi slides to the format expected by HeroCarousel
-  const slides = strapiSlides.length > 0 ? strapiSlides.map(slide => ({
-    id: slide.id,
-    title: slide.attributes.title,
-    description: slide.attributes.description,
-    image: slide.attributes.image?.data?.attributes?.url || fallbackSlides[0].image,
-    ctaText: slide.attributes.ctaText,
-    ctaLink: slide.attributes.ctaLink,
-  })) : fallbackSlides;
   
   return (
-    <div className="min-h-screen">
-      <HeroCarousel slides={slides} />
+    <div className="min-h-screen bg-background">
+      <HeroSection />
+      <TrustSection />
       <BenefitsSection />
       <CategoriesSection 
         categories={categories}
@@ -163,8 +116,8 @@ const Home: React.FC = () => {
         getDefaultCategoryImage={getDefaultCategoryImage}
       />
       <FeaturedProductsSection featuredProducts={featuredProducts} />
-      <CtaSection />
       <TestimonialsSection />
+      <CtaSection />
     </div>
   );
 };

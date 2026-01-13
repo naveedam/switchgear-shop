@@ -1,74 +1,66 @@
-
 import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { ShieldCheck, Truck, Clock, Award } from 'lucide-react';
-import { useBenefits } from '@/hooks/useStrapiContent';
+import { ShieldCheck, Truck, Clock, Award, CheckCircle, Headphones } from 'lucide-react';
 
-// Fallback benefits
-const fallbackBenefits = [
+const benefits = [
   {
-    icon: <ShieldCheck className="h-6 w-6" />,
+    icon: ShieldCheck,
     title: "Verified Suppliers",
-    description: "All sellers on our platform are thoroughly vetted for quality and reliability.",
+    description: "Every seller is thoroughly vetted for quality, reliability, and compliance with industry standards.",
   },
   {
-    icon: <Truck className="h-6 w-6" />,
+    icon: Truck,
     title: "Fast Shipping",
-    description: "Efficient logistics network ensures your orders arrive on time, every time.",
+    description: "Efficient logistics network ensures your orders reach you on time, every time across India.",
   },
   {
-    icon: <Clock className="h-6 w-6" />,
+    icon: Headphones,
     title: "24/7 Support",
-    description: "Our customer service team is available round-the-clock to assist you.",
+    description: "Our dedicated support team is available round-the-clock to assist with any queries.",
   },
   {
-    icon: <Award className="h-6 w-6" />,
+    icon: Award,
     title: "Quality Guaranteed",
-    description: "Every product on our platform meets rigorous industry standards.",
+    description: "All products meet rigorous industry standards with authentic certifications.",
+  },
+  {
+    icon: CheckCircle,
+    title: "Secure Payments",
+    description: "Multiple payment options with enterprise-grade security for all transactions.",
+  },
+  {
+    icon: Clock,
+    title: "Quick Quotes",
+    description: "Get competitive quotes from multiple sellers within hours, not days.",
   },
 ];
 
-// Icon mapping
-const getIcon = (iconName: string) => {
-  const icons: { [key: string]: React.ReactNode } = {
-    'shield-check': <ShieldCheck className="h-6 w-6" />,
-    'truck': <Truck className="h-6 w-6" />,
-    'clock': <Clock className="h-6 w-6" />,
-    'award': <Award className="h-6 w-6" />,
-  };
-  return icons[iconName] || <ShieldCheck className="h-6 w-6" />;
-};
-
-const BenefitsSection = () => {
-  const { benefits: strapiBenefits, loading, error } = useBenefits();
-
-  // Use Strapi benefits if available, otherwise use fallback
-  const benefits = strapiBenefits.length > 0 
-    ? strapiBenefits.map(benefit => ({
-        icon: getIcon(benefit.attributes.icon),
-        title: benefit.attributes.title,
-        description: benefit.attributes.description,
-      }))
-    : fallbackBenefits;
-
+const BenefitsSection: React.FC = () => {
   return (
-    <section className="py-16 bg-gray-50">
-      <div className="container mx-auto px-4">
-        <h2 className="text-2xl md:text-3xl font-bold text-center mb-12">
-          Why Choose SwitchgearShop?
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {benefits.map((b, i) => (
-            <Card key={i} className="border-0 shadow-sm">
-              <CardContent className="pt-6 text-center">
-                <div className="mb-4 inline-flex items-center justify-center w-12 h-12 rounded-full bg-brand-100 text-brand-600">
-                  {b.icon}
+    <section className="section-padding bg-background">
+      <div className="container-wide">
+        <div className="text-center mb-16">
+          <h2 className="section-title">Why Choose SwitchgearShop?</h2>
+          <p className="section-subtitle mx-auto">
+            India's trusted B2B marketplace for industrial electrical equipment
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {benefits.map((benefit, index) => {
+            const Icon = benefit.icon;
+            return (
+              <div 
+                key={index} 
+                className="group p-6 rounded-xl bg-card border border-border/50 hover:border-primary/20 hover:shadow-soft transition-all duration-300"
+              >
+                <div className="mb-4 inline-flex items-center justify-center w-14 h-14 rounded-xl bg-primary/5 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-300">
+                  <Icon className="h-7 w-7" />
                 </div>
-                <h3 className="text-lg font-medium mb-2">{b.title}</h3>
-                <p className="text-gray-600">{b.description}</p>
-              </CardContent>
-            </Card>
-          ))}
+                <h3 className="text-xl font-semibold text-foreground mb-2">{benefit.title}</h3>
+                <p className="text-muted-foreground leading-relaxed">{benefit.description}</p>
+              </div>
+            );
+          })}
         </div>
       </div>
     </section>
