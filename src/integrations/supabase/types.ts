@@ -349,12 +349,18 @@ export type Database = {
           created_at: string | null
           description: string | null
           email: string
+          gst_registration_type: string | null
+          gstin: string | null
           id: string
           is_vendor: boolean | null
+          legal_name: string | null
           name: string
+          pan_number: string | null
           phone: string | null
           role: string | null
+          state_code: string | null
           status: string | null
+          trade_name: string | null
           updated_at: string | null
         }
         Insert: {
@@ -362,12 +368,18 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           email: string
+          gst_registration_type?: string | null
+          gstin?: string | null
           id?: string
           is_vendor?: boolean | null
+          legal_name?: string | null
           name: string
+          pan_number?: string | null
           phone?: string | null
           role?: string | null
+          state_code?: string | null
           status?: string | null
+          trade_name?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -375,27 +387,171 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           email?: string
+          gst_registration_type?: string | null
+          gstin?: string | null
           id?: string
           is_vendor?: boolean | null
+          legal_name?: string | null
           name?: string
+          pan_number?: string | null
           phone?: string | null
           role?: string | null
+          state_code?: string | null
           status?: string | null
+          trade_name?: string | null
           updated_at?: string | null
         }
         Relationships: []
       }
+      invoice_items: {
+        Row: {
+          cgst_amount: number | null
+          cgst_rate: number | null
+          created_at: string | null
+          description: string
+          discount: number | null
+          hsn_code: string | null
+          id: string
+          igst_amount: number | null
+          igst_rate: number | null
+          invoice_id: string
+          product_id: string | null
+          quantity: number
+          sgst_amount: number | null
+          sgst_rate: number | null
+          taxable_value: number
+          total: number
+          unit: string | null
+          unit_price: number
+        }
+        Insert: {
+          cgst_amount?: number | null
+          cgst_rate?: number | null
+          created_at?: string | null
+          description: string
+          discount?: number | null
+          hsn_code?: string | null
+          id?: string
+          igst_amount?: number | null
+          igst_rate?: number | null
+          invoice_id: string
+          product_id?: string | null
+          quantity?: number
+          sgst_amount?: number | null
+          sgst_rate?: number | null
+          taxable_value: number
+          total: number
+          unit?: string | null
+          unit_price: number
+        }
+        Update: {
+          cgst_amount?: number | null
+          cgst_rate?: number | null
+          created_at?: string | null
+          description?: string
+          discount?: number | null
+          hsn_code?: string | null
+          id?: string
+          igst_amount?: number | null
+          igst_rate?: number | null
+          invoice_id?: string
+          product_id?: string | null
+          quantity?: number
+          sgst_amount?: number | null
+          sgst_rate?: number | null
+          taxable_value?: number
+          total?: number
+          unit?: string | null
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoice_sequences: {
+        Row: {
+          created_at: string | null
+          financial_year: string
+          id: string
+          last_number: number
+          prefix: string | null
+          seller_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          financial_year: string
+          id?: string
+          last_number?: number
+          prefix?: string | null
+          seller_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          financial_year?: string
+          id?: string
+          last_number?: number
+          prefix?: string | null
+          seller_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_sequences_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoices: {
         Row: {
           amount: number
+          buyer_address: Json | null
+          buyer_gstin: string | null
           buyer_id: string
+          buyer_name: string | null
+          cgst_amount: number | null
+          cgst_rate: number | null
           created_at: string | null
           due_date: string
+          e_way_bill_date: string | null
+          e_way_bill_no: string | null
+          financial_year: string | null
           id: string
+          igst_amount: number | null
+          igst_rate: number | null
           invoice_number: string
+          invoice_type: string | null
+          irn: string | null
+          irn_date: string | null
           notes: string | null
           order_id: string
           payment_terms: string | null
+          place_of_supply: string | null
+          qr_code_data: string | null
+          reverse_charge: boolean | null
+          seller_address: Json | null
+          seller_gstin: string | null
+          seller_id: string | null
+          seller_name: string | null
+          sgst_amount: number | null
+          sgst_rate: number | null
           status: Database["public"]["Enums"]["invoice_status"]
           tax_amount: number
           total_amount: number
@@ -403,14 +559,36 @@ export type Database = {
         }
         Insert: {
           amount: number
+          buyer_address?: Json | null
+          buyer_gstin?: string | null
           buyer_id: string
+          buyer_name?: string | null
+          cgst_amount?: number | null
+          cgst_rate?: number | null
           created_at?: string | null
           due_date: string
+          e_way_bill_date?: string | null
+          e_way_bill_no?: string | null
+          financial_year?: string | null
           id?: string
+          igst_amount?: number | null
+          igst_rate?: number | null
           invoice_number: string
+          invoice_type?: string | null
+          irn?: string | null
+          irn_date?: string | null
           notes?: string | null
           order_id: string
           payment_terms?: string | null
+          place_of_supply?: string | null
+          qr_code_data?: string | null
+          reverse_charge?: boolean | null
+          seller_address?: Json | null
+          seller_gstin?: string | null
+          seller_id?: string | null
+          seller_name?: string | null
+          sgst_amount?: number | null
+          sgst_rate?: number | null
           status?: Database["public"]["Enums"]["invoice_status"]
           tax_amount?: number
           total_amount: number
@@ -418,14 +596,36 @@ export type Database = {
         }
         Update: {
           amount?: number
+          buyer_address?: Json | null
+          buyer_gstin?: string | null
           buyer_id?: string
+          buyer_name?: string | null
+          cgst_amount?: number | null
+          cgst_rate?: number | null
           created_at?: string | null
           due_date?: string
+          e_way_bill_date?: string | null
+          e_way_bill_no?: string | null
+          financial_year?: string | null
           id?: string
+          igst_amount?: number | null
+          igst_rate?: number | null
           invoice_number?: string
+          invoice_type?: string | null
+          irn?: string | null
+          irn_date?: string | null
           notes?: string | null
           order_id?: string
           payment_terms?: string | null
+          place_of_supply?: string | null
+          qr_code_data?: string | null
+          reverse_charge?: boolean | null
+          seller_address?: Json | null
+          seller_gstin?: string | null
+          seller_id?: string | null
+          seller_name?: string | null
+          sgst_amount?: number | null
+          sgst_rate?: number | null
           status?: Database["public"]["Enums"]["invoice_status"]
           tax_amount?: number
           total_amount?: number
@@ -444,6 +644,13 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
         ]
@@ -1837,7 +2044,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_current_financial_year: { Args: never; Returns: string }
       get_current_user_role: { Args: never; Returns: string }
+      get_next_invoice_number: {
+        Args: {
+          p_financial_year: string
+          p_prefix?: string
+          p_seller_id: string
+        }
+        Returns: string
+      }
       get_or_create_user_cart: { Args: { user_id: string }; Returns: string }
       is_super_admin: { Args: never; Returns: boolean }
       make_user_super_admin: { Args: { user_email: string }; Returns: string }

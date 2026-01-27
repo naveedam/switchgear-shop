@@ -1,3 +1,4 @@
+project_id = "hdoefblcoavpzvfiiglm"
 
 # This file configures the Supabase project.
 
@@ -5,3 +6,12 @@
 # Verifies the JWT to ensure only authenticated users can call this function.
 # Further permission checks are done inside the function logic.
 verify_jwt = true
+
+[functions.calculate-gst]
+verify_jwt = false
+
+[functions.generate-invoice-pdf]
+verify_jwt = false
+
+[functions.generate-gstr1-export]
+verify_jwt = false
