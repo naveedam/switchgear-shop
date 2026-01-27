@@ -31,6 +31,7 @@ import AdminReports from './pages/admin/AdminReports';
 import CheckoutPage from './pages/CheckoutPage';
 import SellerProducts from './pages/SellerProducts';
 import SellerOrders from './pages/SellerOrders';
+import SellerInvoices from './pages/SellerInvoices';
 import ProfilePage from './pages/ProfilePage';
 import OrdersPage from './pages/OrdersPage';
 import SellersPage from './pages/SellersPage';
@@ -156,6 +157,7 @@ function App() {
             <Route index element={<SellerDashboard />} />
             <Route path="products" element={<SellerProducts />} />
             <Route path="orders" element={<SellerOrders />} />
+            <Route path="invoices" element={<SellerInvoices />} />
           </Route>
 
           {/* Catch all */}

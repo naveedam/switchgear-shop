@@ -1,175 +1,215 @@
-
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import StatCard from '@/components/dashboard/StatCard';
 import RecentOrdersTable from '@/components/dashboard/RecentOrdersTable';
 import SalesChart from '@/components/dashboard/SalesChart';
-import { Package, DollarSign, ShoppingCart, Users } from 'lucide-react';
+import { Package, DollarSign, ShoppingCart, Users, AlertCircle } from 'lucide-react';
+import { useSellerStats } from '@/hooks/useSellerStats';
 import { Order } from '@/types/order';
 
-// Mock data for seller dashboard
-const mockSalesData = [
-  { date: 'Jan', revenue: 4500, orders: 15 },
-  { date: 'Feb', revenue: 6200, orders: 21 },
-  { date: 'Mar', revenue: 7800, orders: 28 },
-  { date: 'Apr', revenue: 5300, orders: 19 },
-  { date: 'May', revenue: 9000, orders: 32 },
-  { date: 'Jun', revenue: 10200, orders: 36 },
-  { date: 'Jul', revenue: 8700, orders: 29 },
-];
-
-const mockRecentOrders: Order[] = Array.from({ length: 5 }, (_, i) => ({
-  id: `ORD${10000 + i}`,
-  buyerId: `buyer-${i + 1}`,
-  buyerName: `Customer ${i + 1}`,
-  sellerId: '2', // Seller's ID
-  sellerName: 'ElectroTech Industries',
-  items: [
-    {
-      id: `item-${i}-1`,
-      productId: `prod-${i + 1}`,
-      productName: `Circuit Breaker ${100 + i}`,
-      productImage: 'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&w=100&h=100',
-      sku: `CB-${100 + i}`,
-      quantity: i + 1,
-      unitPrice: 349.99,
-      totalPrice: 349.99 * (i + 1),
-    }
-  ],
-  subtotal: 349.99 * (i + 1),
-  tax: 0.08 * 349.99 * (i + 1),
-  shippingDetails: {
-    address: {
-      street: '123 Main St',
-      city: 'Anytown',
-      state: 'CA',
-      zipCode: '12345',
-      country: 'USA',
-    },
-    method: 'Standard Shipping',
-    shippingCost: 25,
-  },
-  paymentDetails: {
-    method: 'credit_card',
-    status: 'completed',
-    transactionId: `tx-${i + 1}`,
-    amount: 349.99 * (i + 1) + 0.08 * 349.99 * (i + 1) + 25,
-    currency: 'USD',
-    paidAt: new Date(Date.now() - i * 86400000), // Days ago
-  },
-  totalAmount: 349.99 * (i + 1) + 0.08 * 349.99 * (i + 1) + 25,
-  status: ['delivered', 'shipped', 'processing', 'pending_payment', 'canceled'][i % 5] as any,
-  createdAt: new Date(Date.now() - i * 86400000), // Days ago
-  updatedAt: new Date(Date.now() - i * 43200000), // Half-days ago
-}));
-
 const SellerDashboard: React.FC = () => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(true);
   
-  useEffect(() => {
-    // Check if user is authenticated and is a seller
-    if (!isLoading && (!isAuthenticated || (user && user.role !== 'seller'))) {
+  const {
+    totalProducts,
+    totalRevenue,
+    totalOrders,
+    totalCustomers,
+    recentOrders,
+    salesData,
+    topProducts,
+    isLoading,
+    error,
+  } = useSellerStats(user?.id);
+
+  // Redirect non-sellers
+  React.useEffect(() => {
+    if (!authLoading && (!isAuthenticated || (user && user.role !== 'seller'))) {
       navigate('/login');
     }
-    
-    // Simulate data loading
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
-    
-    return () => clearTimeout(timer);
-  }, [isAuthenticated, user, navigate, isLoading]);
-  
-  if (isLoading) {
+  }, [isAuthenticated, user, navigate, authLoading]);
+
+  if (authLoading || isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading dashboard...</p>
+      <div className="dashboard-container p-6">
+        <div className="mb-8">
+          <Skeleton className="h-9 w-48 mb-2" />
+          <Skeleton className="h-5 w-64" />
         </div>
-      </div>
-    );
-  }
-  
-  return (
-    <div className="dashboard-container">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Seller Dashboard</h1>
-        <p className="text-gray-600">Welcome back, {user?.name}</p>
-      </div>
-      
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <StatCard 
-          title="Total Products"
-          value="24"
-          description="Active products in your catalog"
-          icon={Package}
-          trend={{ value: 12, isPositive: true }}
-        />
-        <StatCard 
-          title="Revenue"
-          value="$12,450"
-          description="Total sales this month"
-          icon={DollarSign}
-          colorClass="text-green-600"
-          trend={{ value: 8.2, isPositive: true }}
-        />
-        <StatCard 
-          title="Orders"
-          value="38"
-          description="Orders this month"
-          icon={ShoppingCart}
-          colorClass="text-blue-600"
-          trend={{ value: 5.3, isPositive: true }}
-        />
-        <StatCard 
-          title="Customers"
-          value="142"
-          description="Total customers"
-          icon={Users}
-          colorClass="text-purple-600"
-          trend={{ value: 12.5, isPositive: true }}
-        />
-      </div>
-      
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        <div className="lg:col-span-2">
-          <SalesChart data={mockSalesData} />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i}>
+              <CardContent className="pt-6">
+                <Skeleton className="h-8 w-16 mb-2" />
+                <Skeleton className="h-4 w-32" />
+              </CardContent>
+            </Card>
+          ))}
         </div>
-        <div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <Card>
+              <CardContent className="pt-6">
+                <Skeleton className="h-64 w-full" />
+              </CardContent>
+            </Card>
+          </div>
           <Card>
             <CardContent className="pt-6">
-              <h3 className="text-lg font-semibold mb-4">Top Products</h3>
-              <div className="space-y-4">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="flex items-center">
-                    <div className="w-12 h-12 bg-gray-200 rounded-md flex items-center justify-center mr-3">
-                      <Package className="h-6 w-6 text-gray-500" />
-                    </div>
-                    <div className="flex-grow">
-                      <h4 className="font-medium text-gray-900">Circuit Breaker {100 + i}</h4>
-                      <div className="flex justify-between text-sm text-gray-500">
-                        <span>{8 - i} sold</span>
-                        <span>${(499.99 - (i * 50)).toFixed(2)}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <Skeleton className="h-64 w-full" />
             </CardContent>
           </Card>
         </div>
       </div>
-      
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="dashboard-container p-6">
+        <Card className="border-destructive">
+          <CardContent className="py-8">
+            <div className="text-center text-destructive">
+              <AlertCircle className="h-12 w-12 mx-auto mb-4" />
+              <p className="text-lg font-medium mb-2">Failed to load dashboard</p>
+              <p className="text-muted-foreground">{error}</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Convert recent orders to the format expected by RecentOrdersTable
+  const ordersForTable: Order[] = recentOrders.map((order) => ({
+    id: order.id,
+    buyerId: '',
+    buyerName: order.buyerName,
+    sellerId: user?.id || '',
+    sellerName: user?.name || '',
+    items: order.items.map((item, idx) => ({
+      id: `${order.id}-${idx}`,
+      productId: '',
+      productName: item.productName,
+      productImage: '',
+      sku: '',
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      totalPrice: item.quantity * item.unitPrice,
+    })),
+    subtotal: order.totalAmount,
+    tax: 0,
+    shippingDetails: {
+      address: { street: '', city: '', state: '', zipCode: '', country: '' },
+      method: '',
+      shippingCost: 0,
+    },
+    paymentDetails: {
+      method: 'credit_card',
+      status: 'completed',
+      amount: order.totalAmount,
+      currency: 'INR',
+    },
+    totalAmount: order.totalAmount,
+    status: order.status as Order['status'],
+    createdAt: order.createdAt,
+    updatedAt: order.createdAt,
+  }));
+
+  return (
+    <div className="dashboard-container p-6">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-foreground">Seller Dashboard</h1>
+        <p className="text-muted-foreground">Welcome back, {user?.name}</p>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <StatCard
+          title="Total Products"
+          value={totalProducts.toString()}
+          description="Active products in your catalog"
+          icon={Package}
+        />
+        <StatCard
+          title="Revenue"
+          value={`₹${totalRevenue.toLocaleString('en-IN')}`}
+          description="Total sales"
+          icon={DollarSign}
+          colorClass="text-green-600"
+        />
+        <StatCard
+          title="Orders"
+          value={totalOrders.toString()}
+          description="Total orders received"
+          icon={ShoppingCart}
+          colorClass="text-blue-600"
+        />
+        <StatCard
+          title="Customers"
+          value={totalCustomers.toString()}
+          description="Unique customers"
+          icon={Users}
+          colorClass="text-purple-600"
+        />
+      </div>
+
+      {/* Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div className="lg:col-span-2">
+          <SalesChart data={salesData} />
+        </div>
+        <div>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Top Products</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {topProducts.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Package className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p>No sales data yet</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {topProducts.map((product) => (
+                    <div key={product.id} className="flex items-center">
+                      <div className="w-12 h-12 bg-muted rounded-md flex items-center justify-center mr-3 overflow-hidden">
+                        {product.image ? (
+                          <img
+                            src={product.image}
+                            alt={product.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <Package className="h-6 w-6 text-muted-foreground" />
+                        )}
+                      </div>
+                      <div className="flex-grow min-w-0">
+                        <h4 className="font-medium text-foreground truncate">
+                          {product.name}
+                        </h4>
+                        <div className="flex justify-between text-sm text-muted-foreground">
+                          <span>{product.soldCount} sold</span>
+                          <span>₹{product.revenue.toLocaleString('en-IN')}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
       {/* Recent Orders */}
       <div className="mb-8">
-        <RecentOrdersTable orders={mockRecentOrders} />
+        <RecentOrdersTable orders={ordersForTable} />
       </div>
     </div>
   );
