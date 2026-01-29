@@ -2,7 +2,8 @@ import React from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCircle, Package, CreditCard, Home, ShoppingBag } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { CheckCircle, Package, CreditCard, Home, ShoppingBag, Store, FileText, Info } from 'lucide-react';
 
 const OrderSuccessPage: React.FC = () => {
   const navigate = useNavigate();
@@ -10,7 +11,7 @@ const OrderSuccessPage: React.FC = () => {
   const orderId = searchParams.get('orderId');
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
+    <div className="min-h-screen bg-muted/30 py-12">
       <div className="max-w-2xl mx-auto px-4">
         <Card className="text-center">
           <CardHeader className="pb-4">
@@ -18,21 +19,21 @@ const OrderSuccessPage: React.FC = () => {
               <CheckCircle className="w-10 h-10 text-green-600" />
             </div>
             <CardTitle className="text-2xl text-green-600">Order Placed Successfully!</CardTitle>
-            <p className="text-gray-600">
+            <p className="text-muted-foreground">
               Thank you for your order. We've received your payment details and will process your order shortly.
             </p>
           </CardHeader>
           
           <CardContent className="space-y-6">
             {orderId && (
-              <div className="bg-gray-50 rounded-lg p-4">
-                <p className="text-sm text-gray-600">Order Reference</p>
-                <p className="font-mono text-lg font-semibold">#{orderId.slice(0, 8)}</p>
+              <div className="bg-muted rounded-lg p-4">
+                <p className="text-sm text-muted-foreground">Order Reference</p>
+                <p className="font-mono text-lg font-semibold">#{orderId.slice(0, 8).toUpperCase()}</p>
               </div>
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-blue-50 rounded-lg p-4">
+              <div className="bg-blue-50 rounded-lg p-4 text-left">
                 <div className="flex items-center gap-2 mb-2">
                   <CreditCard className="w-5 h-5 text-blue-600" />
                   <h3 className="font-semibold text-blue-800">Payment Verification</h3>
@@ -42,24 +43,38 @@ const OrderSuccessPage: React.FC = () => {
                 </p>
               </div>
 
-              <div className="bg-purple-50 rounded-lg p-4">
+              <div className="bg-purple-50 rounded-lg p-4 text-left">
                 <div className="flex items-center gap-2 mb-2">
-                  <Package className="w-5 h-5 text-purple-600" />
-                  <h3 className="font-semibold text-purple-800">Order Processing</h3>
+                  <Store className="w-5 h-5 text-purple-600" />
+                  <h3 className="font-semibold text-purple-800">Seller Fulfillment</h3>
                 </div>
                 <p className="text-sm text-purple-700">
-                  Once payment is confirmed, we'll prepare your items for shipment.
+                  Each seller will process their items and update shipping details separately.
                 </p>
               </div>
             </div>
 
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-              <h3 className="font-semibold text-yellow-800 mb-2">What's Next?</h3>
-              <ul className="text-sm text-yellow-700 space-y-1">
+            {/* Multi-seller marketplace notice */}
+            <Alert className="text-left bg-muted/50">
+              <Info className="h-4 w-4" />
+              <AlertDescription className="text-sm">
+                <strong>Marketplace Order:</strong> Your order may be fulfilled by multiple sellers. 
+                Each seller will issue their own GST tax invoice directly to you. 
+                You can download seller invoices from your order details page once they are uploaded.
+              </AlertDescription>
+            </Alert>
+
+            <div className="bg-accent/50 border border-accent rounded-lg p-4 text-left">
+              <h3 className="font-semibold mb-2 flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                What's Next?
+              </h3>
+              <ul className="text-sm text-muted-foreground space-y-1">
                 <li>• You'll receive an email confirmation shortly</li>
                 <li>• We'll notify you when payment is verified</li>
-                <li>• Shipping details will be sent once order is dispatched</li>
-                <li>• Track your order anytime from your profile</li>
+                <li>• Each seller will upload their GST invoice</li>
+                <li>• Shipping details will be sent per seller shipment</li>
+                <li>• Track all shipments from your orders page</li>
               </ul>
             </div>
 
@@ -81,9 +96,9 @@ const OrderSuccessPage: React.FC = () => {
               </Button>
             </div>
 
-            <div className="text-sm text-gray-500 pt-4 border-t">
+            <div className="text-sm text-muted-foreground pt-4 border-t">
               <p>Need help? Contact our support team:</p>
-              <p className="font-medium">support@switchgearshop.com | +91-XXXX-XXXXXX</p>
+              <p className="font-medium">support@switchgearshop.in | +91-XXXX-XXXXXX</p>
             </div>
           </CardContent>
         </Card>

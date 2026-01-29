@@ -732,6 +732,7 @@ export type Database = {
           order_id: string
           product_id: string
           quantity: number
+          seller_order_id: string | null
           total_price: number
           unit_price: number
         }
@@ -740,6 +741,7 @@ export type Database = {
           order_id: string
           product_id: string
           quantity: number
+          seller_order_id?: string | null
           total_price: number
           unit_price: number
         }
@@ -748,6 +750,7 @@ export type Database = {
           order_id?: string
           product_id?: string
           quantity?: number
+          seller_order_id?: string | null
           total_price?: number
           unit_price?: number
         }
@@ -766,15 +769,27 @@ export type Database = {
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "order_items_seller_order_id_fkey"
+            columns: ["seller_order_id"]
+            isOneToOne: false
+            referencedRelation: "seller_orders"
+            referencedColumns: ["id"]
+          },
         ]
       }
       orders: {
         Row: {
+          buyer_company_name: string | null
+          buyer_email: string | null
+          buyer_gstin: string | null
           buyer_id: string
+          buyer_phone: string | null
           cart_id: string | null
           created_at: string | null
           fulfillment_status: string | null
           id: string
+          is_multi_seller: boolean | null
           notes: string | null
           payment_proof_url: string | null
           payment_reference: string | null
@@ -786,11 +801,16 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          buyer_company_name?: string | null
+          buyer_email?: string | null
+          buyer_gstin?: string | null
           buyer_id: string
+          buyer_phone?: string | null
           cart_id?: string | null
           created_at?: string | null
           fulfillment_status?: string | null
           id?: string
+          is_multi_seller?: boolean | null
           notes?: string | null
           payment_proof_url?: string | null
           payment_reference?: string | null
@@ -802,11 +822,16 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          buyer_company_name?: string | null
+          buyer_email?: string | null
+          buyer_gstin?: string | null
           buyer_id?: string
+          buyer_phone?: string | null
           cart_id?: string | null
           created_at?: string | null
           fulfillment_status?: string | null
           id?: string
+          is_multi_seller?: boolean | null
           notes?: string | null
           payment_proof_url?: string | null
           payment_reference?: string | null
@@ -1968,6 +1993,140 @@ export type Database = {
           years_in_business?: number | null
         }
         Relationships: []
+      }
+      seller_order_audit_log: {
+        Row: {
+          action: string
+          created_at: string | null
+          details: Json | null
+          id: string
+          new_status: string | null
+          performed_by: string | null
+          previous_status: string | null
+          seller_order_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          new_status?: string | null
+          performed_by?: string | null
+          previous_status?: string | null
+          seller_order_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          new_status?: string | null
+          performed_by?: string | null
+          previous_status?: string | null
+          seller_order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seller_order_audit_log_seller_order_id_fkey"
+            columns: ["seller_order_id"]
+            isOneToOne: false
+            referencedRelation: "seller_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seller_orders: {
+        Row: {
+          carrier_name: string | null
+          created_at: string | null
+          delivered_at: string | null
+          eway_bill_date: string | null
+          eway_bill_number: string | null
+          eway_bill_url: string | null
+          id: string
+          order_id: string
+          rejection_reason: string | null
+          seller_id: string
+          seller_invoice_number: string | null
+          seller_invoice_uploaded_at: string | null
+          seller_invoice_url: string | null
+          seller_notes: string | null
+          shipped_at: string | null
+          shipping_amount: number | null
+          status: string | null
+          subtotal: number
+          tax_amount: number
+          total_amount: number
+          tracking_number: string | null
+          tracking_url: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          carrier_name?: string | null
+          created_at?: string | null
+          delivered_at?: string | null
+          eway_bill_date?: string | null
+          eway_bill_number?: string | null
+          eway_bill_url?: string | null
+          id?: string
+          order_id: string
+          rejection_reason?: string | null
+          seller_id: string
+          seller_invoice_number?: string | null
+          seller_invoice_uploaded_at?: string | null
+          seller_invoice_url?: string | null
+          seller_notes?: string | null
+          shipped_at?: string | null
+          shipping_amount?: number | null
+          status?: string | null
+          subtotal?: number
+          tax_amount?: number
+          total_amount?: number
+          tracking_number?: string | null
+          tracking_url?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          carrier_name?: string | null
+          created_at?: string | null
+          delivered_at?: string | null
+          eway_bill_date?: string | null
+          eway_bill_number?: string | null
+          eway_bill_url?: string | null
+          id?: string
+          order_id?: string
+          rejection_reason?: string | null
+          seller_id?: string
+          seller_invoice_number?: string | null
+          seller_invoice_uploaded_at?: string | null
+          seller_invoice_url?: string | null
+          seller_notes?: string | null
+          shipped_at?: string | null
+          shipping_amount?: number | null
+          status?: string | null
+          subtotal?: number
+          tax_amount?: number
+          total_amount?: number
+          tracking_number?: string | null
+          tracking_url?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seller_orders_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seller_orders_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       seller_products: {
         Row: {

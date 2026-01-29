@@ -5,15 +5,39 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ShoppingBag, Package, Calendar, ChevronRight, AlertCircle } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
+import { 
+  ShoppingBag, 
+  Package, 
+  Calendar, 
+  ChevronRight, 
+  AlertCircle, 
+  Store, 
+  FileText,
+  Truck,
+  Download
+} from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
 import { Link } from 'react-router-dom';
+
+interface SellerOrderData {
+  id: string;
+  seller_id: string;
+  status: string;
+  total_amount: number;
+  tracking_number: string | null;
+  seller_invoice_url: string | null;
+  seller: {
+    name: string;
+  } | null;
+}
 
 interface OrderItem {
   id: string;
   quantity: number;
   unit_price: number;
   total_price: number;
+  seller_order_id: string | null;
   product: {
     id: string;
     name: string;
@@ -29,21 +53,28 @@ interface Order {
   total_amount: number;
   created_at: string | null;
   tracking_number: string | null;
+  is_multi_seller: boolean | null;
+  buyer_gstin: string | null;
   order_items: OrderItem[];
+  seller_orders: SellerOrderData[];
 }
 
 const statusColors: Record<string, string> = {
   pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+  pending_payment: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+  accepted: 'bg-blue-100 text-blue-800 border-blue-200',
   processing: 'bg-blue-100 text-blue-800 border-blue-200',
   shipped: 'bg-purple-100 text-purple-800 border-purple-200',
   delivered: 'bg-green-100 text-green-800 border-green-200',
   cancelled: 'bg-red-100 text-red-800 border-red-200',
+  rejected: 'bg-red-100 text-red-800 border-red-200',
   refunded: 'bg-gray-100 text-gray-800 border-gray-200',
 };
 
 const paymentStatusColors: Record<string, string> = {
   pending: 'bg-yellow-50 text-yellow-700',
   paid: 'bg-green-50 text-green-700',
+  completed: 'bg-green-50 text-green-700',
   failed: 'bg-red-50 text-red-700',
   refunded: 'bg-gray-50 text-gray-700',
 };
@@ -72,15 +103,29 @@ const OrdersPage: React.FC = () => {
             total_amount,
             created_at,
             tracking_number,
+            is_multi_seller,
+            buyer_gstin,
             order_items (
               id,
               quantity,
               unit_price,
               total_price,
+              seller_order_id,
               product:products (
                 id,
                 name,
                 Images
+              )
+            ),
+            seller_orders (
+              id,
+              seller_id,
+              status,
+              total_amount,
+              tracking_number,
+              seller_invoice_url,
+              seller:companies!seller_orders_seller_id_fkey (
+                name
               )
             )
           `)
@@ -100,6 +145,21 @@ const OrdersPage: React.FC = () => {
 
     fetchOrders();
   }, [user]);
+
+  const handleDownloadInvoice = async (invoiceUrl: string, sellerName: string) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from('seller-invoices')
+        .createSignedUrl(invoiceUrl, 60);
+
+      if (error) throw error;
+      if (data?.signedUrl) {
+        window.open(data.signedUrl, '_blank');
+      }
+    } catch (err) {
+      console.error('Error downloading invoice:', err);
+    }
+  };
 
   if (!user) {
     return (
@@ -172,14 +232,20 @@ const OrdersPage: React.FC = () => {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-6">
             {orders.map((order) => (
-              <Card key={order.id} className="hover:shadow-md transition-shadow">
+              <Card key={order.id} className="overflow-hidden">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <CardTitle className="text-lg">
+                      <CardTitle className="text-lg flex items-center gap-2">
                         Order #{order.id.slice(0, 8).toUpperCase()}
+                        {order.is_multi_seller && (
+                          <Badge variant="outline" className="text-xs">
+                            <Store className="h-3 w-3 mr-1" />
+                            Multi-Seller
+                          </Badge>
+                        )}
                       </CardTitle>
                       <CardDescription className="flex items-center gap-2 mt-1">
                         <Calendar className="h-4 w-4" />
@@ -193,7 +259,7 @@ const OrdersPage: React.FC = () => {
                         variant="outline" 
                         className={statusColors[order.status || 'pending']}
                       >
-                        {order.status || 'Pending'}
+                        {(order.status || 'Pending').replace('_', ' ')}
                       </Badge>
                       {order.payment_status && (
                         <Badge 
@@ -206,9 +272,64 @@ const OrdersPage: React.FC = () => {
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {/* Order Items Preview */}
+                
+                <CardContent className="space-y-4">
+                  {/* Seller Shipments */}
+                  {order.seller_orders && order.seller_orders.length > 0 ? (
+                    <div className="space-y-3">
+                      <h4 className="text-sm font-medium text-muted-foreground">
+                        {order.seller_orders.length} Seller Shipment{order.seller_orders.length > 1 ? 's' : ''}
+                      </h4>
+                      {order.seller_orders.map((sellerOrder, index) => (
+                        <div 
+                          key={sellerOrder.id} 
+                          className="bg-muted/50 rounded-lg p-3"
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <Store className="h-4 w-4 text-muted-foreground" />
+                              <span className="font-medium text-sm">
+                                {sellerOrder.seller?.name || 'Unknown Seller'}
+                              </span>
+                              <Badge 
+                                variant="outline" 
+                                className={`text-xs ${statusColors[sellerOrder.status]}`}
+                              >
+                                {sellerOrder.status}
+                              </Badge>
+                            </div>
+                            <span className="font-semibold">
+                              ₹{sellerOrder.total_amount.toLocaleString('en-IN')}
+                            </span>
+                          </div>
+                          
+                          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                            {sellerOrder.tracking_number && (
+                              <span className="flex items-center gap-1">
+                                <Truck className="h-3 w-3" />
+                                {sellerOrder.tracking_number}
+                              </span>
+                            )}
+                            {sellerOrder.seller_invoice_url && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 text-xs"
+                                onClick={() => handleDownloadInvoice(
+                                  sellerOrder.seller_invoice_url!,
+                                  sellerOrder.seller?.name || 'Seller'
+                                )}
+                              >
+                                <Download className="h-3 w-3 mr-1" />
+                                Invoice
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    /* Fallback: Show order items directly */
                     <div className="flex items-center gap-3">
                       {order.order_items.slice(0, 3).map((item) => (
                         <div 
@@ -233,33 +354,27 @@ const OrdersPage: React.FC = () => {
                           +{order.order_items.length - 3}
                         </div>
                       )}
-                      <div className="flex-grow" />
-                      <div className="text-right">
-                        <p className="text-sm text-muted-foreground">
-                          {order.order_items.length} item{order.order_items.length !== 1 ? 's' : ''}
-                        </p>
-                        <p className="text-lg font-semibold">
-                          ₹{order.total_amount.toLocaleString('en-IN')}
-                        </p>
-                      </div>
                     </div>
+                  )}
 
-                    {/* Tracking Info */}
-                    {order.tracking_number && (
-                      <div className="text-sm text-muted-foreground bg-muted/50 px-3 py-2 rounded-md">
-                        Tracking: <span className="font-mono">{order.tracking_number}</span>
-                      </div>
-                    )}
+                  <Separator />
 
-                    {/* View Details Link */}
-                    <div className="pt-2 border-t">
-                      <Button variant="ghost" className="w-full justify-between" asChild>
-                        <Link to={`/orders/${order.id}`}>
-                          View Order Details
-                          <ChevronRight className="h-4 w-4" />
-                        </Link>
-                      </Button>
+                  {/* Order Total & Actions */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">
+                        {order.order_items.length} item{order.order_items.length !== 1 ? 's' : ''}
+                      </p>
+                      <p className="text-lg font-semibold">
+                        ₹{order.total_amount.toLocaleString('en-IN')}
+                      </p>
                     </div>
+                    <Button variant="ghost" className="gap-1" asChild>
+                      <Link to={`/orders/${order.id}`}>
+                        View Details
+                        <ChevronRight className="h-4 w-4" />
+                      </Link>
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
