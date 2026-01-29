@@ -1,13 +1,20 @@
-
 import React, { useState } from "react";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useCartWithSellers } from "@/hooks/useCartWithSellers";
+import MultiSellerNotice from "@/components/checkout/MultiSellerNotice";
+import CartBySeller from "@/components/checkout/CartBySeller";
+import { Store, CreditCard, MapPin, FileText, AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const BANK_ACCOUNT = {
   accountNumber: "123456789012",
@@ -16,38 +23,72 @@ const BANK_ACCOUNT = {
   accountName: "SwitchgearShop Pvt Ltd",
 };
 
-const initialAddress = { street: "", city: "", state: "", zipCode: "", country: "" };
+const initialAddress = { street: "", city: "", state: "", zipCode: "", country: "India" };
 
 const CheckoutPage: React.FC = () => {
-  const { cart, clearCart } = useCart();
+  const { clearCart } = useCart();
   const { user } = useAuth();
+  const navigate = useNavigate();
+  
+  const { groupedBySeller, isMultiSeller, totalAmount, sellerCount, isLoading: cartLoading } = useCartWithSellers();
+  
   const [step, setStep] = useState<"address" | "payment" | "summary">("address");
   const [shipping, setShipping] = useState(initialAddress);
+  const [buyerGstin, setBuyerGstin] = useState("");
+  const [buyerCompanyName, setBuyerCompanyName] = useState("");
+  const [buyerEmail, setBuyerEmail] = useState(user?.email || "");
+  const [buyerPhone, setBuyerPhone] = useState("");
+  const [isB2B, setIsB2B] = useState(false);
   const [utr, setUtr] = useState("");
   const [paymentProof, setPaymentProof] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const navigate = useNavigate();
 
   if (!user) {
-    return <div className="max-w-xl mx-auto py-16 text-center">Please sign in to checkout.</div>;
+    return (
+      <div className="max-w-xl mx-auto py-16 text-center">
+        <p className="text-muted-foreground">Please sign in to checkout.</p>
+        <Button className="mt-4" onClick={() => navigate("/login")}>Sign In</Button>
+      </div>
+    );
   }
-  if (cart.length === 0) {
-    return <div className="max-w-xl mx-auto py-16 text-center">Your cart is empty.</div>;
+  
+  if (cartLoading) {
+    return (
+      <div className="max-w-3xl mx-auto py-16 text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+        <p className="text-muted-foreground">Loading cart...</p>
+      </div>
+    );
+  }
+  
+  if (groupedBySeller.length === 0) {
+    return (
+      <div className="max-w-xl mx-auto py-16 text-center">
+        <p className="text-muted-foreground">Your cart is empty.</p>
+        <Button className="mt-4" onClick={() => navigate("/categories")}>Browse Products</Button>
+      </div>
+    );
   }
 
-  // Step 1: Address form
   const handleAddressNext = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!shipping.street || !shipping.city || !shipping.state || !shipping.zipCode || !shipping.country) {
+    if (!shipping.street || !shipping.city || !shipping.state || !shipping.zipCode) {
       setError("Please fill all shipping fields.");
+      return;
+    }
+    if (isB2B && !buyerGstin) {
+      setError("Please enter your GSTIN for B2B orders.");
+      return;
+    }
+    if (isB2B && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(buyerGstin)) {
+      setError("Please enter a valid 15-character GSTIN.");
       return;
     }
     setError(null);
     setStep("payment");
   };
 
-  // Step 2: Payment form after bank details show
   const handlePaymentNext = (e: React.FormEvent) => {
     e.preventDefault();
     if (!utr) {
@@ -58,153 +99,414 @@ const CheckoutPage: React.FC = () => {
     setStep("summary");
   };
 
-  // Step 3: Save everything to Supabase
   const handleSubmit = async () => {
     setSaving(true);
     setError(null);
 
-    let paymentProofUrl: string | null = null;
-    if (paymentProof) {
-      // Save payment proof file to storage using user_id/filename format for RLS
-      const fileName = `${user.id}/${Date.now()}_${paymentProof.name}`;
-      const { error: uploadErr } = await supabase.storage
-        .from("payment-proofs")
-        .upload(fileName, paymentProof);
-      if (uploadErr) {
-        setSaving(false);
-        setError("Failed to upload payment proof.");
-        return;
+    try {
+      let paymentProofUrl: string | null = null;
+      if (paymentProof) {
+        const fileName = `${user.id}/${Date.now()}_${paymentProof.name}`;
+        const { error: uploadErr } = await supabase.storage
+          .from("payment-proofs")
+          .upload(fileName, paymentProof);
+        if (uploadErr) throw new Error("Failed to upload payment proof.");
+        paymentProofUrl = fileName;
       }
-      // Store the object key (path), not the full URL since bucket is private
-      paymentProofUrl = fileName;
-    }
 
-    // Create order
-    const { data: newOrder, error: orderErr } = await supabase
-      .from("orders")
-      .insert([{
-        buyer_id: user.id,
-        total_amount: cart.reduce((sum, item) => sum + item.price * item.quantity, 0),
-        shipping_address: shipping,
-        status: "pending_payment",
-        payment_status: "pending",
-        payment_reference: utr,
-        payment_proof_url: paymentProofUrl,
-        notes: null,
-      }])
-      .select()
-      .single();
+      // Create parent order
+      const { data: newOrder, error: orderErr } = await supabase
+        .from("orders")
+        .insert([{
+          buyer_id: user.id,
+          total_amount: totalAmount,
+          shipping_address: shipping,
+          status: "pending_payment",
+          payment_status: "pending",
+          payment_reference: utr,
+          payment_proof_url: paymentProofUrl,
+          buyer_gstin: isB2B ? buyerGstin : null,
+          buyer_company_name: isB2B ? buyerCompanyName : null,
+          buyer_email: buyerEmail,
+          buyer_phone: buyerPhone,
+          is_multi_seller: isMultiSeller,
+        }])
+        .select()
+        .single();
 
-    if (orderErr) {
-      setSaving(false);
-      setError("Could not save your order.");
-      return;
-    }
+      if (orderErr) throw new Error("Could not save your order.");
 
-    // Save order_items
-    const itemsToInsert = cart.map(item => ({
-      order_id: newOrder.id,
-      product_id: item.productId,
-      quantity: item.quantity,
-      unit_price: item.price,
-      total_price: item.price * item.quantity
-    }));
-    const { error: itemsErr } = await supabase.from("order_items").insert(itemsToInsert);
-    if (itemsErr) {
-      setSaving(false);
-      setError("Could not save order items.");
-      return;
-    }
+      // Create seller sub-orders and order items
+      for (const group of groupedBySeller) {
+        // Create seller order
+        const { data: sellerOrder, error: sellerOrderErr } = await supabase
+          .from("seller_orders")
+          .insert([{
+            order_id: newOrder.id,
+            seller_id: group.sellerId,
+            status: "pending",
+            subtotal: group.subtotal,
+            tax_amount: 0, // Will be calculated by seller
+            shipping_amount: 0,
+            total_amount: group.subtotal,
+          }])
+          .select()
+          .single();
 
-    // Create invoice
-    const { error: invErr } = await supabase.from("invoices").insert([
-      {
-        order_id: newOrder.id,
-        buyer_id: user.id,
-        amount: newOrder.total_amount,
-        total_amount: newOrder.total_amount,
-        status: "draft",
-        due_date: new Date().toISOString(), // <-- fix: pass as string
-        invoice_number: `INV-${Date.now()}`,
+        if (sellerOrderErr) {
+          console.error("Error creating seller order:", sellerOrderErr);
+          throw new Error("Could not create seller sub-order.");
+        }
+
+        // Create order items linked to seller order
+        const itemsToInsert = group.items.map(item => ({
+          order_id: newOrder.id,
+          seller_order_id: sellerOrder.id,
+          product_id: item.productId,
+          quantity: item.quantity,
+          unit_price: item.price,
+          total_price: item.price * item.quantity
+        }));
+
+        const { error: itemsErr } = await supabase.from("order_items").insert(itemsToInsert);
+        if (itemsErr) {
+          console.error("Error creating order items:", itemsErr);
+          throw new Error("Could not save order items.");
+        }
       }
-    ]);
-    if (invErr) {
-      setSaving(false);
-      setError("Could not create invoice.");
-      return;
-    }
 
-    clearCart();
-    setSaving(false);
-    toast({ title: "Order submitted!", description: "Admin will review after payment is received." });
-    navigate(`/order-success?orderId=${newOrder.id}`);
+      clearCart();
+      toast({ 
+        title: "Order submitted!", 
+        description: isMultiSeller 
+          ? `Your order has been split across ${sellerCount} sellers. Each seller will process their portion.`
+          : "Your order is being processed." 
+      });
+      navigate(`/order-success?orderId=${newOrder.id}`);
+    } catch (err: any) {
+      console.error("Checkout error:", err);
+      setError(err.message || "An error occurred during checkout.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
-    <div className="max-w-xl mx-auto py-10">
+    <div className="max-w-3xl mx-auto py-10 px-4">
       <h1 className="text-2xl font-bold mb-6">Checkout</h1>
 
+      {/* Multi-seller notice */}
+      <MultiSellerNotice 
+        groupedBySeller={groupedBySeller} 
+        isMultiSeller={isMultiSeller} 
+      />
+
+      {/* Platform disclaimer */}
+      <Alert className="mb-6 bg-muted/50 border-muted-foreground/20">
+        <FileText className="h-4 w-4" />
+        <AlertDescription className="text-sm text-muted-foreground">
+          <strong>Important:</strong> Products are fulfilled by verified sellers. GST tax invoices will be issued by respective sellers, not by SwitchgearShop. SwitchgearShop acts as a marketplace platform only.
+        </AlertDescription>
+      </Alert>
+
       {step === "address" && (
-        <form className="space-y-4" onSubmit={handleAddressNext}>
-          <h2 className="font-semibold mb-2">Shipping Address</h2>
-          <Input placeholder="Street Address" value={shipping.street} onChange={e => setShipping(s => ({ ...s, street: e.target.value }))} />
-          <Input placeholder="City" value={shipping.city} onChange={e => setShipping(s => ({ ...s, city: e.target.value }))} />
-          <Input placeholder="State" value={shipping.state} onChange={e => setShipping(s => ({ ...s, state: e.target.value }))} />
-          <Input placeholder="Zip Code" value={shipping.zipCode} onChange={e => setShipping(s => ({ ...s, zipCode: e.target.value }))} />
-          <Input placeholder="Country" value={shipping.country} onChange={e => setShipping(s => ({ ...s, country: e.target.value }))} />
-          {error && <div className="text-red-600 text-sm">{error}</div>}
-          <Button type="submit" className="w-full mt-2">Next: Payment</Button>
+        <form className="space-y-6" onSubmit={handleAddressNext}>
+          {/* Shipping Address */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <MapPin className="h-5 w-5" />
+                Shipping Address
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4">
+                <div>
+                  <Label htmlFor="street">Street Address</Label>
+                  <Input 
+                    id="street"
+                    placeholder="Enter street address" 
+                    value={shipping.street} 
+                    onChange={e => setShipping(s => ({ ...s, street: e.target.value }))} 
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="city">City</Label>
+                    <Input 
+                      id="city"
+                      placeholder="City" 
+                      value={shipping.city} 
+                      onChange={e => setShipping(s => ({ ...s, city: e.target.value }))} 
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="state">State</Label>
+                    <Input 
+                      id="state"
+                      placeholder="State" 
+                      value={shipping.state} 
+                      onChange={e => setShipping(s => ({ ...s, state: e.target.value }))} 
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="zipCode">PIN Code</Label>
+                    <Input 
+                      id="zipCode"
+                      placeholder="PIN Code" 
+                      value={shipping.zipCode} 
+                      onChange={e => setShipping(s => ({ ...s, zipCode: e.target.value }))} 
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="country">Country</Label>
+                    <Input 
+                      id="country"
+                      value={shipping.country} 
+                      onChange={e => setShipping(s => ({ ...s, country: e.target.value }))} 
+                    />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* B2B / GST Details */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Store className="h-5 w-5" />
+                Business Details (Optional)
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="isB2B" 
+                  checked={isB2B} 
+                  onCheckedChange={(checked) => setIsB2B(!!checked)} 
+                />
+                <Label htmlFor="isB2B" className="text-sm font-medium">
+                  I have a GST number (B2B Order)
+                </Label>
+              </div>
+              
+              {isB2B && (
+                <div className="grid gap-4 pt-2">
+                  <div>
+                    <Label htmlFor="gstin">GSTIN *</Label>
+                    <Input 
+                      id="gstin"
+                      placeholder="e.g., 29AABCU9603R1ZM" 
+                      value={buyerGstin}
+                      onChange={e => setBuyerGstin(e.target.value.toUpperCase())}
+                      maxLength={15}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Your GSTIN will be shared with sellers for invoice generation
+                    </p>
+                  </div>
+                  <div>
+                    <Label htmlFor="companyName">Company Name</Label>
+                    <Input 
+                      id="companyName"
+                      placeholder="Legal business name" 
+                      value={buyerCompanyName}
+                      onChange={e => setBuyerCompanyName(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <Separator />
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="email">Email</Label>
+                  <Input 
+                    id="email"
+                    type="email"
+                    placeholder="Email address" 
+                    value={buyerEmail}
+                    onChange={e => setBuyerEmail(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="phone">Phone</Label>
+                  <Input 
+                    id="phone"
+                    placeholder="Phone number" 
+                    value={buyerPhone}
+                    onChange={e => setBuyerPhone(e.target.value)}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+          
+          <Button type="submit" className="w-full" size="lg">
+            Continue to Payment
+          </Button>
         </form>
       )}
 
       {step === "payment" && (
-        <form className="space-y-4" onSubmit={handlePaymentNext}>
-          <h2 className="font-semibold mb-2">Bank Transfer Details</h2>
-          <div className="bg-gray-100 rounded p-3 mb-2">
-            <p><strong>Bank Name:</strong> {BANK_ACCOUNT.bankName}</p>
-            <p><strong>Account Holder Name:</strong> {BANK_ACCOUNT.accountName}</p>
-            <p><strong>Account Number:</strong> {BANK_ACCOUNT.accountNumber}</p>
-            <p><strong>IFSC Code:</strong> {BANK_ACCOUNT.ifsc}</p>
+        <form className="space-y-6" onSubmit={handlePaymentNext}>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <CreditCard className="h-5 w-5" />
+                Bank Transfer Details
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="bg-muted rounded-lg p-4">
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <span className="text-muted-foreground">Bank Name:</span>
+                  <span className="font-medium">{BANK_ACCOUNT.bankName}</span>
+                  <span className="text-muted-foreground">Account Holder:</span>
+                  <span className="font-medium">{BANK_ACCOUNT.accountName}</span>
+                  <span className="text-muted-foreground">Account Number:</span>
+                  <span className="font-mono font-medium">{BANK_ACCOUNT.accountNumber}</span>
+                  <span className="text-muted-foreground">IFSC Code:</span>
+                  <span className="font-mono font-medium">{BANK_ACCOUNT.ifsc}</span>
+                </div>
+              </div>
+              
+              <div className="bg-primary/5 rounded-lg p-4 text-sm">
+                <p className="mb-2">
+                  <strong>Amount to transfer:</strong>{" "}
+                  <span className="text-lg font-bold">₹{totalAmount.toLocaleString('en-IN')}</span>
+                </p>
+                <p className="text-muted-foreground">
+                  Complete payment via NEFT/IMPS/RTGS and enter your UTR/reference number below.
+                </p>
+              </div>
+
+              <div>
+                <Label htmlFor="utr">UTR / Reference Number *</Label>
+                <Input 
+                  id="utr"
+                  placeholder="Enter payment reference" 
+                  value={utr} 
+                  onChange={e => setUtr(e.target.value)} 
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="proof">Payment Proof (Optional)</Label>
+                <Input
+                  id="proof"
+                  type="file"
+                  accept="image/*,.pdf"
+                  onChange={e => setPaymentProof(e.target.files?.[0] ?? null)}
+                  className="mt-1"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Upload a screenshot or PDF of your payment confirmation
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          <div className="flex gap-4">
+            <Button type="button" variant="outline" onClick={() => setStep("address")} className="flex-1">
+              Back
+            </Button>
+            <Button type="submit" className="flex-1" size="lg">
+              Review Order
+            </Button>
           </div>
-          <div className="mb-2 text-gray-700 text-sm">
-            Please complete payment via NEFT/IMPS using these details. Then enter your payment UTR/reference number and (optionally) upload payment proof for admin verification.
-          </div>
-          <Input placeholder="UTR / Reference Number" value={utr} onChange={e => setUtr(e.target.value)} />
-          <input
-            type="file"
-            accept="image/*,.pdf"
-            onChange={e => setPaymentProof(e.target.files?.[0] ?? null)}
-            className="block mt-2"
-          />
-          {error && <div className="text-red-600 text-sm">{error}</div>}
-          <Button type="submit" className="w-full mt-2">Next: Review & Place Order</Button>
         </form>
       )}
 
       {step === "summary" && (
-        <div>
-          <h2 className="font-semibold mb-3">Order Summary</h2>
-          <ul className="divide-y border rounded mb-4">
-            {cart.map(item => (
-              <li key={item.productId} className="flex justify-between items-center p-2">
-                <span>{item.name} × {item.quantity}</span>
-                <span>₹{(item.price * item.quantity).toFixed(2)}</span>
-              </li>
-            ))}
-          </ul>
-          <div className="mb-2">
-            <div className="text-sm text-gray-700">Shipping to: <span className="font-medium">{shipping.street}, {shipping.city}</span></div>
-            <div className="text-sm text-gray-700">Payment Ref: <span className="font-medium">{utr}</span> {paymentProof && <span>(file attached)</span>}</div>
-            <div className="font-bold">Total: ₹{cart.reduce((sum, item) => sum + item.price * item.quantity, 0).toFixed(2)}</div>
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Order Summary</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <CartBySeller groupedBySeller={groupedBySeller} />
+              
+              <Separator />
+              
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Shipping to:</span>
+                  <span className="text-right">
+                    {shipping.street}, {shipping.city}, {shipping.state} {shipping.zipCode}
+                  </span>
+                </div>
+                {isB2B && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">GSTIN:</span>
+                    <span className="font-mono">{buyerGstin}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Payment Reference:</span>
+                  <span className="font-mono">{utr}</span>
+                </div>
+                {paymentProof && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Proof Attached:</span>
+                    <span className="text-green-600">✓ {paymentProof.name}</span>
+                  </div>
+                )}
+              </div>
+              
+              <Separator />
+              
+              <div className="flex justify-between items-center">
+                <span className="text-lg font-semibold">Order Total</span>
+                <span className="text-2xl font-bold">₹{totalAmount.toLocaleString('en-IN')}</span>
+              </div>
+              
+              {isMultiSeller && (
+                <p className="text-sm text-muted-foreground">
+                  You will receive {sellerCount} separate shipments from different sellers.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          <div className="flex gap-4">
+            <Button type="button" variant="outline" onClick={() => setStep("payment")} className="flex-1">
+              Back
+            </Button>
+            <Button 
+              disabled={saving} 
+              onClick={handleSubmit}
+              className="flex-1" 
+              size="lg"
+            >
+              {saving ? "Placing Order..." : "Place Order"}
+            </Button>
           </div>
-          {error && <div className="text-red-600 text-sm">{error}</div>}
-          <Button
-            disabled={saving}
-            className="w-full mt-4"
-            onClick={handleSubmit}
-          >
-            {saving ? "Placing Order..." : "Place Order"}
-          </Button>
         </div>
       )}
     </div>
