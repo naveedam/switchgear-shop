@@ -37,6 +37,12 @@ import OrdersPage from './pages/OrdersPage';
 import SellersPage from './pages/SellersPage';
 import OrderSuccessPage from './pages/OrderSuccessPage';
 import ContactPage from './pages/ContactPage';
+import PanelBuildingPage from './pages/applications/PanelBuildingPage';
+import PowerDistributionPage from './pages/applications/PowerDistributionPage';
+import MotorControlCentersPage from './pages/applications/MotorControlCentersPage';
+import EnergyManagementPage from './pages/applications/EnergyManagementPage';
+import IndustrialAutomationPage from './pages/applications/IndustrialAutomationPage';
+import AllApplicationsPage from './pages/applications/AllApplicationsPage';
 
 import { Toaster } from './components/ui/toaster';
 import './App.css';
@@ -92,7 +98,17 @@ function App() {
             <Route path="contact" element={<ContactPage />} />
             <Route path="categories" element={<AllCategories />} />
             <Route path="categories/:categorySlug" element={<ProductListingPage />} />
+            <Route path="products" element={<ProductListingPage />} />
             <Route path="products/:productSlug" element={<ProductDetailPage />} />
+            
+            {/* Application pages */}
+            <Route path="applications" element={<AllApplicationsPage />} />
+            <Route path="applications/panel-building" element={<PanelBuildingPage />} />
+            <Route path="applications/power-distribution" element={<PowerDistributionPage />} />
+            <Route path="applications/motor-control-centers" element={<MotorControlCentersPage />} />
+            <Route path="applications/energy-management" element={<EnergyManagementPage />} />
+            <Route path="applications/industrial-automation" element={<IndustrialAutomationPage />} />
+            
             <Route path="profile" element={
               <ProtectedRoute>
                 <ProfilePage />
