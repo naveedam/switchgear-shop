@@ -43,6 +43,12 @@ import MotorControlCentersPage from './pages/applications/MotorControlCentersPag
 import EnergyManagementPage from './pages/applications/EnergyManagementPage';
 import IndustrialAutomationPage from './pages/applications/IndustrialAutomationPage';
 import AllApplicationsPage from './pages/applications/AllApplicationsPage';
+ import BomUploadPage from './pages/buyer/BomUploadPage';
+ import BuyerRfqsPage from './pages/buyer/BuyerRfqsPage';
+ import RfqCreatePage from './pages/buyer/RfqCreatePage';
+ import RfqDetailPage from './pages/buyer/RfqDetailPage';
+ import SellerRfqsPage from './pages/seller/SellerRfqsPage';
+ import SellerQuotePage from './pages/seller/SellerQuotePage';
 
 import { Toaster } from './components/ui/toaster';
 import './App.css';
@@ -119,6 +125,31 @@ function App() {
                 <OrdersPage />
               </ProtectedRoute>
             } />
+             <Route path="buyer/bom/upload" element={
+               <ProtectedRoute>
+                 <BomUploadPage />
+               </ProtectedRoute>
+             } />
+             <Route path="buyer/boms" element={
+               <ProtectedRoute>
+                 <BuyerRfqsPage />
+               </ProtectedRoute>
+             } />
+             <Route path="buyer/rfqs" element={
+               <ProtectedRoute>
+                 <BuyerRfqsPage />
+               </ProtectedRoute>
+             } />
+             <Route path="buyer/rfq/create/:bomId" element={
+               <ProtectedRoute>
+                 <RfqCreatePage />
+               </ProtectedRoute>
+             } />
+             <Route path="buyer/rfqs/:rfqId" element={
+               <ProtectedRoute>
+                 <RfqDetailPage />
+               </ProtectedRoute>
+             } />
           </Route>
           
           {/* Auth routes */}
@@ -174,6 +205,8 @@ function App() {
             <Route path="products" element={<SellerProducts />} />
             <Route path="orders" element={<SellerOrders />} />
             <Route path="invoices" element={<SellerInvoices />} />
+             <Route path="rfqs" element={<SellerRfqsPage />} />
+             <Route path="rfq/:rfqId/quote" element={<SellerQuotePage />} />
           </Route>
 
           {/* Catch all */}

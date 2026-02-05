@@ -91,6 +91,122 @@ export type Database = {
         }
         Relationships: []
       }
+      bom_items: {
+        Row: {
+          bom_id: string
+          buyer_notes: string | null
+          created_at: string
+          description: string
+          id: string
+          line_number: number
+          match_confidence: number | null
+          match_status: string
+          matched_product_id: string | null
+          preferred_brand: string | null
+          quantity: number
+          rating_specs: string | null
+          target_price: number | null
+          unit: string | null
+        }
+        Insert: {
+          bom_id: string
+          buyer_notes?: string | null
+          created_at?: string
+          description: string
+          id?: string
+          line_number: number
+          match_confidence?: number | null
+          match_status?: string
+          matched_product_id?: string | null
+          preferred_brand?: string | null
+          quantity?: number
+          rating_specs?: string | null
+          target_price?: number | null
+          unit?: string | null
+        }
+        Update: {
+          bom_id?: string
+          buyer_notes?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          line_number?: number
+          match_confidence?: number | null
+          match_status?: string
+          matched_product_id?: string | null
+          preferred_brand?: string | null
+          quantity?: number
+          rating_specs?: string | null
+          target_price?: number | null
+          unit?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bom_items_bom_id_fkey"
+            columns: ["bom_id"]
+            isOneToOne: false
+            referencedRelation: "bom_uploads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bom_items_matched_product_id_fkey"
+            columns: ["matched_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bom_uploads: {
+        Row: {
+          buyer_id: string
+          created_at: string
+          file_url: string | null
+          filename: string
+          id: string
+          matched_items: number | null
+          notes: string | null
+          project_name: string | null
+          status: string
+          total_items: number | null
+          updated_at: string
+        }
+        Insert: {
+          buyer_id: string
+          created_at?: string
+          file_url?: string | null
+          filename: string
+          id?: string
+          matched_items?: number | null
+          notes?: string | null
+          project_name?: string | null
+          status?: string
+          total_items?: number | null
+          updated_at?: string
+        }
+        Update: {
+          buyer_id?: string
+          created_at?: string
+          file_url?: string | null
+          filename?: string
+          id?: string
+          matched_items?: number | null
+          notes?: string | null
+          project_name?: string | null
+          status?: string
+          total_items?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bom_uploads_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brands: {
         Row: {
           created_at: string | null
@@ -794,6 +910,7 @@ export type Database = {
           payment_proof_url: string | null
           payment_reference: string | null
           payment_status: string | null
+          rfq_id: string | null
           shipping_address: Json | null
           status: string | null
           total_amount: number
@@ -815,6 +932,7 @@ export type Database = {
           payment_proof_url?: string | null
           payment_reference?: string | null
           payment_status?: string | null
+          rfq_id?: string | null
           shipping_address?: Json | null
           status?: string | null
           total_amount: number
@@ -836,6 +954,7 @@ export type Database = {
           payment_proof_url?: string | null
           payment_reference?: string | null
           payment_status?: string | null
+          rfq_id?: string | null
           shipping_address?: Json | null
           status?: string | null
           total_amount?: number
@@ -855,6 +974,13 @@ export type Database = {
             columns: ["cart_id"]
             isOneToOne: false
             referencedRelation: "shopping_carts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_rfq_id_fkey"
+            columns: ["rfq_id"]
+            isOneToOne: false
+            referencedRelation: "rfqs"
             referencedColumns: ["id"]
           },
         ]
@@ -1765,6 +1891,264 @@ export type Database = {
           },
         ]
       }
+      rfq_audit_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          actor_type: string | null
+          bom_id: string | null
+          created_at: string
+          details: Json | null
+          id: string
+          order_id: string | null
+          quote_id: string | null
+          rfq_id: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          actor_type?: string | null
+          bom_id?: string | null
+          created_at?: string
+          details?: Json | null
+          id?: string
+          order_id?: string | null
+          quote_id?: string | null
+          rfq_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          actor_type?: string | null
+          bom_id?: string | null
+          created_at?: string
+          details?: Json | null
+          id?: string
+          order_id?: string | null
+          quote_id?: string | null
+          rfq_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rfq_audit_log_bom_id_fkey"
+            columns: ["bom_id"]
+            isOneToOne: false
+            referencedRelation: "bom_uploads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rfq_audit_log_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rfq_audit_log_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "seller_quotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rfq_audit_log_rfq_id_fkey"
+            columns: ["rfq_id"]
+            isOneToOne: false
+            referencedRelation: "rfqs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rfq_items: {
+        Row: {
+          bom_item_id: string | null
+          category: Database["public"]["Enums"]["product_category"] | null
+          created_at: string
+          description: string
+          id: string
+          line_number: number
+          matched_product_id: string | null
+          preferred_brand: string | null
+          quantity: number
+          rating_specs: string | null
+          rfq_id: string
+          status: string
+          target_price: number | null
+          unit: string | null
+        }
+        Insert: {
+          bom_item_id?: string | null
+          category?: Database["public"]["Enums"]["product_category"] | null
+          created_at?: string
+          description: string
+          id?: string
+          line_number: number
+          matched_product_id?: string | null
+          preferred_brand?: string | null
+          quantity?: number
+          rating_specs?: string | null
+          rfq_id: string
+          status?: string
+          target_price?: number | null
+          unit?: string | null
+        }
+        Update: {
+          bom_item_id?: string | null
+          category?: Database["public"]["Enums"]["product_category"] | null
+          created_at?: string
+          description?: string
+          id?: string
+          line_number?: number
+          matched_product_id?: string | null
+          preferred_brand?: string | null
+          quantity?: number
+          rating_specs?: string | null
+          rfq_id?: string
+          status?: string
+          target_price?: number | null
+          unit?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rfq_items_bom_item_id_fkey"
+            columns: ["bom_item_id"]
+            isOneToOne: false
+            referencedRelation: "bom_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rfq_items_matched_product_id_fkey"
+            columns: ["matched_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rfq_items_rfq_id_fkey"
+            columns: ["rfq_id"]
+            isOneToOne: false
+            referencedRelation: "rfqs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rfq_seller_invitations: {
+        Row: {
+          decline_reason: string | null
+          id: string
+          invited_at: string
+          responded_at: string | null
+          rfq_id: string
+          seller_id: string
+          status: string
+          viewed_at: string | null
+        }
+        Insert: {
+          decline_reason?: string | null
+          id?: string
+          invited_at?: string
+          responded_at?: string | null
+          rfq_id: string
+          seller_id: string
+          status?: string
+          viewed_at?: string | null
+        }
+        Update: {
+          decline_reason?: string | null
+          id?: string
+          invited_at?: string
+          responded_at?: string | null
+          rfq_id?: string
+          seller_id?: string
+          status?: string
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rfq_seller_invitations_rfq_id_fkey"
+            columns: ["rfq_id"]
+            isOneToOne: false
+            referencedRelation: "rfqs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rfq_seller_invitations_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rfqs: {
+        Row: {
+          bom_id: string | null
+          buyer_id: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          notes: string | null
+          quoted_items: number | null
+          reference_documents: string[] | null
+          required_delivery_date: string | null
+          rfq_number: string
+          status: string
+          title: string
+          total_items: number | null
+          updated_at: string
+          validity_days: number | null
+        }
+        Insert: {
+          bom_id?: string | null
+          buyer_id: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          notes?: string | null
+          quoted_items?: number | null
+          reference_documents?: string[] | null
+          required_delivery_date?: string | null
+          rfq_number: string
+          status?: string
+          title: string
+          total_items?: number | null
+          updated_at?: string
+          validity_days?: number | null
+        }
+        Update: {
+          bom_id?: string | null
+          buyer_id?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          notes?: string | null
+          quoted_items?: number | null
+          reference_documents?: string[] | null
+          required_delivery_date?: string | null
+          rfq_number?: string
+          status?: string
+          title?: string
+          total_items?: number | null
+          updated_at?: string
+          validity_days?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rfqs_bom_id_fkey"
+            columns: ["bom_id"]
+            isOneToOne: false
+            referencedRelation: "bom_uploads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rfqs_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sales_metrics: {
         Row: {
           average_order_value: number | null
@@ -2045,7 +2429,9 @@ export type Database = {
           eway_bill_url: string | null
           id: string
           order_id: string
+          quote_id: string | null
           rejection_reason: string | null
+          rfq_id: string | null
           seller_id: string
           seller_invoice_number: string | null
           seller_invoice_uploaded_at: string | null
@@ -2070,7 +2456,9 @@ export type Database = {
           eway_bill_url?: string | null
           id?: string
           order_id: string
+          quote_id?: string | null
           rejection_reason?: string | null
+          rfq_id?: string | null
           seller_id: string
           seller_invoice_number?: string | null
           seller_invoice_uploaded_at?: string | null
@@ -2095,7 +2483,9 @@ export type Database = {
           eway_bill_url?: string | null
           id?: string
           order_id?: string
+          quote_id?: string | null
           rejection_reason?: string | null
+          rfq_id?: string | null
           seller_id?: string
           seller_invoice_number?: string | null
           seller_invoice_uploaded_at?: string | null
@@ -2117,6 +2507,20 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seller_orders_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "seller_quotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seller_orders_rfq_id_fkey"
+            columns: ["rfq_id"]
+            isOneToOne: false
+            referencedRelation: "rfqs"
             referencedColumns: ["id"]
           },
           {
@@ -2169,6 +2573,160 @@ export type Database = {
           },
         ]
       }
+      seller_quote_items: {
+        Row: {
+          available_quantity: number | null
+          brand: string | null
+          created_at: string
+          id: string
+          is_available: boolean | null
+          lead_time_days: number | null
+          model_number: string | null
+          notes: string | null
+          product_id: string | null
+          quote_id: string
+          quoted_quantity: number
+          rfq_item_id: string
+          status: string
+          tax_amount: number | null
+          tax_rate: number | null
+          total_price: number
+          unit_price: number
+        }
+        Insert: {
+          available_quantity?: number | null
+          brand?: string | null
+          created_at?: string
+          id?: string
+          is_available?: boolean | null
+          lead_time_days?: number | null
+          model_number?: string | null
+          notes?: string | null
+          product_id?: string | null
+          quote_id: string
+          quoted_quantity: number
+          rfq_item_id: string
+          status?: string
+          tax_amount?: number | null
+          tax_rate?: number | null
+          total_price: number
+          unit_price: number
+        }
+        Update: {
+          available_quantity?: number | null
+          brand?: string | null
+          created_at?: string
+          id?: string
+          is_available?: boolean | null
+          lead_time_days?: number | null
+          model_number?: string | null
+          notes?: string | null
+          product_id?: string | null
+          quote_id?: string
+          quoted_quantity?: number
+          rfq_item_id?: string
+          status?: string
+          tax_amount?: number | null
+          tax_rate?: number | null
+          total_price?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seller_quote_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seller_quote_items_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "seller_quotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seller_quote_items_rfq_item_id_fkey"
+            columns: ["rfq_item_id"]
+            isOneToOne: false
+            referencedRelation: "rfq_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seller_quotes: {
+        Row: {
+          created_at: string
+          delivery_terms: string | null
+          expires_at: string | null
+          grand_total: number | null
+          id: string
+          notes: string | null
+          payment_terms: string | null
+          quote_number: string
+          rfq_id: string
+          seller_id: string
+          status: string
+          submitted_at: string | null
+          tax_amount: number | null
+          total_amount: number | null
+          updated_at: string
+          validity_days: number | null
+        }
+        Insert: {
+          created_at?: string
+          delivery_terms?: string | null
+          expires_at?: string | null
+          grand_total?: number | null
+          id?: string
+          notes?: string | null
+          payment_terms?: string | null
+          quote_number: string
+          rfq_id: string
+          seller_id: string
+          status?: string
+          submitted_at?: string | null
+          tax_amount?: number | null
+          total_amount?: number | null
+          updated_at?: string
+          validity_days?: number | null
+        }
+        Update: {
+          created_at?: string
+          delivery_terms?: string | null
+          expires_at?: string | null
+          grand_total?: number | null
+          id?: string
+          notes?: string | null
+          payment_terms?: string | null
+          quote_number?: string
+          rfq_id?: string
+          seller_id?: string
+          status?: string
+          submitted_at?: string | null
+          tax_amount?: number | null
+          total_amount?: number | null
+          updated_at?: string
+          validity_days?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seller_quotes_rfq_id_fkey"
+            columns: ["rfq_id"]
+            isOneToOne: false
+            referencedRelation: "rfqs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seller_quotes_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shopping_carts: {
         Row: {
           buyer_id: string
@@ -2203,6 +2761,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_quote_number: { Args: { p_seller_id: string }; Returns: string }
+      generate_rfq_number: { Args: never; Returns: string }
       get_current_financial_year: { Args: never; Returns: string }
       get_current_user_role: { Args: never; Returns: string }
       get_next_invoice_number: {
