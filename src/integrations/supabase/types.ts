@@ -462,6 +462,11 @@ export type Database = {
       companies: {
         Row: {
           address: string | null
+          bank_account_holder_name: string | null
+          bank_account_number: string | null
+          bank_ifsc: string | null
+          bank_name: string | null
+          bank_verified: boolean | null
           created_at: string | null
           description: string | null
           email: string
@@ -481,6 +486,11 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          bank_account_holder_name?: string | null
+          bank_account_number?: string | null
+          bank_ifsc?: string | null
+          bank_name?: string | null
+          bank_verified?: boolean | null
           created_at?: string | null
           description?: string | null
           email: string
@@ -500,6 +510,11 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          bank_account_holder_name?: string | null
+          bank_account_number?: string | null
+          bank_ifsc?: string | null
+          bank_name?: string | null
+          bank_verified?: boolean | null
           created_at?: string | null
           description?: string | null
           email?: string
@@ -518,6 +533,96 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      escrow_accounts: {
+        Row: {
+          account_type: string
+          balance: number
+          created_at: string
+          id: string
+          last_reconciled_at: string | null
+          pending_settlements: number
+          updated_at: string
+        }
+        Insert: {
+          account_type?: string
+          balance?: number
+          created_at?: string
+          id?: string
+          last_reconciled_at?: string | null
+          pending_settlements?: number
+          updated_at?: string
+        }
+        Update: {
+          account_type?: string
+          balance?: number
+          created_at?: string
+          id?: string
+          last_reconciled_at?: string | null
+          pending_settlements?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      escrow_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          metadata: Json | null
+          order_id: string | null
+          reference_number: string | null
+          reference_type: string | null
+          seller_order_id: string | null
+          status: string
+          transaction_type: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          order_id?: string | null
+          reference_number?: string | null
+          reference_type?: string | null
+          seller_order_id?: string | null
+          status?: string
+          transaction_type: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          order_id?: string | null
+          reference_number?: string | null
+          reference_type?: string | null
+          seller_order_id?: string | null
+          status?: string
+          transaction_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "escrow_transactions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "escrow_transactions_seller_order_id_fkey"
+            columns: ["seller_order_id"]
+            isOneToOne: false
+            referencedRelation: "seller_orders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       invoice_items: {
         Row: {
@@ -903,6 +1008,9 @@ export type Database = {
           buyer_phone: string | null
           cart_id: string | null
           created_at: string | null
+          escrow_amount: number | null
+          escrow_received_at: string | null
+          escrow_status: string | null
           fulfillment_status: string | null
           id: string
           is_multi_seller: boolean | null
@@ -910,6 +1018,8 @@ export type Database = {
           payment_proof_url: string | null
           payment_reference: string | null
           payment_status: string | null
+          payment_verified_at: string | null
+          payment_verified_by: string | null
           rfq_id: string | null
           shipping_address: Json | null
           status: string | null
@@ -925,6 +1035,9 @@ export type Database = {
           buyer_phone?: string | null
           cart_id?: string | null
           created_at?: string | null
+          escrow_amount?: number | null
+          escrow_received_at?: string | null
+          escrow_status?: string | null
           fulfillment_status?: string | null
           id?: string
           is_multi_seller?: boolean | null
@@ -932,6 +1045,8 @@ export type Database = {
           payment_proof_url?: string | null
           payment_reference?: string | null
           payment_status?: string | null
+          payment_verified_at?: string | null
+          payment_verified_by?: string | null
           rfq_id?: string | null
           shipping_address?: Json | null
           status?: string | null
@@ -947,6 +1062,9 @@ export type Database = {
           buyer_phone?: string | null
           cart_id?: string | null
           created_at?: string | null
+          escrow_amount?: number | null
+          escrow_received_at?: string | null
+          escrow_status?: string | null
           fulfillment_status?: string | null
           id?: string
           is_multi_seller?: boolean | null
@@ -954,6 +1072,8 @@ export type Database = {
           payment_proof_url?: string | null
           payment_reference?: string | null
           payment_status?: string | null
+          payment_verified_at?: string | null
+          payment_verified_by?: string | null
           rfq_id?: string | null
           shipping_address?: Json | null
           status?: string | null
@@ -984,6 +1104,111 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      platform_commission_invoices: {
+        Row: {
+          cgst_amount: number | null
+          commission_amount: number
+          commission_rate: number
+          created_at: string
+          id: string
+          igst_amount: number | null
+          invoice_number: string
+          issued_at: string | null
+          pdf_url: string | null
+          period_end: string
+          period_start: string
+          seller_id: string
+          settlement_id: string | null
+          sgst_amount: number | null
+          status: string
+          total_amount: number
+          total_order_value: number
+          updated_at: string
+        }
+        Insert: {
+          cgst_amount?: number | null
+          commission_amount: number
+          commission_rate: number
+          created_at?: string
+          id?: string
+          igst_amount?: number | null
+          invoice_number: string
+          issued_at?: string | null
+          pdf_url?: string | null
+          period_end: string
+          period_start: string
+          seller_id: string
+          settlement_id?: string | null
+          sgst_amount?: number | null
+          status?: string
+          total_amount: number
+          total_order_value: number
+          updated_at?: string
+        }
+        Update: {
+          cgst_amount?: number | null
+          commission_amount?: number
+          commission_rate?: number
+          created_at?: string
+          id?: string
+          igst_amount?: number | null
+          invoice_number?: string
+          issued_at?: string | null
+          pdf_url?: string | null
+          period_end?: string
+          period_start?: string
+          seller_id?: string
+          settlement_id?: string | null
+          sgst_amount?: number | null
+          status?: string
+          total_amount?: number
+          total_order_value?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_commission_invoices_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_commission_invoices_settlement_id_fkey"
+            columns: ["settlement_id"]
+            isOneToOne: false
+            referencedRelation: "seller_settlements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      platform_config: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key: string
+          updated_at?: string
+          value: Json
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
       }
       product_catalogs: {
         Row: {
@@ -2429,6 +2654,7 @@ export type Database = {
           eway_bill_url: string | null
           id: string
           order_id: string
+          platform_commission: number | null
           quote_id: string | null
           rejection_reason: string | null
           rfq_id: string | null
@@ -2437,6 +2663,10 @@ export type Database = {
           seller_invoice_uploaded_at: string | null
           seller_invoice_url: string | null
           seller_notes: string | null
+          settled_at: string | null
+          settlement_amount: number | null
+          settlement_eligible_at: string | null
+          settlement_status: string | null
           shipped_at: string | null
           shipping_amount: number | null
           status: string | null
@@ -2456,6 +2686,7 @@ export type Database = {
           eway_bill_url?: string | null
           id?: string
           order_id: string
+          platform_commission?: number | null
           quote_id?: string | null
           rejection_reason?: string | null
           rfq_id?: string | null
@@ -2464,6 +2695,10 @@ export type Database = {
           seller_invoice_uploaded_at?: string | null
           seller_invoice_url?: string | null
           seller_notes?: string | null
+          settled_at?: string | null
+          settlement_amount?: number | null
+          settlement_eligible_at?: string | null
+          settlement_status?: string | null
           shipped_at?: string | null
           shipping_amount?: number | null
           status?: string | null
@@ -2483,6 +2718,7 @@ export type Database = {
           eway_bill_url?: string | null
           id?: string
           order_id?: string
+          platform_commission?: number | null
           quote_id?: string | null
           rejection_reason?: string | null
           rfq_id?: string | null
@@ -2491,6 +2727,10 @@ export type Database = {
           seller_invoice_uploaded_at?: string | null
           seller_invoice_url?: string | null
           seller_notes?: string | null
+          settled_at?: string | null
+          settlement_amount?: number | null
+          settlement_eligible_at?: string | null
+          settlement_status?: string | null
           shipped_at?: string | null
           shipping_amount?: number | null
           status?: string | null
@@ -2727,6 +2967,194 @@ export type Database = {
           },
         ]
       }
+      seller_settlements: {
+        Row: {
+          admin_notes: string | null
+          bank_account_number: string | null
+          bank_ifsc: string | null
+          bank_name: string | null
+          commission_rate: number
+          created_at: string
+          delivery_confirmed: boolean | null
+          eligibility_met_at: string | null
+          gross_amount: number
+          hold_period_elapsed: boolean | null
+          id: string
+          invoice_uploaded: boolean | null
+          metadata: Json | null
+          net_payable: number
+          order_accepted: boolean | null
+          order_id: string
+          other_deductions: number
+          platform_commission: number
+          seller_id: string
+          seller_order_id: string
+          settled_at: string | null
+          settled_by: string | null
+          settlement_batch_id: string | null
+          settlement_reference: string | null
+          shipment_confirmed: boolean | null
+          status: Database["public"]["Enums"]["settlement_status"]
+          tcs_amount: number
+          tcs_rate: number
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          bank_account_number?: string | null
+          bank_ifsc?: string | null
+          bank_name?: string | null
+          commission_rate?: number
+          created_at?: string
+          delivery_confirmed?: boolean | null
+          eligibility_met_at?: string | null
+          gross_amount: number
+          hold_period_elapsed?: boolean | null
+          id?: string
+          invoice_uploaded?: boolean | null
+          metadata?: Json | null
+          net_payable: number
+          order_accepted?: boolean | null
+          order_id: string
+          other_deductions?: number
+          platform_commission?: number
+          seller_id: string
+          seller_order_id: string
+          settled_at?: string | null
+          settled_by?: string | null
+          settlement_batch_id?: string | null
+          settlement_reference?: string | null
+          shipment_confirmed?: boolean | null
+          status?: Database["public"]["Enums"]["settlement_status"]
+          tcs_amount?: number
+          tcs_rate?: number
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          bank_account_number?: string | null
+          bank_ifsc?: string | null
+          bank_name?: string | null
+          commission_rate?: number
+          created_at?: string
+          delivery_confirmed?: boolean | null
+          eligibility_met_at?: string | null
+          gross_amount?: number
+          hold_period_elapsed?: boolean | null
+          id?: string
+          invoice_uploaded?: boolean | null
+          metadata?: Json | null
+          net_payable?: number
+          order_accepted?: boolean | null
+          order_id?: string
+          other_deductions?: number
+          platform_commission?: number
+          seller_id?: string
+          seller_order_id?: string
+          settled_at?: string | null
+          settled_by?: string | null
+          settlement_batch_id?: string | null
+          settlement_reference?: string | null
+          shipment_confirmed?: boolean | null
+          status?: Database["public"]["Enums"]["settlement_status"]
+          tcs_amount?: number
+          tcs_rate?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seller_settlements_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seller_settlements_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seller_settlements_seller_order_id_fkey"
+            columns: ["seller_order_id"]
+            isOneToOne: true
+            referencedRelation: "seller_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      settlement_audit_log: {
+        Row: {
+          action: string
+          amount: number | null
+          created_at: string
+          details: Json | null
+          id: string
+          ip_address: string | null
+          new_status: string | null
+          order_id: string | null
+          performed_by: string | null
+          previous_status: string | null
+          seller_order_id: string | null
+          settlement_id: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          amount?: number | null
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          new_status?: string | null
+          order_id?: string | null
+          performed_by?: string | null
+          previous_status?: string | null
+          seller_order_id?: string | null
+          settlement_id?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          amount?: number | null
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          new_status?: string | null
+          order_id?: string | null
+          performed_by?: string | null
+          previous_status?: string | null
+          seller_order_id?: string | null
+          settlement_id?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "settlement_audit_log_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "settlement_audit_log_seller_order_id_fkey"
+            columns: ["seller_order_id"]
+            isOneToOne: false
+            referencedRelation: "seller_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "settlement_audit_log_settlement_id_fkey"
+            columns: ["settlement_id"]
+            isOneToOne: false
+            referencedRelation: "seller_settlements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shopping_carts: {
         Row: {
           buyer_id: string
@@ -2761,6 +3189,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_settlement_amounts: {
+        Args: { p_seller_order_id: string }
+        Returns: Json
+      }
+      check_settlement_eligibility: {
+        Args: { p_seller_order_id: string }
+        Returns: Json
+      }
+      create_or_update_settlement: {
+        Args: { p_seller_order_id: string }
+        Returns: string
+      }
       generate_quote_number: { Args: { p_seller_id: string }; Returns: string }
       generate_rfq_number: { Args: never; Returns: string }
       get_current_financial_year: { Args: never; Returns: string }
@@ -2828,6 +3268,13 @@ export type Database = {
         | "capacitors_and_reactors"
         | "admin_panel"
       reference_type: "invoice" | "payment" | "adjustment"
+      settlement_status:
+        | "pending"
+        | "eligible"
+        | "processing"
+        | "completed"
+        | "on_hold"
+        | "cancelled"
       transaction_type: "debit" | "credit"
     }
     CompositeTypes: {
@@ -3009,6 +3456,14 @@ export const Constants = {
         "admin_panel",
       ],
       reference_type: ["invoice", "payment", "adjustment"],
+      settlement_status: [
+        "pending",
+        "eligible",
+        "processing",
+        "completed",
+        "on_hold",
+        "cancelled",
+      ],
       transaction_type: ["debit", "credit"],
     },
   },
