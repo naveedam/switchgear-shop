@@ -205,7 +205,10 @@ const CheckoutPage: React.FC = () => {
       <Alert className="mb-6 bg-muted/50 border-muted-foreground/20">
         <FileText className="h-4 w-4" />
         <AlertDescription className="text-sm text-muted-foreground">
-          <strong>Important:</strong> Products are fulfilled by verified sellers. GST tax invoices will be issued by respective sellers, not by SwitchgearShop. SwitchgearShop acts as a marketplace platform only.
+          <strong>Escrow Payment Model:</strong> Your payment is held securely in SwitchgearShop's nodal account. 
+          Sellers are paid after fulfillment milestones (order acceptance, invoice upload, shipment). 
+          GST tax invoices will be issued by respective sellers, not by SwitchgearShop. 
+          SwitchgearShop acts as a marketplace facilitator only.
         </AlertDescription>
       </Alert>
 

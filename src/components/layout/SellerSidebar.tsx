@@ -6,7 +6,9 @@ import {
   LayoutDashboard, 
   Package, 
   ShoppingBag, 
-  Users, 
+  FileText,
+  Wallet,
+  MessageSquare,
   BarChart, 
   Settings, 
   HelpCircle
@@ -29,9 +31,19 @@ const menuItems = [
     icon: ShoppingBag,
   },
   {
-    name: 'Customers',
-    href: '/seller/customers',
-    icon: Users,
+    name: 'Invoices',
+    href: '/seller/invoices',
+    icon: FileText,
+  },
+  {
+    name: 'Settlements',
+    href: '/seller/settlements',
+    icon: Wallet,
+  },
+  {
+    name: 'RFQs',
+    href: '/seller/rfqs',
+    icon: MessageSquare,
   },
   {
     name: 'Analytics',

@@ -15,7 +15,8 @@ import {
   Image,
   Package,
   Building,
-  ShoppingCart
+  ShoppingCart,
+  Wallet
 } from 'lucide-react';
 
 const menuItems = [
@@ -33,6 +34,11 @@ const menuItems = [
     name: 'Orders',
     href: '/admin/orders',
     icon: Box,
+  },
+  {
+    name: 'Escrow & Settlements',
+    href: '/admin/escrow',
+    icon: Wallet,
   },
   {
     name: 'Carts',
