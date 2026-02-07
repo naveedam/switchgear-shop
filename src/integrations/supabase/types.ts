@@ -1342,6 +1342,91 @@ export type Database = {
           },
         ]
       }
+      product_requests: {
+        Row: {
+          additional_documents: string[] | null
+          admin_notes: string | null
+          approved_catalog_product_id: string | null
+          brand_name: string
+          category: string | null
+          created_at: string
+          datasheet_url: string | null
+          description: string | null
+          id: string
+          model_number: string
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          seller_id: string
+          status: string
+          subcategory: string | null
+          technical_specs: Json | null
+          updated_at: string
+        }
+        Insert: {
+          additional_documents?: string[] | null
+          admin_notes?: string | null
+          approved_catalog_product_id?: string | null
+          brand_name: string
+          category?: string | null
+          created_at?: string
+          datasheet_url?: string | null
+          description?: string | null
+          id?: string
+          model_number: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          seller_id: string
+          status?: string
+          subcategory?: string | null
+          technical_specs?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          additional_documents?: string[] | null
+          admin_notes?: string | null
+          approved_catalog_product_id?: string | null
+          brand_name?: string
+          category?: string | null
+          created_at?: string
+          datasheet_url?: string | null
+          description?: string | null
+          id?: string
+          model_number?: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          seller_id?: string
+          status?: string
+          subcategory?: string | null
+          technical_specs?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_requests_approved_catalog_product_id_fkey"
+            columns: ["approved_catalog_product_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_requests_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_requests_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_subcategories: {
         Row: {
           category: Database["public"]["Enums"]["product_category"]
@@ -2451,6 +2536,137 @@ export type Database = {
           },
         ]
       }
+      seller_bulk_upload_items: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          input_brand: string | null
+          input_description: string | null
+          input_model: string | null
+          is_processed: boolean | null
+          lead_time_days: number | null
+          match_confidence: number | null
+          match_status: string
+          matched_catalog_product_id: string | null
+          moq: number | null
+          price: number | null
+          processed_at: string | null
+          raw_data: Json
+          row_number: number
+          stock: number | null
+          upload_id: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          input_brand?: string | null
+          input_description?: string | null
+          input_model?: string | null
+          is_processed?: boolean | null
+          lead_time_days?: number | null
+          match_confidence?: number | null
+          match_status?: string
+          matched_catalog_product_id?: string | null
+          moq?: number | null
+          price?: number | null
+          processed_at?: string | null
+          raw_data: Json
+          row_number: number
+          stock?: number | null
+          upload_id: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          input_brand?: string | null
+          input_description?: string | null
+          input_model?: string | null
+          is_processed?: boolean | null
+          lead_time_days?: number | null
+          match_confidence?: number | null
+          match_status?: string
+          matched_catalog_product_id?: string | null
+          moq?: number | null
+          price?: number | null
+          processed_at?: string | null
+          raw_data?: Json
+          row_number?: number
+          stock?: number | null
+          upload_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seller_bulk_upload_items_matched_catalog_product_id_fkey"
+            columns: ["matched_catalog_product_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seller_bulk_upload_items_upload_id_fkey"
+            columns: ["upload_id"]
+            isOneToOne: false
+            referencedRelation: "seller_bulk_uploads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seller_bulk_uploads: {
+        Row: {
+          created_at: string
+          error_details: Json | null
+          error_rows: number
+          file_url: string | null
+          filename: string
+          id: string
+          matched_rows: number
+          processed_at: string | null
+          seller_id: string
+          status: string
+          total_rows: number
+          unmatched_rows: number
+        }
+        Insert: {
+          created_at?: string
+          error_details?: Json | null
+          error_rows?: number
+          file_url?: string | null
+          filename: string
+          id?: string
+          matched_rows?: number
+          processed_at?: string | null
+          seller_id: string
+          status?: string
+          total_rows?: number
+          unmatched_rows?: number
+        }
+        Update: {
+          created_at?: string
+          error_details?: Json | null
+          error_rows?: number
+          file_url?: string | null
+          filename?: string
+          id?: string
+          matched_rows?: number
+          processed_at?: string | null
+          seller_id?: string
+          status?: string
+          total_rows?: number
+          unmatched_rows?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seller_bulk_uploads_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       seller_documents: {
         Row: {
           admin_notes: string | null
@@ -2497,6 +2713,53 @@ export type Database = {
             columns: ["seller_id"]
             isOneToOne: false
             referencedRelation: "seller_onboarding"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seller_inventory_audit_log: {
+        Row: {
+          action: string
+          created_at: string
+          entity_id: string
+          entity_type: string
+          id: string
+          ip_address: string | null
+          new_values: Json | null
+          old_values: Json | null
+          performed_by: string | null
+          seller_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          id?: string
+          ip_address?: string | null
+          new_values?: Json | null
+          old_values?: Json | null
+          performed_by?: string | null
+          seller_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          ip_address?: string | null
+          new_values?: Json | null
+          old_values?: Json | null
+          performed_by?: string | null
+          seller_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seller_inventory_audit_log_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
         ]
@@ -3215,6 +3478,17 @@ export type Database = {
       }
       get_or_create_user_cart: { Args: { user_id: string }; Returns: string }
       is_super_admin: { Args: never; Returns: boolean }
+      log_seller_inventory_action: {
+        Args: {
+          p_action: string
+          p_entity_id: string
+          p_entity_type: string
+          p_new_values?: Json
+          p_old_values?: Json
+          p_seller_id: string
+        }
+        Returns: string
+      }
       make_user_super_admin: { Args: { user_email: string }; Returns: string }
     }
     Enums: {
