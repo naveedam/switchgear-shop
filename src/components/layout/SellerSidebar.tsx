@@ -1,10 +1,10 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { 
   LayoutDashboard, 
   Package, 
+  PackagePlus,
   ShoppingBag, 
   FileText,
   Wallet,
@@ -17,11 +17,17 @@ import {
 const menuItems = [
   {
     name: 'Dashboard',
-    href: '/seller/dashboard',
+    href: '/seller',
     icon: LayoutDashboard,
   },
   {
-    name: 'Products',
+    name: 'Inventory',
+    href: '/seller/inventory',
+    icon: PackagePlus,
+    badge: 'New',
+  },
+  {
+    name: 'My Products',
     href: '/seller/products',
     icon: Package,
   },
@@ -74,7 +80,7 @@ const SellerSidebar: React.FC = () => {
       
       <nav className="space-y-1">
         {menuItems.map((item) => {
-          const isActive = pathname === item.href;
+          const isActive = pathname === item.href || (item.href !== '/seller' && pathname.startsWith(item.href));
           
           return (
             <Link
@@ -83,17 +89,22 @@ const SellerSidebar: React.FC = () => {
               className={cn(
                 "flex items-center px-3 py-2 text-sm font-medium rounded-md",
                 isActive
-                  ? "bg-brand-50 text-brand-700"
-                  : "text-gray-700 hover:bg-gray-100"
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:bg-accent"
               )}
             >
               <item.icon 
                 className={cn(
                   "mr-3 h-5 w-5",
-                  isActive ? "text-brand-500" : "text-gray-400"
+                  isActive ? "text-primary" : "text-muted-foreground"
                 )} 
               />
               {item.name}
+              {'badge' in item && item.badge && (
+                <span className="ml-auto text-xs bg-primary text-primary-foreground px-1.5 py-0.5 rounded">
+                  {item.badge}
+                </span>
+              )}
             </Link>
           );
         })}

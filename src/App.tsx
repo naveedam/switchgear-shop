@@ -34,6 +34,8 @@ import SellerProducts from './pages/SellerProducts';
 import SellerOrders from './pages/SellerOrders';
 import SellerInvoices from './pages/SellerInvoices';
 import SellerSettlements from './pages/seller/SellerSettlements';
+import SellerInventory from './pages/seller/SellerInventory';
+import AdminProductRequests from './pages/admin/AdminProductRequests';
 import ProfilePage from './pages/ProfilePage';
 import OrdersPage from './pages/OrdersPage';
 import SellersPage from './pages/SellersPage';
@@ -186,6 +188,7 @@ function App() {
             <Route path="users/:id" element={<EditUser />} />
             <Route path="sellers" element={<AdminSellers />} />
             <Route path="sellers/:id" element={<EditSeller />} />
+            <Route path="product-requests" element={<AdminProductRequests />} />
             <Route path="analytics" element={<AdminAnalytics />} />
             <Route path="settings" element={<AdminSettings />} />
             <Route path="permissions" element={<AdminPermissions />} />
@@ -206,6 +209,7 @@ function App() {
           >
             <Route index element={<SellerDashboard />} />
             <Route path="products" element={<SellerProducts />} />
+            <Route path="inventory" element={<SellerInventory />} />
             <Route path="orders" element={<SellerOrders />} />
             <Route path="invoices" element={<SellerInvoices />} />
             <Route path="settlements" element={<SellerSettlements />} />
