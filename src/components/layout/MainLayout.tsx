@@ -6,7 +6,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { useAuth } from '@/contexts/AuthContext';
 import SellerSidebar from './SellerSidebar';
 import AdminSidebar from './AdminSidebar';
-// import CartButton from '../cart/CartButton'; // No longer used here
+import AIAssistantButton from '@/components/ai-assistant/AIAssistantButton';
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -44,6 +44,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       </div>
       <Footer />
       <Toaster />
+      <AIAssistantButton />
     </div>
   );
 };
