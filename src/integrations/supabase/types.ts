@@ -1538,6 +1538,7 @@ export type Database = {
           category: Database["public"]["Enums"]["product_category"] | null
           ce_marked: boolean | null
           changeover_type: string | null
+          class_accuracy: string | null
           closing_time: string | null
           coating_thickness: string | null
           coating_type: string | null
@@ -1568,6 +1569,7 @@ export type Database = {
           core_type: string | null
           corrosion_resistance_rating: string | null
           created_at: string | null
+          ct_ratio: string | null
           currency: string
           current_carrying_capacity: string | null
           data_logging_capacity: string | null
@@ -1582,9 +1584,12 @@ export type Database = {
           door_type: string | null
           drawout_type: boolean | null
           driver_type: string | null
+          duty_cycle: string | null
           earth_resistance: string | null
           efficiency_rating: string | null
           electrical_life_cycles: string | null
+          enclosure_material: string | null
+          enclosure_type: string | null
           energy_efficiency_rating: string | null
           fan_mounting_type: string | null
           finish_type: string | null
@@ -1592,12 +1597,14 @@ export type Database = {
           fire_retardant: boolean | null
           frame_size: string | null
           frequency_range: string | null
+          gang_count: number | null
           grip_type: string | null
           halogen_free: boolean | null
           handle_material: string | null
           hardness_rating: string | null
           harmonic_handling_capacity: string | null
           head_type: string | null
+          hours_position: string | null
           hsn_code: string | null
           id: string
           iec_standards_compliance: string[] | null
@@ -1629,6 +1636,7 @@ export type Database = {
           measurement_category: string | null
           measurement_range: string | null
           mechanical_life_cycles: string | null
+          meter_type: string | null
           min_order_quantity: number | null
           model_number: string | null
           monitoring_parameters: string[] | null
@@ -1650,10 +1658,12 @@ export type Database = {
           operation_time_motorized: string | null
           outer_diameter: string | null
           outgoing_terminal_size: string | null
+          output_current_range: string | null
           output_voltage_range: string | null
           overload_capacity: string | null
           pin_configuration: string | null
           pin_material: string | null
+          plug_type: string | null
           pole_count: number | null
           positive_break_indication: boolean | null
           power_consumption: string | null
@@ -1672,6 +1682,8 @@ export type Database = {
           reactor_current: string | null
           reactor_inductance: string | null
           reactor_type: string | null
+          relay_type: string | null
+          reset_type: string | null
           residual_current_rating: string | null
           residual_current_type: string | null
           resolution: string | null
@@ -1681,11 +1693,13 @@ export type Database = {
           secondary_voltage: string | null
           selective_type: boolean | null
           series_name: string | null
+          service_factor: string | null
           sheath_color: string | null
           sheath_material: string | null
           sheet_metal_thickness: string | null
           sku: string | null
           socket_material: string | null
+          socket_type: string | null
           soil_resistivity_range: string | null
           sort_order: number | null
           sound_level: string | null
@@ -1694,11 +1708,14 @@ export type Database = {
           speed_rpm: string | null
           spring_charging_time: string | null
           standard_length_per_roll: string | null
+          starter_type: string | null
           status: string | null
           stock_quantity: number | null
           subcategory_id: string | null
+          supply_voltage: string | null
           surface_treatment: string | null
           sweep_size: string | null
+          switch_type: string | null
           switching_time: string | null
           tap_configuration: string | null
           tax_rate: number | null
@@ -1710,7 +1727,9 @@ export type Database = {
           terminal_type: string | null
           thermal_setting_range: string | null
           time_current_characteristic: string | null
+          timing_range: string | null
           tool_type: string | null
+          torque_control: string | null
           transition_type: string | null
           tripping_characteristic: string | null
           updated_at: string | null
@@ -1762,6 +1781,7 @@ export type Database = {
           category?: Database["public"]["Enums"]["product_category"] | null
           ce_marked?: boolean | null
           changeover_type?: string | null
+          class_accuracy?: string | null
           closing_time?: string | null
           coating_thickness?: string | null
           coating_type?: string | null
@@ -1792,6 +1812,7 @@ export type Database = {
           core_type?: string | null
           corrosion_resistance_rating?: string | null
           created_at?: string | null
+          ct_ratio?: string | null
           currency?: string
           current_carrying_capacity?: string | null
           data_logging_capacity?: string | null
@@ -1806,9 +1827,12 @@ export type Database = {
           door_type?: string | null
           drawout_type?: boolean | null
           driver_type?: string | null
+          duty_cycle?: string | null
           earth_resistance?: string | null
           efficiency_rating?: string | null
           electrical_life_cycles?: string | null
+          enclosure_material?: string | null
+          enclosure_type?: string | null
           energy_efficiency_rating?: string | null
           fan_mounting_type?: string | null
           finish_type?: string | null
@@ -1816,12 +1840,14 @@ export type Database = {
           fire_retardant?: boolean | null
           frame_size?: string | null
           frequency_range?: string | null
+          gang_count?: number | null
           grip_type?: string | null
           halogen_free?: boolean | null
           handle_material?: string | null
           hardness_rating?: string | null
           harmonic_handling_capacity?: string | null
           head_type?: string | null
+          hours_position?: string | null
           hsn_code?: string | null
           id?: string
           iec_standards_compliance?: string[] | null
@@ -1853,6 +1879,7 @@ export type Database = {
           measurement_category?: string | null
           measurement_range?: string | null
           mechanical_life_cycles?: string | null
+          meter_type?: string | null
           min_order_quantity?: number | null
           model_number?: string | null
           monitoring_parameters?: string[] | null
@@ -1874,10 +1901,12 @@ export type Database = {
           operation_time_motorized?: string | null
           outer_diameter?: string | null
           outgoing_terminal_size?: string | null
+          output_current_range?: string | null
           output_voltage_range?: string | null
           overload_capacity?: string | null
           pin_configuration?: string | null
           pin_material?: string | null
+          plug_type?: string | null
           pole_count?: number | null
           positive_break_indication?: boolean | null
           power_consumption?: string | null
@@ -1896,6 +1925,8 @@ export type Database = {
           reactor_current?: string | null
           reactor_inductance?: string | null
           reactor_type?: string | null
+          relay_type?: string | null
+          reset_type?: string | null
           residual_current_rating?: string | null
           residual_current_type?: string | null
           resolution?: string | null
@@ -1905,11 +1936,13 @@ export type Database = {
           secondary_voltage?: string | null
           selective_type?: boolean | null
           series_name?: string | null
+          service_factor?: string | null
           sheath_color?: string | null
           sheath_material?: string | null
           sheet_metal_thickness?: string | null
           sku?: string | null
           socket_material?: string | null
+          socket_type?: string | null
           soil_resistivity_range?: string | null
           sort_order?: number | null
           sound_level?: string | null
@@ -1918,11 +1951,14 @@ export type Database = {
           speed_rpm?: string | null
           spring_charging_time?: string | null
           standard_length_per_roll?: string | null
+          starter_type?: string | null
           status?: string | null
           stock_quantity?: number | null
           subcategory_id?: string | null
+          supply_voltage?: string | null
           surface_treatment?: string | null
           sweep_size?: string | null
+          switch_type?: string | null
           switching_time?: string | null
           tap_configuration?: string | null
           tax_rate?: number | null
@@ -1934,7 +1970,9 @@ export type Database = {
           terminal_type?: string | null
           thermal_setting_range?: string | null
           time_current_characteristic?: string | null
+          timing_range?: string | null
           tool_type?: string | null
+          torque_control?: string | null
           transition_type?: string | null
           tripping_characteristic?: string | null
           updated_at?: string | null
@@ -1986,6 +2024,7 @@ export type Database = {
           category?: Database["public"]["Enums"]["product_category"] | null
           ce_marked?: boolean | null
           changeover_type?: string | null
+          class_accuracy?: string | null
           closing_time?: string | null
           coating_thickness?: string | null
           coating_type?: string | null
@@ -2016,6 +2055,7 @@ export type Database = {
           core_type?: string | null
           corrosion_resistance_rating?: string | null
           created_at?: string | null
+          ct_ratio?: string | null
           currency?: string
           current_carrying_capacity?: string | null
           data_logging_capacity?: string | null
@@ -2030,9 +2070,12 @@ export type Database = {
           door_type?: string | null
           drawout_type?: boolean | null
           driver_type?: string | null
+          duty_cycle?: string | null
           earth_resistance?: string | null
           efficiency_rating?: string | null
           electrical_life_cycles?: string | null
+          enclosure_material?: string | null
+          enclosure_type?: string | null
           energy_efficiency_rating?: string | null
           fan_mounting_type?: string | null
           finish_type?: string | null
@@ -2040,12 +2083,14 @@ export type Database = {
           fire_retardant?: boolean | null
           frame_size?: string | null
           frequency_range?: string | null
+          gang_count?: number | null
           grip_type?: string | null
           halogen_free?: boolean | null
           handle_material?: string | null
           hardness_rating?: string | null
           harmonic_handling_capacity?: string | null
           head_type?: string | null
+          hours_position?: string | null
           hsn_code?: string | null
           id?: string
           iec_standards_compliance?: string[] | null
@@ -2077,6 +2122,7 @@ export type Database = {
           measurement_category?: string | null
           measurement_range?: string | null
           mechanical_life_cycles?: string | null
+          meter_type?: string | null
           min_order_quantity?: number | null
           model_number?: string | null
           monitoring_parameters?: string[] | null
@@ -2098,10 +2144,12 @@ export type Database = {
           operation_time_motorized?: string | null
           outer_diameter?: string | null
           outgoing_terminal_size?: string | null
+          output_current_range?: string | null
           output_voltage_range?: string | null
           overload_capacity?: string | null
           pin_configuration?: string | null
           pin_material?: string | null
+          plug_type?: string | null
           pole_count?: number | null
           positive_break_indication?: boolean | null
           power_consumption?: string | null
@@ -2120,6 +2168,8 @@ export type Database = {
           reactor_current?: string | null
           reactor_inductance?: string | null
           reactor_type?: string | null
+          relay_type?: string | null
+          reset_type?: string | null
           residual_current_rating?: string | null
           residual_current_type?: string | null
           resolution?: string | null
@@ -2129,11 +2179,13 @@ export type Database = {
           secondary_voltage?: string | null
           selective_type?: boolean | null
           series_name?: string | null
+          service_factor?: string | null
           sheath_color?: string | null
           sheath_material?: string | null
           sheet_metal_thickness?: string | null
           sku?: string | null
           socket_material?: string | null
+          socket_type?: string | null
           soil_resistivity_range?: string | null
           sort_order?: number | null
           sound_level?: string | null
@@ -2142,11 +2194,14 @@ export type Database = {
           speed_rpm?: string | null
           spring_charging_time?: string | null
           standard_length_per_roll?: string | null
+          starter_type?: string | null
           status?: string | null
           stock_quantity?: number | null
           subcategory_id?: string | null
+          supply_voltage?: string | null
           surface_treatment?: string | null
           sweep_size?: string | null
+          switch_type?: string | null
           switching_time?: string | null
           tap_configuration?: string | null
           tax_rate?: number | null
@@ -2158,7 +2213,9 @@ export type Database = {
           terminal_type?: string | null
           thermal_setting_range?: string | null
           time_current_characteristic?: string | null
+          timing_range?: string | null
           tool_type?: string | null
+          torque_control?: string | null
           transition_type?: string | null
           tripping_characteristic?: string | null
           updated_at?: string | null
