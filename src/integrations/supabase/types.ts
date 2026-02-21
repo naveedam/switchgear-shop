@@ -2570,8 +2570,11 @@ export type Database = {
           decline_reason: string | null
           id: string
           invited_at: string
+          matched_categories: string[] | null
           responded_at: string | null
           rfq_id: string
+          routing_method: string | null
+          routing_score: number | null
           seller_id: string
           status: string
           viewed_at: string | null
@@ -2580,8 +2583,11 @@ export type Database = {
           decline_reason?: string | null
           id?: string
           invited_at?: string
+          matched_categories?: string[] | null
           responded_at?: string | null
           rfq_id: string
+          routing_method?: string | null
+          routing_score?: number | null
           seller_id: string
           status?: string
           viewed_at?: string | null
@@ -2590,8 +2596,11 @@ export type Database = {
           decline_reason?: string | null
           id?: string
           invited_at?: string
+          matched_categories?: string[] | null
           responded_at?: string | null
           rfq_id?: string
+          routing_method?: string | null
+          routing_score?: number | null
           seller_id?: string
           status?: string
           viewed_at?: string | null
@@ -2617,6 +2626,7 @@ export type Database = {
         Row: {
           bom_id: string | null
           buyer_id: string
+          categories_detected: string[] | null
           created_at: string
           expires_at: string | null
           id: string
@@ -2625,6 +2635,7 @@ export type Database = {
           reference_documents: string[] | null
           required_delivery_date: string | null
           rfq_number: string
+          sellers_invited: number | null
           status: string
           title: string
           total_items: number | null
@@ -2634,6 +2645,7 @@ export type Database = {
         Insert: {
           bom_id?: string | null
           buyer_id: string
+          categories_detected?: string[] | null
           created_at?: string
           expires_at?: string | null
           id?: string
@@ -2642,6 +2654,7 @@ export type Database = {
           reference_documents?: string[] | null
           required_delivery_date?: string | null
           rfq_number: string
+          sellers_invited?: number | null
           status?: string
           title: string
           total_items?: number | null
@@ -2651,6 +2664,7 @@ export type Database = {
         Update: {
           bom_id?: string | null
           buyer_id?: string
+          categories_detected?: string[] | null
           created_at?: string
           expires_at?: string | null
           id?: string
@@ -2659,6 +2673,7 @@ export type Database = {
           reference_documents?: string[] | null
           required_delivery_date?: string | null
           rfq_number?: string
+          sellers_invited?: number | null
           status?: string
           title?: string
           total_items?: number | null
@@ -2883,6 +2898,41 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "seller_bulk_uploads_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seller_categories: {
+        Row: {
+          category_slug: string
+          created_at: string
+          id: string
+          product_count: number | null
+          seller_id: string
+          updated_at: string
+        }
+        Insert: {
+          category_slug: string
+          created_at?: string
+          id?: string
+          product_count?: number | null
+          seller_id: string
+          updated_at?: string
+        }
+        Update: {
+          category_slug?: string
+          created_at?: string
+          id?: string
+          product_count?: number | null
+          seller_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seller_categories_seller_id_fkey"
             columns: ["seller_id"]
             isOneToOne: false
             referencedRelation: "companies"

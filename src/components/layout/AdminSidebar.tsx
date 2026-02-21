@@ -41,6 +41,11 @@ const menuItems = [
     icon: Box,
   },
   {
+    name: 'RFQs',
+    href: '/admin/rfqs',
+    icon: FileText,
+  },
+  {
     name: 'Escrow & Settlements',
     href: '/admin/escrow',
     icon: Wallet,

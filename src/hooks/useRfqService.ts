@@ -146,22 +146,25 @@
        await supabase.from('rfq_items').insert(rfqItems);
  
        // Update BOM status
-       await supabase.from('bom_uploads').update({ status: 'converted' }).eq('id', bomId);
- 
-       // Find and invite relevant sellers
-       await inviteSellersToRfq(rfq.id);
- 
-       // Log audit
-       await supabase.from('rfq_audit_log').insert({
-         rfq_id: rfq.id,
-         bom_id: bomId,
-         action: 'rfq_created',
-         actor_id: buyerId,
-         actor_type: 'buyer',
-         details: { title },
-       });
- 
-       toast({ title: 'Success', description: 'RFQ created and sent to sellers' });
+        await supabase.from('bom_uploads').update({ status: 'converted' }).eq('id', bomId);
+
+        // Find and invite relevant sellers via auto-routing
+        const routingResult = await inviteSellersToRfq(rfq.id);
+
+        // Log audit
+        await supabase.from('rfq_audit_log').insert({
+          rfq_id: rfq.id,
+          bom_id: bomId,
+          action: 'rfq_created',
+          actor_id: buyerId,
+          actor_type: 'buyer',
+          details: { title, ...routingResult },
+        });
+
+        toast({
+          title: 'RFQ Created',
+          description: `RFQ sent to ${routingResult.sellers_invited} verified sellers in ${routingResult.categories_detected.length || 'relevant'} categories.`,
+        });
        return rfq as RFQ;
      } catch (error) {
        toast({ title: 'Error', description: 'Failed to create RFQ', variant: 'destructive' });
@@ -171,24 +174,42 @@
      }
    };
  
-   const inviteSellersToRfq = async (rfqId: string): Promise<void> => {
-     // Get all active vendors
-     const { data: sellers } = await supabase
-       .from('companies')
-       .select('id')
-       .eq('is_vendor', true)
-       .eq('status', 'active');
- 
-     if (!sellers || sellers.length === 0) return;
- 
-     const invitations = sellers.map(seller => ({
-       rfq_id: rfqId,
-       seller_id: seller.id,
-       status: 'pending' as const,
-     }));
- 
-     await supabase.from('rfq_seller_invitations').insert(invitations);
-   };
+    const inviteSellersToRfq = async (rfqId: string, projectId?: string): Promise<{ sellers_invited: number; categories_detected: string[] }> => {
+      try {
+        const { data, error } = await supabase.functions.invoke('route-rfq-sellers', {
+          body: { rfqId, projectId },
+        });
+
+        if (error) {
+          console.error('Auto-routing failed, falling back to manual:', error);
+          // Fallback: invite all active vendors
+          const { data: sellers } = await supabase
+            .from('companies')
+            .select('id')
+            .eq('is_vendor', true)
+            .eq('status', 'active');
+
+          if (sellers && sellers.length > 0) {
+            const invitations = sellers.slice(0, 8).map(seller => ({
+              rfq_id: rfqId,
+              seller_id: seller.id,
+              status: 'pending' as const,
+              routing_method: 'fallback',
+            }));
+            await supabase.from('rfq_seller_invitations').insert(invitations);
+          }
+          return { sellers_invited: sellers?.length || 0, categories_detected: [] };
+        }
+
+        return {
+          sellers_invited: data?.sellers_invited || 0,
+          categories_detected: data?.categories_detected || [],
+        };
+      } catch (err) {
+        console.error('inviteSellersToRfq error:', err);
+        return { sellers_invited: 0, categories_detected: [] };
+      }
+    };
  
    const getUserRfqs = async (buyerId: string): Promise<RFQ[]> => {
      const { data, error } = await supabase

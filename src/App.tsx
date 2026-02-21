@@ -25,6 +25,7 @@ import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import AllCategories from './pages/AllCategories';
 import AdminOrders from './pages/admin/AdminOrders';
+import AdminRfqs from './pages/admin/AdminRfqs';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminAnalytics from './pages/admin/AdminAnalytics';
 import AdminPermissions from './pages/admin/AdminPermissions';
@@ -194,6 +195,7 @@ function App() {
             <Route path="subcategories" element={<AdminSubcategories />} />
             <Route path="subcategories/:id" element={<EditSubcategory />} />
             <Route path="orders" element={<AdminOrders />} />
+            <Route path="rfqs" element={<AdminRfqs />} />
             <Route path="escrow" element={<AdminEscrow />} />
             <Route path="carts" element={<AdminCarts />} />
             <Route path="users" element={<AdminUsers />} />
