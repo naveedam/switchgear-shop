@@ -27,7 +27,7 @@ serve(async (req) => {
       );
     }
 
-    console.log(`[extract-pdf-text] Starting extraction for document ${documentId}`);
+    console.log(`[extract-pdf-text] Starting extraction for document ${documentId}, fileUrl: ${fileUrl}`);
 
     // Update status to extracting
     await supabase
@@ -35,16 +35,37 @@ serve(async (req) => {
       .update({ processing_status: "extracting" })
       .eq("id", documentId);
 
-    // Download the PDF file
-    // fileUrl could be a full public URL or a storage path
+    // Download the PDF from Supabase Storage using the service role client
+    // Extract the storage path from the public URL
     let pdfBytes: Uint8Array;
 
-    // Try downloading from the public URL
-    const downloadResponse = await fetch(fileUrl);
-    if (!downloadResponse.ok) {
-      throw new Error(`Failed to download PDF: ${downloadResponse.status} ${downloadResponse.statusText}`);
+    // The fileUrl is a full public URL like: https://<project>.supabase.co/storage/v1/object/public/project-documents/<path>
+    // We need to extract the bucket name and path
+    const storagePathMatch = fileUrl.match(/\/storage\/v1\/object\/public\/([^/]+)\/(.+)$/);
+    
+    if (storagePathMatch) {
+      const bucketName = storagePathMatch[1];
+      const filePath = decodeURIComponent(storagePathMatch[2]);
+      console.log(`[extract-pdf-text] Downloading from bucket: ${bucketName}, path: ${filePath}`);
+      
+      const { data, error: downloadError } = await supabase.storage
+        .from(bucketName)
+        .download(filePath);
+
+      if (downloadError || !data) {
+        throw new Error(`Failed to download PDF from storage: ${downloadError?.message || 'No data returned'}`);
+      }
+
+      pdfBytes = new Uint8Array(await data.arrayBuffer());
+    } else {
+      // Fallback: try direct fetch (for external URLs)
+      console.log(`[extract-pdf-text] URL doesn't match storage pattern, trying direct fetch`);
+      const downloadResponse = await fetch(fileUrl);
+      if (!downloadResponse.ok) {
+        throw new Error(`Failed to download PDF: ${downloadResponse.status} ${downloadResponse.statusText}`);
+      }
+      pdfBytes = new Uint8Array(await downloadResponse.arrayBuffer());
     }
-    pdfBytes = new Uint8Array(await downloadResponse.arrayBuffer());
 
     console.log(`[extract-pdf-text] Downloaded PDF, size: ${pdfBytes.length} bytes`);
 
