@@ -2258,6 +2258,172 @@ export type Database = {
           },
         ]
       }
+      project_bom_items: {
+        Row: {
+          brand: string | null
+          breaking_capacity: string | null
+          category_slug: string | null
+          component_type: string | null
+          confidence_score: number | null
+          created_at: string
+          description: string
+          id: string
+          model_number: string | null
+          poles: string | null
+          power_rating: string | null
+          project_id: string
+          quantity: number
+          rated_current: string | null
+          rated_voltage: string | null
+          raw_text: string | null
+          source_document_id: string | null
+          updated_at: string
+          validation_status: string
+        }
+        Insert: {
+          brand?: string | null
+          breaking_capacity?: string | null
+          category_slug?: string | null
+          component_type?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          description: string
+          id?: string
+          model_number?: string | null
+          poles?: string | null
+          power_rating?: string | null
+          project_id: string
+          quantity?: number
+          rated_current?: string | null
+          rated_voltage?: string | null
+          raw_text?: string | null
+          source_document_id?: string | null
+          updated_at?: string
+          validation_status?: string
+        }
+        Update: {
+          brand?: string | null
+          breaking_capacity?: string | null
+          category_slug?: string | null
+          component_type?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          description?: string
+          id?: string
+          model_number?: string | null
+          poles?: string | null
+          power_rating?: string | null
+          project_id?: string
+          quantity?: number
+          rated_current?: string | null
+          rated_voltage?: string | null
+          raw_text?: string | null
+          source_document_id?: string | null
+          updated_at?: string
+          validation_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_bom_items_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_bom_items_source_document_id_fkey"
+            columns: ["source_document_id"]
+            isOneToOne: false
+            referencedRelation: "project_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_documents: {
+        Row: {
+          file_size: number | null
+          file_type: string
+          file_url: string
+          filename: string
+          id: string
+          processing_status: string
+          project_id: string
+          raw_extracted_text: string | null
+          uploaded_at: string
+        }
+        Insert: {
+          file_size?: number | null
+          file_type: string
+          file_url: string
+          filename: string
+          id?: string
+          processing_status?: string
+          project_id: string
+          raw_extracted_text?: string | null
+          uploaded_at?: string
+        }
+        Update: {
+          file_size?: number | null
+          file_type?: string
+          file_url?: string
+          filename?: string
+          id?: string
+          processing_status?: string
+          project_id?: string
+          raw_extracted_text?: string | null
+          uploaded_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_documents_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projects: {
+        Row: {
+          buyer_id: string
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          rfq_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          buyer_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          rfq_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          buyer_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          rfq_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_rfq_id_fkey"
+            columns: ["rfq_id"]
+            isOneToOne: false
+            referencedRelation: "rfqs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rfq_audit_log: {
         Row: {
           action: string

@@ -74,6 +74,16 @@ const NavUserMenu: React.FC<NavUserMenuProps> = ({ onSignIn, onLogout }) => {
         <DropdownMenuItem onClick={() => navigate("/orders")}>
           Orders
         </DropdownMenuItem>
+        {(!user?.role || user?.role === 'buyer') && (
+          <>
+            <DropdownMenuItem onClick={() => navigate("/buyer/projects")}>
+              Smart BOM Builder
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate("/buyer/rfqs")}>
+              My RFQs
+            </DropdownMenuItem>
+          </>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={onLogout}>
           Logout
