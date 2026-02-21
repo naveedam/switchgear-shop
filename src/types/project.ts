@@ -16,7 +16,7 @@ export interface ProjectDocument {
   file_type: string;
   filename: string;
   file_size?: number;
-  processing_status: 'pending' | 'processing' | 'completed' | 'failed';
+  processing_status: 'pending' | 'processing' | 'completed' | 'failed' | 'extracting' | 'extracted' | 'extraction_failed';
   raw_extracted_text?: string;
   uploaded_at: string;
 }

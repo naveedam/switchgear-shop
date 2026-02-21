@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Upload, FileText, Sparkles, ArrowRight, Plus, Trash2, Edit2, Save, X,
-  CheckCircle2, AlertTriangle, HelpCircle, Download
+  CheckCircle2, AlertTriangle, HelpCircle, Download, Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,6 +13,7 @@ import { Container } from '@/components/ui/container';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Progress } from '@/components/ui/progress';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from '@/components/ui/dialog';
@@ -51,7 +52,7 @@ const ProjectDetailPage = () => {
   const { toast } = useToast();
   const {
     getProject, getDocuments, getBomItems, uploadDocument,
-    parseDocument, updateBomItem, deleteBomItem, addBomItem,
+    extractPdfText, parseDocument, updateBomItem, deleteBomItem, addBomItem,
     convertToRfq, isLoading,
   } = useProjectService();
 
@@ -68,6 +69,7 @@ const ProjectDetailPage = () => {
   const [rfqNotes, setRfqNotes] = useState('');
   const [textInput, setTextInput] = useState('');
   const [textDialogOpen, setTextDialogOpen] = useState(false);
+  const [pipelineStatus, setPipelineStatus] = useState<string | null>(null); // 'uploading' | 'extracting' | 'generating' | 'extraction_failed' | null
 
   const loadData = useCallback(async () => {
     if (!projectId) return;
@@ -90,16 +92,62 @@ const ProjectDetailPage = () => {
     const file = e.target.files?.[0];
     if (!file || !user?.id || !projectId) return;
 
-    const doc = await uploadDocument(projectId, user.id, file);
-    if (doc) {
-      setDocuments(prev => [doc, ...prev]);
-      toast({ title: 'File Uploaded', description: `${file.name} uploaded successfully` });
+    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+    const isTextFile = file.type === 'text/csv' || file.name.endsWith('.csv') || file.name.endsWith('.txt');
 
-      // If it's a text-extractable type, read it client-side for now
-      if (file.type === 'text/csv' || file.name.endsWith('.csv') || file.name.endsWith('.txt')) {
-        const text = await file.text();
-        await handleParse(doc.id, text);
+    setPipelineStatus('uploading');
+    const doc = await uploadDocument(projectId, user.id, file);
+    if (!doc) {
+      setPipelineStatus(null);
+      return;
+    }
+
+    setDocuments(prev => [doc, ...prev]);
+    toast({ title: 'File Uploaded', description: `${file.name} uploaded successfully` });
+
+    if (isPdf) {
+      // Auto-extract text from PDF server-side, then auto-parse
+      setPipelineStatus('extracting');
+      const extractResult = await extractPdfText(doc.id, projectId, doc.file_url);
+
+      if (extractResult.success && extractResult.extractedText) {
+        // Update local doc status
+        setDocuments(prev =>
+          prev.map(d => d.id === doc.id ? { ...d, processing_status: 'extracted', raw_extracted_text: extractResult.extractedText } : d)
+        );
+
+        // Auto-trigger BOM parsing
+        setPipelineStatus('generating');
+        const result = await parseDocument(projectId, doc.id, extractResult.extractedText);
+        if (result.success) {
+          toast({
+            title: 'BOM Generated',
+            description: `Found ${result.items_found} components from PDF. Please review.`,
+          });
+          const items = await getBomItems(projectId);
+          setBomItems(items);
+          setProject(prev => prev ? { ...prev, status: 'bom_generated' } : prev);
+        }
+        setPipelineStatus(null);
+      } else {
+        // Extraction failed — show fallback
+        setPipelineStatus('extraction_failed');
+        setDocuments(prev =>
+          prev.map(d => d.id === doc.id ? { ...d, processing_status: 'extraction_failed' } : d)
+        );
+        toast({
+          title: 'PDF Text Extraction Failed',
+          description: 'Could not extract text from PDF. Please paste text manually.',
+          variant: 'destructive',
+        });
       }
+    } else if (isTextFile) {
+      setPipelineStatus('generating');
+      const text = await file.text();
+      await handleParse(doc.id, text);
+      setPipelineStatus(null);
+    } else {
+      setPipelineStatus(null);
     }
   };
 
@@ -302,10 +350,21 @@ const ProjectDetailPage = () => {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="text-xs">
-                            {doc.processing_status}
+                          <Badge variant="outline" className={`text-xs ${
+                            doc.processing_status === 'completed' ? 'border-green-300 text-green-700' :
+                            doc.processing_status === 'extraction_failed' || doc.processing_status === 'failed' ? 'border-red-300 text-red-700' :
+                            doc.processing_status === 'extracting' || doc.processing_status === 'processing' ? 'border-blue-300 text-blue-700' :
+                            ''
+                          }`}>
+                            {doc.processing_status === 'extracting' && 'Extracting...'}
+                            {doc.processing_status === 'extracted' && 'Text Extracted'}
+                            {doc.processing_status === 'extraction_failed' && 'Extraction Failed'}
+                            {doc.processing_status === 'completed' && 'Completed'}
+                            {doc.processing_status === 'processing' && 'Processing...'}
+                            {doc.processing_status === 'failed' && 'Failed'}
+                            {doc.processing_status === 'pending' && 'Pending'}
                           </Badge>
-                          {doc.processing_status === 'pending' && (
+                          {(doc.processing_status === 'pending' || doc.processing_status === 'extraction_failed') && (
                             <Button
                               size="sm"
                               variant="outline"
@@ -313,7 +372,7 @@ const ProjectDetailPage = () => {
                               disabled={parsing}
                             >
                               <Sparkles className="h-3 w-3 mr-1" />
-                              {parsing ? 'Parsing...' : 'Parse'}
+                              {parsing ? 'Parsing...' : doc.processing_status === 'extraction_failed' ? 'Paste Text' : 'Parse'}
                             </Button>
                           )}
                         </div>
@@ -322,12 +381,35 @@ const ProjectDetailPage = () => {
                   </div>
                 )}
 
-                {parsing && (
+                {(parsing || pipelineStatus) && (
                   <div className="flex items-center justify-center p-8 bg-muted/50 rounded-lg">
-                    <div className="text-center">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-3" />
-                      <p className="text-sm text-muted-foreground">AI is extracting components...</p>
-                      <p className="text-xs text-muted-foreground mt-1">This may take a few seconds</p>
+                    <div className="text-center w-full max-w-md">
+                      {pipelineStatus === 'extraction_failed' ? (
+                        <>
+                          <AlertTriangle className="h-8 w-8 text-destructive mx-auto mb-3" />
+                          <p className="text-sm font-medium text-destructive">PDF text could not be reliably extracted.</p>
+                          <p className="text-xs text-muted-foreground mt-1">Paste text manually using the "Paste Text" button above.</p>
+                          <Button variant="outline" size="sm" className="mt-3" onClick={() => setPipelineStatus(null)}>
+                            Dismiss
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-3" />
+                          <p className="text-sm font-medium">
+                            {pipelineStatus === 'uploading' && 'Uploading document...'}
+                            {pipelineStatus === 'extracting' && 'Extracting text from PDF...'}
+                            {pipelineStatus === 'generating' && 'AI is generating BOM...'}
+                            {!pipelineStatus && parsing && 'AI is extracting components...'}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">This may take a few seconds</p>
+                          <Progress value={
+                            pipelineStatus === 'uploading' ? 20 :
+                            pipelineStatus === 'extracting' ? 50 :
+                            pipelineStatus === 'generating' ? 80 : 60
+                          } className="mt-3 h-2" />
+                        </>
+                      )}
                     </div>
                   </div>
                 )}

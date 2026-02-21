@@ -160,6 +160,34 @@ export const useProjectService = () => {
     return data as unknown as ProjectBomItem;
   };
 
+  // Extract text from PDF server-side
+  const extractPdfText = async (
+    documentId: string,
+    projectId: string,
+    fileUrl: string
+  ): Promise<{ success: boolean; extractedText?: string; message?: string }> => {
+    setIsLoading(true);
+    try {
+      await supabase.from('project_documents').update({
+        processing_status: 'extracting',
+      }).eq('id', documentId);
+
+      const { data, error } = await supabase.functions.invoke('extract-pdf-text', {
+        body: { documentId, projectId, fileUrl },
+      });
+
+      if (error) throw error;
+      return data;
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'PDF text extraction failed';
+      toast({ title: 'Extraction Error', description: message, variant: 'destructive' });
+      await supabase.from('project_documents').update({ processing_status: 'extraction_failed' }).eq('id', documentId);
+      return { success: false, message };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Parse document with AI
   const parseDocument = async (
     projectId: string,
@@ -324,6 +352,7 @@ export const useProjectService = () => {
     updateBomItem,
     deleteBomItem,
     addBomItem,
+    extractPdfText,
     parseDocument,
     convertToRfq,
   };

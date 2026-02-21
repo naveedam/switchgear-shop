@@ -21,3 +21,6 @@ verify_jwt = false
 
 [functions.parse-bom-document]
 verify_jwt = false
+
+[functions.extract-pdf-text]
+verify_jwt = false
