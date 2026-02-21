@@ -302,20 +302,37 @@ export const useProjectService = () => {
       // Update project
       await supabase.from('projects').update({ status: 'rfq_created', rfq_id: rfq.id }).eq('id', projectId);
 
-      // Invite sellers
-      const { data: sellers } = await supabase
-        .from('companies')
-        .select('id')
-        .eq('is_vendor', true)
-        .eq('status', 'active');
+      // Auto-route to relevant sellers
+      let routingResult = { sellers_invited: 0, categories_detected: [] as string[] };
+      try {
+        const { data, error } = await supabase.functions.invoke('route-rfq-sellers', {
+          body: { rfqId: rfq.id, projectId },
+        });
+        if (!error && data) {
+          routingResult = {
+            sellers_invited: data.sellers_invited || 0,
+            categories_detected: data.categories_detected || [],
+          };
+        }
+      } catch (routeErr) {
+        console.error('Auto-routing failed:', routeErr);
+        // Fallback: invite all active sellers (capped)
+        const { data: sellers } = await supabase
+          .from('companies')
+          .select('id')
+          .eq('is_vendor', true)
+          .eq('status', 'active');
 
-      if (sellers && sellers.length > 0) {
-        const invitations = sellers.map(s => ({
-          rfq_id: rfq.id,
-          seller_id: s.id,
-          status: 'pending' as const,
-        }));
-        await supabase.from('rfq_seller_invitations').insert(invitations);
+        if (sellers && sellers.length > 0) {
+          const invitations = sellers.slice(0, 8).map(s => ({
+            rfq_id: rfq.id,
+            seller_id: s.id,
+            status: 'pending' as const,
+            routing_method: 'fallback',
+          }));
+          await supabase.from('rfq_seller_invitations').insert(invitations);
+          routingResult.sellers_invited = invitations.length;
+        }
       }
 
       // Audit log
@@ -325,10 +342,13 @@ export const useProjectService = () => {
         action: 'rfq_created_from_project',
         actor_id: buyerId,
         actor_type: 'buyer',
-        details: { projectId, title },
+        details: { projectId, title, ...routingResult },
       });
 
-      toast({ title: 'RFQ Created', description: 'RFQ has been sent to sellers' });
+      toast({
+        title: 'RFQ Created',
+        description: `RFQ sent to ${routingResult.sellers_invited} verified sellers in ${routingResult.categories_detected.length || 'relevant'} categories.`,
+      });
       return rfq.id;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to create RFQ';
