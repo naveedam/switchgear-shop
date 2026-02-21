@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -17,6 +18,7 @@ const loginSchema = z.object({
 type LoginFormData = z.infer<typeof loginSchema>;
 
 const LoginForm: React.FC<{ onSuccess?: () => void }> = ({ onSuccess }) => {
+  const navigate = useNavigate();
   const { login, isLoading, error } = useAuth();
   const { toast } = useToast();
   
@@ -74,6 +76,15 @@ const LoginForm: React.FC<{ onSuccess?: () => void }> = ({ onSuccess }) => {
             </FormItem>
           )}
         />
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={() => navigate('/forgot-password')}
+            className="text-sm text-primary hover:underline"
+          >
+            Forgot your password?
+          </button>
+        </div>
         <Button type="submit" className="w-full" disabled={isLoading}>
           {isLoading ? 'Logging in...' : 'Login'}
         </Button>

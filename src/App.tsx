@@ -23,6 +23,8 @@ import ProductListingPage from './pages/ProductListingPage';
 import ProductDetailPage from './pages/ProductDetailPage';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
+import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
+import ResetPasswordPage from './pages/auth/ResetPasswordPage';
 import AllCategories from './pages/AllCategories';
 import AdminOrders from './pages/admin/AdminOrders';
 import AdminRfqs from './pages/admin/AdminRfqs';
@@ -172,6 +174,8 @@ function App() {
           {/* Auth routes */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           
           {/* Cart and checkout routes */}
           <Route path="/cart" element={<CartPage />} />
