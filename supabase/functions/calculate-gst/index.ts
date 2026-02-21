@@ -335,10 +335,10 @@ serve(async (req) => {
       JSON.stringify(result),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error calculating GST:", error);
     return new Response(
-      JSON.stringify({ error: error.message || "Failed to calculate GST" }),
+      JSON.stringify({ error: error instanceof Error ? error.message : "Failed to calculate GST" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

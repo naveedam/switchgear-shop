@@ -319,9 +319,9 @@ Deno.serve(async (req) => {
           authorizations: authorizations.length 
         });
 
-      } catch (error) {
+    } catch (error: unknown) {
         console.error(`Error processing seller ${sellerData.company_name}:`, error);
-        results.push({ seller: sellerData.company_name, status: 'failed', error: error.message });
+        results.push({ seller: sellerData.company_name, status: 'failed', error: error instanceof Error ? error.message : 'Unknown error' });
       }
     }
 
@@ -340,12 +340,12 @@ Deno.serve(async (req) => {
       }
     );
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error in generate-bangalore-sellers function:', error);
     return new Response(
       JSON.stringify({
         success: false,
-        error: error.message
+        error: error instanceof Error ? error.message : 'Unknown error'
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

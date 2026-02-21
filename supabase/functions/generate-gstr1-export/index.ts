@@ -365,10 +365,10 @@ serve(async (req) => {
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error generating GSTR-1 export:", error);
     return new Response(
-      JSON.stringify({ error: error.message || "Failed to generate GSTR-1 export" }),
+      JSON.stringify({ error: error instanceof Error ? error.message : "Failed to generate GSTR-1 export" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

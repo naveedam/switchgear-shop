@@ -120,10 +120,10 @@ serve(async (req) => {
       JSON.stringify({ error: 'Invalid action' }),
       { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error in generate-products:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
@@ -157,9 +157,9 @@ async function createVendors() {
         console.log(`✅ Created vendor: ${vendor.name}`);
         results.push({ vendor: vendor.name, success: true, id: vendorId });
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(`Error creating vendor ${vendor.name}:`, error);
-      results.push({ vendor: vendor.name, success: false, error: error.message });
+      results.push({ vendor: vendor.name, success: false, error: error instanceof Error ? error.message : 'Unknown error' });
     }
   }
   
@@ -183,7 +183,7 @@ async function generateProducts(category: string, count: number) {
     throw new Error('No vendors found. Please create vendors first.');
   }
   
-  const template = productTemplates[category];
+  const template = (productTemplates as Record<string, any>)[category];
   if (!template) {
     throw new Error(`No template found for category: ${category}`);
   }
@@ -263,9 +263,9 @@ async function generateProducts(category: string, count: number) {
       // Small delay to avoid rate limits
       await new Promise(resolve => setTimeout(resolve, 500));
       
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(`Error generating product ${i + 1}:`, error);
-      results.push({ index: i + 1, success: false, error: error.message });
+      results.push({ index: i + 1, success: false, error: error instanceof Error ? error.message : 'Unknown error' });
     }
   }
   
@@ -304,12 +304,12 @@ async function generateAllProducts() {
       // Delay between categories
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(`Error generating products for ${category}:`, error);
       allResults.push({
         category,
         success: false,
-        error: error.message
+        error: error instanceof Error ? error.message : 'Unknown error'
       });
     }
   }

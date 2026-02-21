@@ -51,6 +51,8 @@ import BomUploadPage from './pages/buyer/BomUploadPage';
 import BuyerRfqsPage from './pages/buyer/BuyerRfqsPage';
 import RfqCreatePage from './pages/buyer/RfqCreatePage';
 import RfqDetailPage from './pages/buyer/RfqDetailPage';
+import ProjectsPage from './pages/buyer/ProjectsPage';
+import ProjectDetailPage from './pages/buyer/ProjectDetailPage';
 import SellerRfqsPage from './pages/seller/SellerRfqsPage';
 import SellerQuotePage from './pages/seller/SellerQuotePage';
 
@@ -152,6 +154,16 @@ function App() {
              <Route path="buyer/rfqs/:rfqId" element={
                <ProtectedRoute>
                  <RfqDetailPage />
+               </ProtectedRoute>
+             } />
+             <Route path="buyer/projects" element={
+               <ProtectedRoute>
+                 <ProjectsPage />
+               </ProtectedRoute>
+             } />
+             <Route path="buyer/projects/:projectId" element={
+               <ProtectedRoute>
+                 <ProjectDetailPage />
                </ProtectedRoute>
              } />
           </Route>
