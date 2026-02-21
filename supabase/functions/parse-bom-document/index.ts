@@ -105,19 +105,108 @@ function detectBrand(text: string): string | null {
   return null;
 }
 
+// Header/metadata patterns to skip
+const HEADER_PATTERNS = [
+  /^\s*sl\.?\s*no/i,
+  /^\s*sr\.?\s*no/i,
+  /^\s*s\.?\s*no/i,
+  /^\s*item\s*no/i,
+  /^\s*component\s*description/i,
+  /^\s*description\s*$/i,
+  /^\s*quantity\s*$/i,
+  /^\s*rating\s*$/i,
+  /^\s*make\s*$/i,
+  /^\s*brand\s*$/i,
+  /^\s*specifications?\s*$/i,
+];
+
+const METADATA_PATTERNS = [
+  /^\s*project\s*(?:name|title|no)/i,
+  /^\s*client\s*(?:name)?/i,
+  /^\s*date\s*[:=]/i,
+  /^\s*rev(?:ision)?\s*[:=]/i,
+  /^\s*voltage\s*[:=]\s*\d+/i,
+  /^\s*panel\s*(?:name|type|rating)\s*[:=]/i,
+  /^\s*drawing\s*(?:no|number)/i,
+  /^\s*prepared\s*by/i,
+  /^\s*approved\s*by/i,
+  /^\s*checked\s*by/i,
+  /^\s*sheet\s*\d/i,
+  /^\s*page\s*\d/i,
+  /^\s*total\s*$/i,
+  /^\s*note\s*[:=]/i,
+  /^\s*remarks?\s*[:=]/i,
+];
+
+function isHeaderOrMetadata(line: string): boolean {
+  return HEADER_PATTERNS.some(p => p.test(line)) || METADATA_PATTERNS.some(p => p.test(line));
+}
+
 // Split raw text into candidate component lines
 function extractCandidateLines(rawText: string): string[] {
-  const lines = rawText.split(/\n/).map(l => l.trim()).filter(l => l.length > 3);
+  // Step 1: Normalize and split into raw lines using multiple strategies
+  let rawLines: string[] = [];
+
+  // Split by newlines first
+  const nlLines = rawText.split(/\n/).map(l => l.trim()).filter(l => l.length > 0);
+
+  // If we got very few lines, the text might be a single blob - try splitting by numbered rows
+  if (nlLines.length <= 3) {
+    // Try splitting on numbered patterns like "1." "2." "1)" "2)" or just standalone numbers at word boundaries
+    const numberedSplit = rawText.split(/(?=(?:^|\s)(?:\d{1,3})\s*[.)]\s)/m);
+    if (numberedSplit.length > nlLines.length) {
+      rawLines = numberedSplit.map(l => l.trim()).filter(l => l.length > 3);
+    }
+  }
+
+  // If still few lines, try splitting on common delimiters in tabular PDFs
+  if (rawLines.length <= 3) {
+    // Try tab-separated or multiple-space separated segments within each line
+    const expandedLines: string[] = [];
+    for (const line of nlLines) {
+      // If line is very long (likely concatenated rows), try to split on numbered row patterns within it
+      if (line.length > 100) {
+        const subSplit = line.split(/(?=\d{1,3}\s*[.)]\s)/);
+        if (subSplit.length > 1) {
+          expandedLines.push(...subSplit.map(s => s.trim()).filter(s => s.length > 3));
+          continue;
+        }
+      }
+      expandedLines.push(line);
+    }
+    if (expandedLines.length > rawLines.length) {
+      rawLines = expandedLines;
+    }
+  }
+
+  // Fallback to newline-split lines if nothing better found
+  if (rawLines.length <= 3) {
+    rawLines = nlLines.filter(l => l.length > 3);
+  }
+
+  // Step 2: Filter to candidate component lines
   const candidates: string[] = [];
 
-  for (const line of lines) {
+  for (const line of rawLines) {
+    // Skip headers and metadata
+    if (isHeaderOrMetadata(line)) continue;
+
+    // Skip very short lines that are just numbers
+    if (/^\d{1,3}[.)]?\s*$/.test(line)) continue;
+
     // Check if line contains any component or spec pattern
     const hasComponent = COMPONENT_PATTERNS.some(cp => cp.pattern.test(line));
     const hasSpec = Object.values(SPEC_PATTERNS).some(sp => sp.test(line));
-    
+
     if (hasComponent || hasSpec) {
       candidates.push(line);
     }
+  }
+
+  // Step 3: If pattern matching found nothing but we have lines, send everything non-header to AI
+  if (candidates.length === 0 && rawLines.length > 0) {
+    const fallback = rawLines.filter(l => !isHeaderOrMetadata(l) && l.length > 10 && !/^\d{1,3}[.)]?\s*$/.test(l));
+    return fallback;
   }
 
   return candidates;
