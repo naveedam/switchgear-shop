@@ -36,11 +36,8 @@ serve(async (req) => {
       .eq("id", documentId);
 
     // Download the PDF from Supabase Storage using the service role client
-    // Extract the storage path from the public URL
     let pdfBytes: Uint8Array;
 
-    // The fileUrl is a full public URL like: https://<project>.supabase.co/storage/v1/object/public/project-documents/<path>
-    // We need to extract the bucket name and path
     const storagePathMatch = fileUrl.match(/\/storage\/v1\/object\/public\/([^/]+)\/(.+)$/);
     
     if (storagePathMatch) {
@@ -58,7 +55,6 @@ serve(async (req) => {
 
       pdfBytes = new Uint8Array(await data.arrayBuffer());
     } else {
-      // Fallback: try direct fetch (for external URLs)
       console.log(`[extract-pdf-text] URL doesn't match storage pattern, trying direct fetch`);
       const downloadResponse = await fetch(fileUrl);
       if (!downloadResponse.ok) {
@@ -73,22 +69,23 @@ serve(async (req) => {
       throw new Error("Downloaded PDF is empty");
     }
 
-    // Use pdf-parse via esm.sh to extract text
-    // We'll use a simpler approach: parse PDF text using a lightweight method
-    const extractedText = await extractTextFromPdf(pdfBytes);
+    // Use unpdf for Deno-compatible PDF text extraction
+    const { getDocumentProxy, extractText } = await import("https://esm.sh/unpdf@0.12.1");
+    const doc = await getDocumentProxy(new Uint8Array(pdfBytes));
+    const { text: extractedText } = await extractText(doc, { mergePages: true });
 
-    console.log(`[extract-pdf-text] Extracted ${extractedText.length} characters of text`);
+    console.log(`[extract-pdf-text] Extracted ${extractedText?.length || 0} characters of text`);
 
     // Save extracted text to the document
+    const success = !!extractedText && extractedText.trim().length > 10;
+
     await supabase
       .from("project_documents")
       .update({
         raw_extracted_text: extractedText || null,
-        processing_status: extractedText && extractedText.trim().length > 10 ? "extracted" : "extraction_failed",
+        processing_status: success ? "extracted" : "extraction_failed",
       })
       .eq("id", documentId);
-
-    const success = !!extractedText && extractedText.trim().length > 10;
 
     return new Response(
       JSON.stringify({
@@ -111,88 +108,3 @@ serve(async (req) => {
     );
   }
 });
-
-/**
- * Extract text from PDF bytes using basic PDF text stream parsing.
- * This handles most text-based PDFs without external dependencies.
- */
-async function extractTextFromPdf(pdfBytes: Uint8Array): Promise<string> {
-  // Try using pdf-parse library
-  try {
-    const pdfParse = (await import("https://esm.sh/pdf-parse@1.1.1")).default;
-    // pdf-parse expects a Buffer-like object
-    const result = await pdfParse(pdfBytes);
-    if (result.text && result.text.trim().length > 0) {
-      console.log(`[extract-pdf-text] pdf-parse extracted ${result.text.length} chars, ${result.numpages} pages`);
-      return result.text;
-    }
-  } catch (err: unknown) {
-    console.warn("[extract-pdf-text] pdf-parse failed, falling back to manual extraction:", err);
-  }
-
-  // Fallback: Basic PDF text extraction by reading text streams
-  try {
-    const text = extractTextManually(pdfBytes);
-    if (text.trim().length > 0) {
-      console.log(`[extract-pdf-text] Manual extraction got ${text.length} chars`);
-      return text;
-    }
-  } catch (err: unknown) {
-    console.warn("[extract-pdf-text] Manual extraction failed:", err);
-  }
-
-  return "";
-}
-
-/**
- * Basic manual PDF text extraction by finding text between BT/ET markers
- * and decoding parenthesized strings. Works for simple text-based PDFs.
- */
-function extractTextManually(pdfBytes: Uint8Array): string {
-  const decoder = new TextDecoder("latin1");
-  const pdfText = decoder.decode(pdfBytes);
-
-  const textParts: string[] = [];
-
-  // Find text between BT (begin text) and ET (end text) markers
-  const btEtRegex = /BT\s([\s\S]*?)ET/g;
-  let match;
-
-  while ((match = btEtRegex.exec(pdfText)) !== null) {
-    const block = match[1];
-
-    // Extract parenthesized strings (PDF literal strings)
-    const strRegex = /\(([^)]*)\)/g;
-    let strMatch;
-    while ((strMatch = strRegex.exec(block)) !== null) {
-      const decoded = strMatch[1]
-        .replace(/\\n/g, "\n")
-        .replace(/\\r/g, "\r")
-        .replace(/\\t/g, "\t")
-        .replace(/\\\\/g, "\\")
-        .replace(/\\([()])/g, "$1");
-      if (decoded.trim()) {
-        textParts.push(decoded);
-      }
-    }
-
-    // Extract hex strings
-    const hexRegex = /<([0-9A-Fa-f]+)>/g;
-    let hexMatch;
-    while ((hexMatch = hexRegex.exec(block)) !== null) {
-      const hex = hexMatch[1];
-      let hexStr = "";
-      for (let i = 0; i < hex.length; i += 2) {
-        const charCode = parseInt(hex.substring(i, i + 2), 16);
-        if (charCode >= 32 && charCode < 127) {
-          hexStr += String.fromCharCode(charCode);
-        }
-      }
-      if (hexStr.trim()) {
-        textParts.push(hexStr);
-      }
-    }
-  }
-
-  return textParts.join(" ").replace(/\s+/g, " ").trim();
-}
