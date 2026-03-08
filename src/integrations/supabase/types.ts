@@ -3760,6 +3760,10 @@ export type Database = {
       }
       generate_quote_number: { Args: { p_seller_id: string }; Returns: string }
       generate_rfq_number: { Args: never; Returns: string }
+      get_component_demand: {
+        Args: { p_from_date?: string; p_limit?: number; p_to_date?: string }
+        Returns: Json
+      }
       get_current_financial_year: { Args: never; Returns: string }
       get_current_user_role: { Args: never; Returns: string }
       get_next_invoice_number: {
@@ -3771,6 +3775,22 @@ export type Database = {
         Returns: string
       }
       get_or_create_user_cart: { Args: { user_id: string }; Returns: string }
+      get_price_intelligence: {
+        Args: { p_from_date?: string; p_limit?: number; p_to_date?: string }
+        Returns: Json
+      }
+      get_response_time_distribution: {
+        Args: { p_from_date?: string; p_to_date?: string }
+        Returns: Json
+      }
+      get_rfq_analytics: {
+        Args: { p_from_date?: string; p_to_date?: string }
+        Returns: Json
+      }
+      get_seller_performance: {
+        Args: { p_from_date?: string; p_limit?: number; p_to_date?: string }
+        Returns: Json
+      }
       is_super_admin: { Args: never; Returns: boolean }
       log_seller_inventory_action: {
         Args: {
