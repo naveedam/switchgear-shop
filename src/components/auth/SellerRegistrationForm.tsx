@@ -72,20 +72,26 @@ const annualTurnoverRanges = [
   'Above ₹100 Crores',
 ];
 
-const productCategories = [
-  'Starters and Switches',
-  'Motors and Pumps',
-  'Control Panel Accessories',
-  'Low Voltage Switchgear',
-  'Control Gear and Signalling Devices',
-  'Wires and Cables',
-  'Industrial Plugs and Sockets',
-  'Transformers',
-  'Capacitors',
-  'Lighting',
-  'Earthing Equipment',
-  'Measuring Instruments',
-];
+// Category label → slug mapping (must match seller_categories.category_slug used by RFQ router)
+const categoryMap: Record<string, string> = {
+  'Low Voltage Switchgear': 'low-voltage-switchgears',
+  'Control Gear and Signalling Devices': 'controlling-gear-signalling-devices',
+  'Wires and Cables': 'wires-cables',
+  'Industrial Plugs and Sockets': 'industrial-plugs-sockets',
+  'Capacitors and Reactors': 'capacitors-reactors',
+  'Relays': 'relays',
+  'Industrial Automation (VFD)': 'industrial-automation',
+  'LED Lights': 'led-lights',
+  'Test and Measuring Instruments': 'test-measuring-instruments',
+  'Conduits and Accessories': 'conduits-accessories',
+  'Industrial Fans': 'industrial-fans',
+  'Switches and Sockets': 'switches-sockets',
+  'Meters': 'meters',
+  'Hand Tools': 'hand-tools',
+  'Fans': 'fans',
+};
+
+const productCategories = Object.keys(categoryMap);
 
 const certificationOptions = [
   'ISO 9001:2015',
