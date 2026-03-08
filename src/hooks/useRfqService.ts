@@ -301,12 +301,13 @@
  
      if (error) return null;
  
-     // Mark invitation as viewed
-     await supabase
-       .from('rfq_seller_invitations')
-       .update({ status: 'viewed', viewed_at: new Date().toISOString() })
-       .eq('rfq_id', rfqId)
-       .eq('seller_id', sellerId);
+      // Mark invitation as viewed and track notification opened
+      const now = new Date().toISOString();
+      await supabase
+        .from('rfq_seller_invitations')
+        .update({ status: 'viewed', viewed_at: now, notification_opened_at: now })
+        .eq('rfq_id', rfqId)
+        .eq('seller_id', sellerId);
  
      return data as SellerQuote;
    };
