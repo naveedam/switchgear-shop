@@ -116,7 +116,7 @@ Deno.serve(async (req: Request) => {
       const categoryBuckets = new Map<string, SellerCandidate[]>();
 
       for (const sc of sellerCats || []) {
-        if (!activeIds.has(sc.seller_id)) continue;
+        if (!eligibleIds.has(sc.seller_id)) continue;
 
         if (!sellerMap.has(sc.seller_id)) {
           sellerMap.set(sc.seller_id, {
