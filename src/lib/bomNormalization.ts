@@ -24,9 +24,15 @@ export function normalizeRatedCurrent(value: string | null | undefined): string 
  */
 export function normalizePoles(value: string | null | undefined): string | null {
   if (!value) return null;
+  const upper = value.trim().toUpperCase();
+  if (upper === 'TPN' || upper === 'TP+N') return '3P+N';
+  if (upper === 'TP') return '3P';
+  if (upper === 'SPN' || upper === 'SP+N') return '1P+N';
+  if (upper === 'SP') return '1P';
+  if (upper === 'FP') return '4P';
   const match = value.trim().match(/^(\d+)\s*(P|p|pole|poles)?$/i);
   if (match) return `${match[1]}P`;
-  return value.trim().toUpperCase();
+  return upper;
 }
 
 /**
