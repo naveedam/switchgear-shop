@@ -35,6 +35,9 @@ export interface ProjectBomItem {
   brand?: string;
   model_number?: string;
   category_slug?: string;
+  coil_voltage?: string;
+  ct_ratio?: string;
+  accuracy_class?: string;
   confidence_score: number;
   validation_status: 'complete' | 'missing_fields' | 'needs_review';
   source_document_id?: string;

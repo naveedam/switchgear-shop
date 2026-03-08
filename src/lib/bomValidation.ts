@@ -25,7 +25,7 @@ const validationRules: Record<string, ValidationRule> = {
   },
   Contactor: {
     label: 'Contactor',
-    requiredFields: ['rated_current', 'rated_voltage'],
+    requiredFields: ['rated_current', 'coil_voltage'],
   },
   'Overload Relay': {
     label: 'Overload Relay',
@@ -37,7 +37,7 @@ const validationRules: Record<string, ValidationRule> = {
   },
   CT: {
     label: 'Current Transformer',
-    requiredFields: ['rated_current'],
+    requiredFields: ['ct_ratio', 'accuracy_class'],
   },
   VFD: {
     label: 'Variable Frequency Drive',
@@ -84,6 +84,9 @@ const fieldLabels: Record<string, string> = {
   model_number: 'Model Number',
   category_slug: 'Category',
   component_type: 'Component Type',
+  coil_voltage: 'Coil Voltage',
+  ct_ratio: 'CT Ratio',
+  accuracy_class: 'Accuracy Class',
 };
 
 export function getFieldLabel(field: string): string {

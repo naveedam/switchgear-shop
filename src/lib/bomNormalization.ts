@@ -83,5 +83,6 @@ export function normalizeBomFields(item: Record<string, unknown>): Record<string
   if ('breaking_capacity' in result) result.breaking_capacity = normalizeBreakingCapacity(result.breaking_capacity as string);
   if ('power_rating' in result) result.power_rating = normalizePowerRating(result.power_rating as string);
   if ('quantity' in result) result.quantity = normalizeQuantity(result.quantity);
+  if ('coil_voltage' in result) result.coil_voltage = normalizeVoltage(result.coil_voltage as string);
   return result;
 }
