@@ -72,20 +72,26 @@ const annualTurnoverRanges = [
   'Above ₹100 Crores',
 ];
 
-const productCategories = [
-  'Starters and Switches',
-  'Motors and Pumps',
-  'Control Panel Accessories',
-  'Low Voltage Switchgear',
-  'Control Gear and Signalling Devices',
-  'Wires and Cables',
-  'Industrial Plugs and Sockets',
-  'Transformers',
-  'Capacitors',
-  'Lighting',
-  'Earthing Equipment',
-  'Measuring Instruments',
-];
+// Category label → slug mapping (must match seller_categories.category_slug used by RFQ router)
+const categoryMap: Record<string, string> = {
+  'Low Voltage Switchgear': 'low-voltage-switchgears',
+  'Control Gear and Signalling Devices': 'controlling-gear-signalling-devices',
+  'Wires and Cables': 'wires-cables',
+  'Industrial Plugs and Sockets': 'industrial-plugs-sockets',
+  'Capacitors and Reactors': 'capacitors-reactors',
+  'Relays': 'relays',
+  'Industrial Automation (VFD)': 'industrial-automation',
+  'LED Lights': 'led-lights',
+  'Test and Measuring Instruments': 'test-measuring-instruments',
+  'Conduits and Accessories': 'conduits-accessories',
+  'Industrial Fans': 'industrial-fans',
+  'Switches and Sockets': 'switches-sockets',
+  'Meters': 'meters',
+  'Hand Tools': 'hand-tools',
+  'Fans': 'fans',
+};
+
+const productCategories = Object.keys(categoryMap);
 
 const certificationOptions = [
   'ISO 9001:2015',
@@ -200,11 +206,13 @@ const SellerRegistrationForm: React.FC<SellerRegistrationFormProps> = ({ onSucce
       if (authError) throw authError;
 
       if (authData.user) {
+        const userId = authData.user.id;
+
         // Insert seller onboarding data
         const { error: onboardingError } = await supabase
           .from('seller_onboarding')
           .insert({
-            user_id: authData.user.id,
+            user_id: userId,
             company_name: data.companyName,
             company_description: data.companyDescription,
             business_type: data.businessType,
@@ -233,6 +241,33 @@ const SellerRegistrationForm: React.FC<SellerRegistrationFormProps> = ({ onSucce
           });
 
         if (onboardingError) throw onboardingError;
+
+        // Sync selected categories to seller_categories table for RFQ routing
+        const categoryRows = data.primaryProductCategories
+          .map(label => categoryMap[label])
+          .filter(Boolean)
+          .map(slug => ({
+            seller_id: userId,
+            category_slug: slug,
+            product_count: 0,
+          }));
+
+        if (categoryRows.length > 0) {
+          const { error: catError } = await supabase
+            .from('seller_categories')
+            .upsert(categoryRows, { onConflict: 'seller_id,category_slug' });
+
+          if (catError) {
+            console.warn('Failed to sync seller categories:', catError);
+          }
+        }
+
+        console.log(`🏪 SELLER_REGISTERED [${new Date().toISOString()}]`, {
+          userId,
+          email: data.email,
+          categories: data.primaryProductCategories,
+          categorySlugs: categoryRows.map(r => r.category_slug),
+        });
       }
 
       toast({
