@@ -63,10 +63,16 @@ export function normalizeVoltage(value: string | null | undefined): string | nul
  */
 export function normalizePowerRating(value: string | null | undefined): string | null {
   if (!value) return null;
+  const kvaMatch = value.trim().match(/^(\d+\.?\d*)\s*(kVA|kva|KVA)$/i);
+  if (kvaMatch) return `${kvaMatch[1]} kVA`;
   const kwMatch = value.trim().match(/^(\d+\.?\d*)\s*(kW|kw|KW)$/i);
   if (kwMatch) return `${kwMatch[1]} kW`;
   const hpMatch = value.trim().match(/^(\d+\.?\d*)\s*(HP|hp|Hp)$/i);
   if (hpMatch) return `${hpMatch[1]} HP`;
+  const vaMatch = value.trim().match(/^(\d+\.?\d*)\s*(VA|va)$/i);
+  if (vaMatch) return `${vaMatch[1]} VA`;
+  const wMatch = value.trim().match(/^(\d+\.?\d*)\s*(W|w|watt|watts)$/i);
+  if (wMatch) return `${wMatch[1]} W`;
   return value.trim();
 }
 
