@@ -38,6 +38,9 @@ interface InvitationRow {
   viewed_at: string | null;
   responded_at: string | null;
   first_quote_at: string | null;
+  notification_sent_at: string | null;
+  notification_opened_at: string | null;
+  notification_channel: string | null;
   seller: { name: string; email: string } | null;
 }
 
