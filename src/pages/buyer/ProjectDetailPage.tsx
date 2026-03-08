@@ -43,16 +43,24 @@ const confidenceBadge = (score: number) => {
 };
 
 const validationBadge = (status: string, missingFields?: string[]) => {
-  if (status === 'complete') return <Badge className="bg-green-100 text-green-800">Complete</Badge>;
+  if (status === 'complete') return (
+    <div className="flex items-center gap-1">
+      <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+      <span className="text-xs text-green-700">Complete</span>
+    </div>
+  );
+  const fieldList = missingFields?.map(f => getFieldLabel(f)).join(', ') || '';
   if (status === 'missing_fields') return (
-    <Badge className="bg-yellow-100 text-yellow-800" title={missingFields?.map(f => getFieldLabel(f)).join(', ')}>
-      Missing Fields
-    </Badge>
+    <div>
+      <Badge className="bg-yellow-100 text-yellow-800 text-[10px]">Missing Fields</Badge>
+      {fieldList && <p className="text-[10px] text-yellow-600 mt-0.5 max-w-[120px] leading-tight">{fieldList}</p>}
+    </div>
   );
   return (
-    <Badge className="bg-red-100 text-red-800" title={missingFields?.map(f => getFieldLabel(f)).join(', ')}>
-      Needs Review
-    </Badge>
+    <div>
+      <Badge className="bg-red-100 text-red-800 text-[10px]">Needs Review</Badge>
+      {fieldList && <p className="text-[10px] text-destructive mt-0.5 max-w-[120px] leading-tight">{fieldList}</p>}
+    </div>
   );
 };
 
