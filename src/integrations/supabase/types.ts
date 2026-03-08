@@ -2260,12 +2260,15 @@ export type Database = {
       }
       project_bom_items: {
         Row: {
+          accuracy_class: string | null
           brand: string | null
           breaking_capacity: string | null
           category_slug: string | null
+          coil_voltage: string | null
           component_type: string | null
           confidence_score: number | null
           created_at: string
+          ct_ratio: string | null
           description: string
           id: string
           model_number: string | null
@@ -2281,12 +2284,15 @@ export type Database = {
           validation_status: string
         }
         Insert: {
+          accuracy_class?: string | null
           brand?: string | null
           breaking_capacity?: string | null
           category_slug?: string | null
+          coil_voltage?: string | null
           component_type?: string | null
           confidence_score?: number | null
           created_at?: string
+          ct_ratio?: string | null
           description: string
           id?: string
           model_number?: string | null
@@ -2302,12 +2308,15 @@ export type Database = {
           validation_status?: string
         }
         Update: {
+          accuracy_class?: string | null
           brand?: string | null
           breaking_capacity?: string | null
           category_slug?: string | null
+          coil_voltage?: string | null
           component_type?: string | null
           confidence_score?: number | null
           created_at?: string
+          ct_ratio?: string | null
           description?: string
           id?: string
           model_number?: string | null
