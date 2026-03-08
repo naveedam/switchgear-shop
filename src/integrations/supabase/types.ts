@@ -2581,6 +2581,9 @@ export type Database = {
           id: string
           invited_at: string
           matched_categories: string[] | null
+          notification_channel: string | null
+          notification_opened_at: string | null
+          notification_sent_at: string | null
           responded_at: string | null
           rfq_id: string
           routing_method: string | null
@@ -2595,6 +2598,9 @@ export type Database = {
           id?: string
           invited_at?: string
           matched_categories?: string[] | null
+          notification_channel?: string | null
+          notification_opened_at?: string | null
+          notification_sent_at?: string | null
           responded_at?: string | null
           rfq_id: string
           routing_method?: string | null
@@ -2609,6 +2615,9 @@ export type Database = {
           id?: string
           invited_at?: string
           matched_categories?: string[] | null
+          notification_channel?: string | null
+          notification_opened_at?: string | null
+          notification_sent_at?: string | null
           responded_at?: string | null
           rfq_id?: string
           routing_method?: string | null

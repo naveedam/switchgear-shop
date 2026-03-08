@@ -38,6 +38,9 @@ interface InvitationRow {
   viewed_at: string | null;
   responded_at: string | null;
   first_quote_at: string | null;
+  notification_sent_at: string | null;
+  notification_opened_at: string | null;
+  notification_channel: string | null;
   seller: { name: string; email: string } | null;
 }
 
@@ -142,6 +145,7 @@ const AdminRfqs: React.FC = () => {
     if (!selectedRfq || !selectedSellerId) return;
     setInvitingManually(true);
     try {
+      const now = new Date().toISOString();
       const { error } = await supabase
         .from('rfq_seller_invitations')
         .insert({
@@ -149,9 +153,20 @@ const AdminRfqs: React.FC = () => {
           seller_id: selectedSellerId,
           status: 'pending',
           routing_method: 'admin_manual',
+          notification_sent_at: now,
+          notification_channel: 'in_app',
         });
       if (error) throw error;
-      toast({ title: 'Seller Invited', description: 'Seller has been manually invited to this RFQ.' });
+
+      // Create in-app notification for the seller
+      await supabase.from('notifications').insert({
+        user_id: selectedSellerId,
+        title: `New RFQ: ${selectedRfq.rfq_number}`,
+        message: `You've been invited to quote on "${selectedRfq.title}" (${selectedRfq.total_items} items). View and submit your quote now.`,
+        type: 'rfq_invitation',
+      });
+
+      toast({ title: 'Seller Invited', description: 'Seller has been invited and notified.' });
       await loadInvitations(selectedRfq.id);
       setSelectedSellerId('');
     } catch (err) {
@@ -477,6 +492,7 @@ const AdminRfqs: React.FC = () => {
                       <TableHead>Seller</TableHead>
                       <TableHead>Matched Categories</TableHead>
                       <TableHead>Method</TableHead>
+                      <TableHead>Notified</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Response Time</TableHead>
                       <TableHead>Invited</TableHead>
@@ -485,7 +501,7 @@ const AdminRfqs: React.FC = () => {
                   <TableBody>
                     {invitations.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center text-muted-foreground">
+                        <TableCell colSpan={7} className="text-center text-muted-foreground">
                           No invitations
                         </TableCell>
                       </TableRow>
@@ -506,6 +522,15 @@ const AdminRfqs: React.FC = () => {
                                inv.routing_method === 'admin_manual' ? 'Manual' :
                                inv.routing_method || 'Unknown'}
                             </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {inv.notification_sent_at ? (
+                              <Badge className="bg-green-100 text-green-800 text-xs">
+                                ✓ {format(new Date(inv.notification_sent_at), 'dd MMM HH:mm')}
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-xs text-muted-foreground">Not sent</Badge>
+                            )}
                           </TableCell>
                           <TableCell>
                             <Badge className={inviteStatusColors[inv.status] || ''}>
