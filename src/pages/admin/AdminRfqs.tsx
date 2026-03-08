@@ -6,8 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Search, Users, Tag, Eye, RefreshCw } from 'lucide-react';
-import { format } from 'date-fns';
+import { Search, Users, Tag, Eye, RefreshCw, Send, UserPlus, Clock, FileText, CheckCircle } from 'lucide-react';
+import { format, formatDistanceToNow } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
@@ -37,7 +37,14 @@ interface InvitationRow {
   invited_at: string;
   viewed_at: string | null;
   responded_at: string | null;
+  first_quote_at: string | null;
   seller: { name: string; email: string } | null;
+}
+
+interface SellerOption {
+  id: string;
+  name: string;
+  email: string;
 }
 
 const statusColors: Record<string, string> = {
@@ -49,6 +56,7 @@ const statusColors: Record<string, string> = {
   converted: 'bg-green-100 text-green-800',
   cancelled: 'bg-red-100 text-red-800',
   expired: 'bg-red-100 text-red-800',
+  admin_review: 'bg-purple-100 text-purple-800',
 };
 
 const inviteStatusColors: Record<string, string> = {
@@ -67,6 +75,10 @@ const AdminRfqs: React.FC = () => {
   const [selectedRfq, setSelectedRfq] = useState<RfqRow | null>(null);
   const [invitations, setInvitations] = useState<InvitationRow[]>([]);
   const [loadingInvites, setLoadingInvites] = useState(false);
+  const [availableSellers, setAvailableSellers] = useState<SellerOption[]>([]);
+  const [selectedSellerId, setSelectedSellerId] = useState('');
+  const [invitingManually, setInvitingManually] = useState(false);
+  const [resending, setResending] = useState(false);
 
   useEffect(() => {
     loadRfqs();
@@ -101,6 +113,18 @@ const AdminRfqs: React.FC = () => {
 
       if (error) throw error;
       setInvitations((data || []) as unknown as InvitationRow[]);
+
+      // Load available sellers not yet invited
+      const invitedIds = (data || []).map((d: any) => d.seller_id);
+      const { data: sellers } = await supabase
+        .from('companies')
+        .select('id, name, email')
+        .eq('is_vendor', true)
+        .eq('status', 'active');
+
+      setAvailableSellers(
+        (sellers || []).filter((s: any) => !invitedIds.includes(s.id)) as SellerOption[]
+      );
     } catch (err) {
       console.error('Error loading invitations:', err);
     } finally {
@@ -110,7 +134,51 @@ const AdminRfqs: React.FC = () => {
 
   const handleViewDetails = (rfq: RfqRow) => {
     setSelectedRfq(rfq);
+    setSelectedSellerId('');
     loadInvitations(rfq.id);
+  };
+
+  const handleManualInvite = async () => {
+    if (!selectedRfq || !selectedSellerId) return;
+    setInvitingManually(true);
+    try {
+      const { error } = await supabase
+        .from('rfq_seller_invitations')
+        .insert({
+          rfq_id: selectedRfq.id,
+          seller_id: selectedSellerId,
+          status: 'pending',
+          routing_method: 'admin_manual',
+        });
+      if (error) throw error;
+      toast({ title: 'Seller Invited', description: 'Seller has been manually invited to this RFQ.' });
+      await loadInvitations(selectedRfq.id);
+      setSelectedSellerId('');
+    } catch (err) {
+      toast({ title: 'Error', description: 'Failed to invite seller', variant: 'destructive' });
+    } finally {
+      setInvitingManually(false);
+    }
+  };
+
+  const handleResendRfq = async () => {
+    if (!selectedRfq) return;
+    setResending(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('route-rfq-sellers', {
+        body: { rfqId: selectedRfq.id },
+      });
+      if (error) throw error;
+      toast({
+        title: 'RFQ Re-routed',
+        description: `${data?.sellers_invited || 0} additional sellers invited.`,
+      });
+      await loadInvitations(selectedRfq.id);
+    } catch (err) {
+      toast({ title: 'Error', description: 'Failed to re-route RFQ', variant: 'destructive' });
+    } finally {
+      setResending(false);
+    }
   };
 
   const filteredRfqs = rfqs.filter(rfq => {
@@ -121,6 +189,25 @@ const AdminRfqs: React.FC = () => {
     const matchesStatus = statusFilter === 'all' || rfq.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  // Summary stats
+  const totalRfqs = rfqs.length;
+  const openRfqs = rfqs.filter(r => r.status === 'open').length;
+  const awaitingQuotes = rfqs.filter(r => r.status === 'partially_quoted').length;
+  const convertedRfqs = rfqs.filter(r => r.status === 'converted').length;
+  const adminReview = rfqs.filter(r => r.status === 'admin_review').length;
+
+  // Response time metrics for selected RFQ
+  const respondedInvites = invitations.filter(i => i.first_quote_at);
+  const avgResponseTime = respondedInvites.length > 0
+    ? respondedInvites.reduce((sum, i) => {
+        const diff = new Date(i.first_quote_at!).getTime() - new Date(i.invited_at).getTime();
+        return sum + diff;
+      }, 0) / respondedInvites.length / (1000 * 60 * 60) // hours
+    : null;
+  const quoteRate = invitations.length > 0
+    ? Math.round((respondedInvites.length / invitations.length) * 100)
+    : 0;
 
   if (loading) return <div className="p-6">Loading RFQs...</div>;
 
@@ -134,6 +221,67 @@ const AdminRfqs: React.FC = () => {
         <Button onClick={loadRfqs} variant="outline">
           <RefreshCw className="h-4 w-4 mr-2" /> Refresh
         </Button>
+      </div>
+
+      {/* Summary Stats */}
+      <div className="grid gap-4 md:grid-cols-5">
+        <Card>
+          <CardContent className="pt-4 pb-3">
+            <div className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-primary" />
+              <div>
+                <p className="text-xl font-bold">{totalRfqs}</p>
+                <p className="text-xs text-muted-foreground">Total RFQs</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4 pb-3">
+            <div className="flex items-center gap-2">
+              <Send className="h-5 w-5 text-blue-600" />
+              <div>
+                <p className="text-xl font-bold">{openRfqs}</p>
+                <p className="text-xs text-muted-foreground">Open</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4 pb-3">
+            <div className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-yellow-600" />
+              <div>
+                <p className="text-xl font-bold">{awaitingQuotes}</p>
+                <p className="text-xs text-muted-foreground">Awaiting Quotes</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4 pb-3">
+            <div className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-green-600" />
+              <div>
+                <p className="text-xl font-bold">{convertedRfqs}</p>
+                <p className="text-xs text-muted-foreground">Converted</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        {adminReview > 0 && (
+          <Card>
+            <CardContent className="pt-4 pb-3">
+              <div className="flex items-center gap-2">
+                <UserPlus className="h-5 w-5 text-purple-600" />
+                <div>
+                  <p className="text-xl font-bold">{adminReview}</p>
+                  <p className="text-xs text-muted-foreground">Needs Routing</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Filters */}
@@ -157,6 +305,7 @@ const AdminRfqs: React.FC = () => {
             <SelectItem value="partially_quoted">Partially Quoted</SelectItem>
             <SelectItem value="quoted">Quoted</SelectItem>
             <SelectItem value="converted">Converted</SelectItem>
+            <SelectItem value="admin_review">Admin Review</SelectItem>
             <SelectItem value="expired">Expired</SelectItem>
           </SelectContent>
         </Select>
@@ -237,7 +386,7 @@ const AdminRfqs: React.FC = () => {
 
       {/* Details Dialog */}
       <Dialog open={!!selectedRfq} onOpenChange={() => setSelectedRfq(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>
               RFQ {selectedRfq?.rfq_number} — Seller Invitations
@@ -259,12 +408,64 @@ const AdminRfqs: React.FC = () => {
                 </div>
                 <div>
                   <span className="text-muted-foreground">Total Invited:</span>
-                  <p className="font-medium">{selectedRfq.sellers_invited || 0} sellers</p>
+                  <p className="font-medium">{invitations.length} sellers</p>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Status:</span>
-                  <p><Badge className={statusColors[selectedRfq.status]}>{selectedRfq.status}</Badge></p>
+                  <p><Badge className={statusColors[selectedRfq.status]}>{selectedRfq.status.replace('_', ' ')}</Badge></p>
                 </div>
+              </div>
+
+              {/* Response Time Metrics */}
+              {invitations.length > 0 && (
+                <div className="grid grid-cols-2 gap-4 p-3 bg-muted/50 rounded-lg text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Avg Response Time:</span>
+                    <p className="font-medium">
+                      {avgResponseTime !== null ? `${avgResponseTime.toFixed(1)} hours` : 'No responses yet'}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Quote Rate:</span>
+                    <p className="font-medium">{quoteRate}% ({respondedInvites.length}/{invitations.length})</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Manual Invite */}
+              <div className="flex gap-2 items-end">
+                <div className="flex-1">
+                  <Select value={selectedSellerId} onValueChange={setSelectedSellerId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select seller to invite..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableSellers.map(s => (
+                        <SelectItem key={s.id} value={s.id}>{s.name} ({s.email})</SelectItem>
+                      ))}
+                      {availableSellers.length === 0 && (
+                        <SelectItem value="none" disabled>No available sellers</SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button
+                  size="sm"
+                  onClick={handleManualInvite}
+                  disabled={!selectedSellerId || invitingManually}
+                >
+                  <UserPlus className="h-4 w-4 mr-1" />
+                  {invitingManually ? 'Inviting...' : 'Invite'}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleResendRfq}
+                  disabled={resending}
+                >
+                  <RefreshCw className="h-4 w-4 mr-1" />
+                  {resending ? 'Routing...' : 'Re-route'}
+                </Button>
               </div>
 
               {loadingInvites ? (
@@ -277,13 +478,14 @@ const AdminRfqs: React.FC = () => {
                       <TableHead>Matched Categories</TableHead>
                       <TableHead>Method</TableHead>
                       <TableHead>Status</TableHead>
+                      <TableHead>Response Time</TableHead>
                       <TableHead>Invited</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {invitations.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center text-muted-foreground">
+                        <TableCell colSpan={6} className="text-center text-muted-foreground">
                           No invitations
                         </TableCell>
                       </TableRow>
@@ -300,13 +502,22 @@ const AdminRfqs: React.FC = () => {
                           </TableCell>
                           <TableCell>
                             <Badge variant="secondary" className="text-xs">
-                              {inv.routing_method === 'category_auto' ? 'Auto' : inv.routing_method || 'Manual'}
+                              {inv.routing_method === 'category_auto' ? 'Auto' :
+                               inv.routing_method === 'admin_manual' ? 'Manual' :
+                               inv.routing_method || 'Unknown'}
                             </Badge>
                           </TableCell>
                           <TableCell>
                             <Badge className={inviteStatusColors[inv.status] || ''}>
                               {inv.status}
                             </Badge>
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
+                            {inv.first_quote_at
+                              ? formatDistanceToNow(new Date(inv.first_quote_at), { addSuffix: false })
+                              : inv.status === 'responded' && inv.responded_at
+                                ? formatDistanceToNow(new Date(inv.responded_at), { addSuffix: false })
+                                : '-'}
                           </TableCell>
                           <TableCell className="text-xs text-muted-foreground">
                             {format(new Date(inv.invited_at), 'dd MMM HH:mm')}

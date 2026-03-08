@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Upload, FileText, Sparkles, ArrowRight, Plus, Trash2, Edit2, Save, X,
-  CheckCircle2, AlertTriangle, HelpCircle, Download, Loader2
+  CheckCircle2, AlertTriangle, HelpCircle, Loader2, RotateCcw, Merge
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,6 +22,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useProjectService } from '@/hooks/useProjectService';
 import { Project, ProjectDocument, ProjectBomItem } from '@/types/project';
 import { useToast } from '@/hooks/use-toast';
+import { validateBomItem, getFieldLabel } from '@/lib/bomValidation';
+import { detectDuplicates, DuplicateGroup } from '@/lib/bomDuplicateDetection';
+import { normalizeBomFields } from '@/lib/bomNormalization';
 
 const CATEGORY_OPTIONS = [
   { value: 'low-voltage-switchgears', label: 'Low Voltage Switchgear' },
@@ -39,10 +42,18 @@ const confidenceBadge = (score: number) => {
   return <Badge className="bg-red-100 text-red-800 gap-1"><HelpCircle className="h-3 w-3" /> Low</Badge>;
 };
 
-const validationBadge = (status: string) => {
+const validationBadge = (status: string, missingFields?: string[]) => {
   if (status === 'complete') return <Badge className="bg-green-100 text-green-800">Complete</Badge>;
-  if (status === 'missing_fields') return <Badge className="bg-yellow-100 text-yellow-800">Missing Fields</Badge>;
-  return <Badge className="bg-red-100 text-red-800">Needs Review</Badge>;
+  if (status === 'missing_fields') return (
+    <Badge className="bg-yellow-100 text-yellow-800" title={missingFields?.map(f => getFieldLabel(f)).join(', ')}>
+      Missing Fields
+    </Badge>
+  );
+  return (
+    <Badge className="bg-red-100 text-red-800" title={missingFields?.map(f => getFieldLabel(f)).join(', ')}>
+      Needs Review
+    </Badge>
+  );
 };
 
 const ProjectDetailPage = () => {
@@ -69,7 +80,18 @@ const ProjectDetailPage = () => {
   const [rfqNotes, setRfqNotes] = useState('');
   const [textInput, setTextInput] = useState('');
   const [textDialogOpen, setTextDialogOpen] = useState(false);
-  const [pipelineStatus, setPipelineStatus] = useState<string | null>(null); // 'uploading' | 'extracting' | 'generating' | 'extraction_failed' | null
+  const [pipelineStatus, setPipelineStatus] = useState<string | null>(null);
+  const [duplicates, setDuplicates] = useState<DuplicateGroup[]>([]);
+
+  // Run validation and duplicate detection on bomItems changes
+  const validationResults = bomItems.map(item => validateBomItem(item));
+  const needsReviewCount = validationResults.filter(v => v.status === 'needs_review').length;
+  const missingFieldsCount = validationResults.filter(v => v.status === 'missing_fields').length;
+  const canSubmitRfq = needsReviewCount === 0;
+
+  useEffect(() => {
+    setDuplicates(detectDuplicates(bomItems));
+  }, [bomItems]);
 
   const loadData = useCallback(async () => {
     if (!projectId) return;
@@ -106,17 +128,13 @@ const ProjectDetailPage = () => {
     toast({ title: 'File Uploaded', description: `${file.name} uploaded successfully` });
 
     if (isPdf) {
-      // Auto-extract text from PDF server-side, then auto-parse
       setPipelineStatus('extracting');
       const extractResult = await extractPdfText(doc.id, projectId, doc.file_url);
 
       if (extractResult.success && extractResult.extractedText) {
-        // Update local doc status
         setDocuments(prev =>
           prev.map(d => d.id === doc.id ? { ...d, processing_status: 'extracted', raw_extracted_text: extractResult.extractedText } : d)
         );
-
-        // Auto-trigger BOM parsing
         setPipelineStatus('generating');
         const result = await parseDocument(projectId, doc.id, extractResult.extractedText);
         if (result.success) {
@@ -127,10 +145,17 @@ const ProjectDetailPage = () => {
           const items = await getBomItems(projectId);
           setBomItems(items);
           setProject(prev => prev ? { ...prev, status: 'bom_generated' } : prev);
+        } else {
+          toast({
+            title: 'Parsing Issue',
+            description: result.items_found === 0
+              ? 'AI could not extract components. Try pasting text manually.'
+              : 'Parsing completed with issues.',
+            variant: 'destructive',
+          });
         }
         setPipelineStatus(null);
       } else {
-        // Extraction failed — show fallback
         setPipelineStatus('extraction_failed');
         setDocuments(prev =>
           prev.map(d => d.id === doc.id ? { ...d, processing_status: 'extraction_failed' } : d)
@@ -151,9 +176,36 @@ const ProjectDetailPage = () => {
     }
   };
 
+  const handleRetryExtraction = async (doc: ProjectDocument) => {
+    if (!projectId) return;
+    setPipelineStatus('extracting');
+    setDocuments(prev =>
+      prev.map(d => d.id === doc.id ? { ...d, processing_status: 'extracting' } : d)
+    );
+    const extractResult = await extractPdfText(doc.id, projectId, doc.file_url);
+    if (extractResult.success && extractResult.extractedText) {
+      setDocuments(prev =>
+        prev.map(d => d.id === doc.id ? { ...d, processing_status: 'extracted', raw_extracted_text: extractResult.extractedText } : d)
+      );
+      setPipelineStatus('generating');
+      const result = await parseDocument(projectId, doc.id, extractResult.extractedText);
+      if (result.success) {
+        const items = await getBomItems(projectId);
+        setBomItems(items);
+        toast({ title: 'Retry Successful', description: `Found ${result.items_found} components.` });
+      }
+      setPipelineStatus(null);
+    } else {
+      setPipelineStatus('extraction_failed');
+      setDocuments(prev =>
+        prev.map(d => d.id === doc.id ? { ...d, processing_status: 'extraction_failed' } : d)
+      );
+      toast({ title: 'Retry Failed', description: 'Still could not extract text. Try pasting manually.', variant: 'destructive' });
+    }
+  };
+
   const handlePasteText = async () => {
     if (!textInput.trim() || !projectId) return;
-    // Create a virtual document
     const doc = await uploadDocument(projectId, user?.id || '', new File([textInput], 'pasted-text.txt', { type: 'text/plain' }));
     if (doc) {
       setDocuments(prev => [doc, ...prev]);
@@ -172,7 +224,6 @@ const ProjectDetailPage = () => {
         title: 'Parsing Complete',
         description: `Found ${result.items_found} components. Please review before proceeding.`,
       });
-      // Reload items
       const items = await getBomItems(projectId);
       setBomItems(items);
       setProject(prev => prev ? { ...prev, status: 'bom_generated' } : prev);
@@ -192,7 +243,6 @@ const ProjectDetailPage = () => {
     }
   };
 
-  // Inline editing
   const startEdit = (item: ProjectBomItem) => {
     setEditingId(item.id);
     setEditData({ ...item });
@@ -200,8 +250,10 @@ const ProjectDetailPage = () => {
 
   const saveEdit = async () => {
     if (!editingId) return;
-    await updateBomItem(editingId, editData);
-    setBomItems(prev => prev.map(i => i.id === editingId ? { ...i, ...editData } as ProjectBomItem : i));
+    // Normalize before saving
+    const normalized = normalizeBomFields(editData as Record<string, unknown>);
+    await updateBomItem(editingId, normalized as Partial<ProjectBomItem>);
+    setBomItems(prev => prev.map(i => i.id === editingId ? { ...i, ...normalized } as ProjectBomItem : i));
     setEditingId(null);
     setEditData({});
   };
@@ -214,11 +266,12 @@ const ProjectDetailPage = () => {
 
   const handleAddItem = async () => {
     if (!projectId || !newItem.description?.trim()) return;
+    const normalized = normalizeBomFields(newItem as Record<string, unknown>);
     const item = await addBomItem({
       project_id: projectId,
-      description: newItem.description!,
-      ...newItem,
-    });
+      description: (normalized.description as string) || newItem.description!,
+      ...normalized,
+    } as any);
     if (item) {
       setBomItems(prev => [...prev, item]);
       setAddDialogOpen(false);
@@ -226,8 +279,36 @@ const ProjectDetailPage = () => {
     }
   };
 
+  const handleMergeDuplicates = async (group: DuplicateGroup) => {
+    if (group.indices.length < 2) return;
+    const keepIdx = group.indices[0];
+    const keepItem = bomItems[keepIdx];
+    const removeIndices = group.indices.slice(1);
+
+    // Update the first item with merged quantity
+    await updateBomItem(keepItem.id, { quantity: group.suggestedQuantity });
+
+    // Delete duplicates
+    for (const idx of removeIndices) {
+      await deleteBomItem(bomItems[idx].id);
+    }
+
+    // Reload
+    const items = await getBomItems(projectId!);
+    setBomItems(items);
+    toast({ title: 'Merged', description: `Combined ${group.indices.length} items into 1 (qty: ${group.suggestedQuantity}).` });
+  };
+
   const handleConvertToRfq = async () => {
     if (!projectId || !user?.id || bomItems.length === 0) return;
+    if (!canSubmitRfq) {
+      toast({
+        title: 'Review Required',
+        description: `${needsReviewCount} items need review before RFQ can be submitted.`,
+        variant: 'destructive',
+      });
+      return;
+    }
     const rfqId = await convertToRfq(projectId, user.id, rfqTitle, bomItems, rfqNotes || undefined);
     if (rfqId) {
       navigate(`/buyer/rfqs/${rfqId}`);
@@ -318,7 +399,7 @@ const ProjectDetailPage = () => {
                       </DialogHeader>
                       <div className="space-y-4">
                         <p className="text-sm text-muted-foreground">
-                          Copy and paste the text content from your design document or BOM. 
+                          Copy and paste the text content from your design document or BOM.
                           AI will extract electrical component data.
                         </p>
                         <Textarea
@@ -364,7 +445,17 @@ const ProjectDetailPage = () => {
                             {doc.processing_status === 'failed' && 'Failed'}
                             {doc.processing_status === 'pending' && 'Pending'}
                           </Badge>
-                          {(doc.processing_status === 'pending' || doc.processing_status === 'extraction_failed') && (
+                          {(doc.processing_status === 'extraction_failed' || doc.processing_status === 'failed') && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleRetryExtraction(doc)}
+                              disabled={!!pipelineStatus}
+                            >
+                              <RotateCcw className="h-3 w-3 mr-1" /> Retry
+                            </Button>
+                          )}
+                          {(doc.processing_status === 'pending' || doc.processing_status === 'extracted') && (
                             <Button
                               size="sm"
                               variant="outline"
@@ -372,7 +463,7 @@ const ProjectDetailPage = () => {
                               disabled={parsing}
                             >
                               <Sparkles className="h-3 w-3 mr-1" />
-                              {parsing ? 'Parsing...' : doc.processing_status === 'extraction_failed' ? 'Paste Text' : 'Parse'}
+                              {parsing ? 'Parsing...' : 'Parse'}
                             </Button>
                           )}
                         </div>
@@ -388,7 +479,7 @@ const ProjectDetailPage = () => {
                         <>
                           <AlertTriangle className="h-8 w-8 text-destructive mx-auto mb-3" />
                           <p className="text-sm font-medium text-destructive">PDF text could not be reliably extracted.</p>
-                          <p className="text-xs text-muted-foreground mt-1">Paste text manually using the "Paste Text" button above.</p>
+                          <p className="text-xs text-muted-foreground mt-1">Paste text manually using the "Paste Text" button above, or click "Retry" on the document.</p>
                           <Button variant="outline" size="sm" className="mt-3" onClick={() => setPipelineStatus(null)}>
                             Dismiss
                           </Button>
@@ -419,6 +510,41 @@ const ProjectDetailPage = () => {
 
           {/* BOM Tab */}
           <TabsContent value="bom">
+            {/* Validation Warning Banner */}
+            {bomItems.length > 0 && needsReviewCount > 0 && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4 text-sm text-red-800 flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                <span className="font-medium">{needsReviewCount} item{needsReviewCount > 1 ? 's' : ''} need{needsReviewCount === 1 ? 's' : ''} review</span>
+                <span className="text-red-600">— RFQ submission blocked until all items are reviewed.</span>
+              </div>
+            )}
+            {bomItems.length > 0 && needsReviewCount === 0 && missingFieldsCount > 0 && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4 text-sm text-yellow-800 flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                <span>{missingFieldsCount} item{missingFieldsCount > 1 ? 's have' : ' has'} missing optional fields. You can still submit the RFQ.</span>
+              </div>
+            )}
+
+            {/* Duplicate Detection Banner */}
+            {duplicates.length > 0 && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 text-sm text-blue-800">
+                <div className="flex items-center gap-2 mb-2">
+                  <Merge className="h-4 w-4 flex-shrink-0" />
+                  <span className="font-medium">{duplicates.length} potential duplicate group{duplicates.length > 1 ? 's' : ''} found</span>
+                </div>
+                {duplicates.map((group, gIdx) => (
+                  <div key={gIdx} className="flex items-center justify-between py-1 pl-6">
+                    <span className="text-xs">
+                      {group.componentType} ({group.matchingSpecs}) — {group.indices.length} items, suggested qty: {group.suggestedQuantity}
+                    </span>
+                    <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => handleMergeDuplicates(group)}>
+                      <Merge className="h-3 w-3 mr-1" /> Merge
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
@@ -538,125 +664,132 @@ const ProjectDetailPage = () => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {bomItems.map((item, idx) => (
-                          <TableRow key={item.id}>
-                            <TableCell className="font-mono text-xs">{idx + 1}</TableCell>
-                            {editingId === item.id ? (
-                              <>
-                                <TableCell>
-                                  <Input
-                                    value={editData.component_type || ''}
-                                    onChange={e => setEditData(d => ({ ...d, component_type: e.target.value }))}
-                                    className="h-8 text-xs w-20"
-                                  />
-                                </TableCell>
-                                <TableCell>
-                                  <Input
-                                    value={editData.description || ''}
-                                    onChange={e => setEditData(d => ({ ...d, description: e.target.value }))}
-                                    className="h-8 text-xs"
-                                  />
-                                </TableCell>
-                                <TableCell>
-                                  <Input
-                                    type="number"
-                                    value={editData.quantity || 1}
-                                    onChange={e => setEditData(d => ({ ...d, quantity: parseInt(e.target.value) || 1 }))}
-                                    className="h-8 text-xs w-16"
-                                  />
-                                </TableCell>
-                                <TableCell>
-                                  <Input
-                                    value={editData.rated_current || ''}
-                                    onChange={e => setEditData(d => ({ ...d, rated_current: e.target.value }))}
-                                    className="h-8 text-xs w-20"
-                                  />
-                                </TableCell>
-                                <TableCell>
-                                  <Input
-                                    value={editData.rated_voltage || ''}
-                                    onChange={e => setEditData(d => ({ ...d, rated_voltage: e.target.value }))}
-                                    className="h-8 text-xs w-20"
-                                  />
-                                </TableCell>
-                                <TableCell>
-                                  <Input
-                                    value={editData.poles || ''}
-                                    onChange={e => setEditData(d => ({ ...d, poles: e.target.value }))}
-                                    className="h-8 text-xs w-14"
-                                  />
-                                </TableCell>
-                                <TableCell>
-                                  <Input
-                                    value={editData.breaking_capacity || ''}
-                                    onChange={e => setEditData(d => ({ ...d, breaking_capacity: e.target.value }))}
-                                    className="h-8 text-xs w-20"
-                                  />
-                                </TableCell>
-                                <TableCell>
-                                  <Input
-                                    value={editData.brand || ''}
-                                    onChange={e => setEditData(d => ({ ...d, brand: e.target.value }))}
-                                    className="h-8 text-xs w-24"
-                                  />
-                                </TableCell>
-                                <TableCell>
-                                  <Select
-                                    value={editData.category_slug || ''}
-                                    onValueChange={v => setEditData(d => ({ ...d, category_slug: v }))}
-                                  >
-                                    <SelectTrigger className="h-8 text-xs w-32">
-                                      <SelectValue placeholder="Select" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {CATEGORY_OPTIONS.map(c => (
-                                        <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                </TableCell>
-                                <TableCell>{confidenceBadge(item.confidence_score)}</TableCell>
-                                <TableCell>{validationBadge(item.validation_status)}</TableCell>
-                                <TableCell>
-                                  <div className="flex gap-1">
-                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={saveEdit}>
-                                      <Save className="h-3 w-3" />
-                                    </Button>
-                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditingId(null)}>
-                                      <X className="h-3 w-3" />
-                                    </Button>
-                                  </div>
-                                </TableCell>
-                              </>
-                            ) : (
-                              <>
-                                <TableCell className="text-xs font-medium">{item.component_type || '-'}</TableCell>
-                                <TableCell className="text-xs max-w-[200px] truncate">{item.description}</TableCell>
-                                <TableCell className="text-xs">{item.quantity}</TableCell>
-                                <TableCell className="text-xs">{item.rated_current || '-'}</TableCell>
-                                <TableCell className="text-xs">{item.rated_voltage || '-'}</TableCell>
-                                <TableCell className="text-xs">{item.poles || '-'}</TableCell>
-                                <TableCell className="text-xs">{item.breaking_capacity || '-'}</TableCell>
-                                <TableCell className="text-xs">{item.brand || '-'}</TableCell>
-                                <TableCell className="text-xs">
-                                  {CATEGORY_OPTIONS.find(c => c.value === item.category_slug)?.label || item.category_slug || '-'}
-                                </TableCell>
-                                <TableCell>{confidenceBadge(item.confidence_score)}</TableCell>
-                                <TableCell>{validationBadge(item.validation_status)}</TableCell>
-                                <TableCell>
-                                  <div className="flex gap-1">
-                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => startEdit(item)}>
-                                      <Edit2 className="h-3 w-3" />
-                                    </Button>
-                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDeleteItem(item.id)}>
-                                      <Trash2 className="h-3 w-3" />
-                                    </Button>
-                                  </div>
-                                </TableCell>
-                              </>
-                            )}
-                          </TableRow>
-                        ))}
+                        {bomItems.map((item, idx) => {
+                          const validation = validationResults[idx];
+                          const rowBorderClass =
+                            validation.status === 'needs_review' ? 'border-l-4 border-l-red-400' :
+                            validation.status === 'missing_fields' ? 'border-l-4 border-l-yellow-400' : '';
+
+                          return (
+                            <TableRow key={item.id} className={rowBorderClass}>
+                              <TableCell className="font-mono text-xs">{idx + 1}</TableCell>
+                              {editingId === item.id ? (
+                                <>
+                                  <TableCell>
+                                    <Input
+                                      value={editData.component_type || ''}
+                                      onChange={e => setEditData(d => ({ ...d, component_type: e.target.value }))}
+                                      className="h-8 text-xs w-20"
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    <Input
+                                      value={editData.description || ''}
+                                      onChange={e => setEditData(d => ({ ...d, description: e.target.value }))}
+                                      className="h-8 text-xs"
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    <Input
+                                      type="number"
+                                      value={editData.quantity || 1}
+                                      onChange={e => setEditData(d => ({ ...d, quantity: parseInt(e.target.value) || 1 }))}
+                                      className="h-8 text-xs w-16"
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    <Input
+                                      value={editData.rated_current || ''}
+                                      onChange={e => setEditData(d => ({ ...d, rated_current: e.target.value }))}
+                                      className="h-8 text-xs w-20"
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    <Input
+                                      value={editData.rated_voltage || ''}
+                                      onChange={e => setEditData(d => ({ ...d, rated_voltage: e.target.value }))}
+                                      className="h-8 text-xs w-20"
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    <Input
+                                      value={editData.poles || ''}
+                                      onChange={e => setEditData(d => ({ ...d, poles: e.target.value }))}
+                                      className="h-8 text-xs w-14"
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    <Input
+                                      value={editData.breaking_capacity || ''}
+                                      onChange={e => setEditData(d => ({ ...d, breaking_capacity: e.target.value }))}
+                                      className="h-8 text-xs w-20"
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    <Input
+                                      value={editData.brand || ''}
+                                      onChange={e => setEditData(d => ({ ...d, brand: e.target.value }))}
+                                      className="h-8 text-xs w-24"
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    <Select
+                                      value={editData.category_slug || ''}
+                                      onValueChange={v => setEditData(d => ({ ...d, category_slug: v }))}
+                                    >
+                                      <SelectTrigger className="h-8 text-xs w-32">
+                                        <SelectValue placeholder="Select" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {CATEGORY_OPTIONS.map(c => (
+                                          <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </TableCell>
+                                  <TableCell>{confidenceBadge(item.confidence_score)}</TableCell>
+                                  <TableCell>{validationBadge(validation.status, validation.missingFields)}</TableCell>
+                                  <TableCell>
+                                    <div className="flex gap-1">
+                                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={saveEdit}>
+                                        <Save className="h-3 w-3" />
+                                      </Button>
+                                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditingId(null)}>
+                                        <X className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                  </TableCell>
+                                </>
+                              ) : (
+                                <>
+                                  <TableCell className="text-xs font-medium">{item.component_type || '-'}</TableCell>
+                                  <TableCell className="text-xs max-w-[200px] truncate">{item.description}</TableCell>
+                                  <TableCell className="text-xs">{item.quantity}</TableCell>
+                                  <TableCell className="text-xs">{item.rated_current || '-'}</TableCell>
+                                  <TableCell className="text-xs">{item.rated_voltage || '-'}</TableCell>
+                                  <TableCell className="text-xs">{item.poles || '-'}</TableCell>
+                                  <TableCell className="text-xs">{item.breaking_capacity || '-'}</TableCell>
+                                  <TableCell className="text-xs">{item.brand || '-'}</TableCell>
+                                  <TableCell className="text-xs">
+                                    {CATEGORY_OPTIONS.find(c => c.value === item.category_slug)?.label || item.category_slug || '-'}
+                                  </TableCell>
+                                  <TableCell>{confidenceBadge(item.confidence_score)}</TableCell>
+                                  <TableCell>{validationBadge(validation.status, validation.missingFields)}</TableCell>
+                                  <TableCell>
+                                    <div className="flex gap-1">
+                                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => startEdit(item)}>
+                                        <Edit2 className="h-3 w-3" />
+                                      </Button>
+                                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDeleteItem(item.id)}>
+                                        <Trash2 className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                  </TableCell>
+                                </>
+                              )}
+                            </TableRow>
+                          );
+                        })}
                       </TableBody>
                     </Table>
                   </div>
@@ -677,6 +810,12 @@ const ProjectDetailPage = () => {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
+                    {!canSubmitRfq && (
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-800 flex items-center gap-2">
+                        <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                        <span>{needsReviewCount} item{needsReviewCount > 1 ? 's' : ''} need{needsReviewCount === 1 ? 's' : ''} review. Go to the BOM tab to fix them.</span>
+                      </div>
+                    )}
                     <div className="space-y-2">
                       <Label>RFQ Title *</Label>
                       <Input
@@ -708,27 +847,34 @@ const ProjectDetailPage = () => {
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Complete</span>
                       <span className="font-medium text-green-600">
-                        {bomItems.filter(i => i.validation_status === 'complete').length}
+                        {validationResults.filter(v => v.status === 'complete').length}
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Missing Fields</span>
+                      <span className="font-medium text-yellow-600">{missingFieldsCount}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Needs Review</span>
-                      <span className="font-medium text-amber-600">
-                        {bomItems.filter(i => i.validation_status !== 'complete').length}
-                      </span>
+                      <span className="font-medium text-red-600">{needsReviewCount}</span>
                     </div>
                     <hr />
                     <Button
                       className="w-full"
                       size="lg"
                       onClick={handleConvertToRfq}
-                      disabled={isLoading || bomItems.length === 0 || !rfqTitle.trim()}
+                      disabled={isLoading || bomItems.length === 0 || !rfqTitle.trim() || !canSubmitRfq}
                     >
                       {isLoading ? 'Creating RFQ...' : 'Create RFQ & Send to Sellers'}
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
+                    {!canSubmitRfq && (
+                      <p className="text-xs text-destructive text-center">
+                        Fix all "Needs Review" items before submitting.
+                      </p>
+                    )}
                     <p className="text-xs text-muted-foreground text-center">
-                      RFQ will be sent to all active sellers. Validity: 7 days.
+                      RFQ will be sent to matched sellers. Validity: 7 days.
                     </p>
                   </CardContent>
                 </Card>
