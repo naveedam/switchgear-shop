@@ -50,6 +50,10 @@ export function normalizeBreakingCapacity(value: string | null | undefined): str
  */
 export function normalizeVoltage(value: string | null | undefined): string | null {
   if (!value) return null;
+  // Transformer voltage: "415/230V"
+  const txMatch = value.trim().match(/^(\d+)\s*\/\s*(\d+)\s*(V|v)\s*(AC|DC|ac|dc)?$/i);
+  if (txMatch) return `${txMatch[1]}/${txMatch[2]} V${txMatch[4] ? ` ${txMatch[4].toUpperCase()}` : ''}`;
+  // Simple: "24V DC", "415V"
   const match = value.trim().match(/^(\d+\.?\d*)\s*(V|v)\s*(AC|DC|ac|dc)?$/i);
   if (match) {
     const suffix = match[3] ? ` ${match[3].toUpperCase()}` : '';
