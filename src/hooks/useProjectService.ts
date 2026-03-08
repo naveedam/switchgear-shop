@@ -207,11 +207,25 @@ export const useProjectService = () => {
       });
 
       if (error) throw error;
+
+      // Handle structured error codes from edge function
+      if (data?.error_code === 'NO_ITEMS_FOUND') {
+        toast({ title: 'No Components Found', description: 'AI could not extract any components. Check the document format or try pasting text manually.', variant: 'destructive' });
+        await supabase.from('project_documents').update({ processing_status: 'failed' }).eq('id', documentId);
+        return { success: false, items_found: 0 };
+      }
+
       return data;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Parsing failed';
-      toast({ title: 'Parse Error', description: message, variant: 'destructive' });
-      // Update doc status to failed
+      const isTimeout = message.includes('timeout') || message.includes('FunctionsRelayError');
+      toast({
+        title: isTimeout ? 'Request Timeout' : 'Parse Error',
+        description: isTimeout
+          ? 'AI parsing timed out. Try again with a shorter document or paste text manually.'
+          : message,
+        variant: 'destructive',
+      });
       await supabase.from('project_documents').update({ processing_status: 'failed' }).eq('id', documentId);
       return { success: false, items_found: 0 };
     } finally {
@@ -335,6 +349,11 @@ export const useProjectService = () => {
         }
       }
 
+      // If no sellers were invited, set RFQ to admin_review
+      if (routingResult.sellers_invited === 0) {
+        await supabase.from('rfqs').update({ status: 'admin_review' }).eq('id', rfq.id);
+      }
+
       // Audit log
       await supabase.from('rfq_audit_log').insert({
         rfq_id: rfq.id,
@@ -346,8 +365,11 @@ export const useProjectService = () => {
       });
 
       toast({
-        title: 'RFQ Created',
-        description: `RFQ sent to ${routingResult.sellers_invited} verified sellers in ${routingResult.categories_detected.length || 'relevant'} categories.`,
+        title: routingResult.sellers_invited > 0 ? 'RFQ Created' : 'RFQ Created — Admin Review',
+        description: routingResult.sellers_invited > 0
+          ? `RFQ sent to ${routingResult.sellers_invited} verified sellers in ${routingResult.categories_detected.length || 'relevant'} categories.`
+          : 'No matching sellers found. RFQ has been sent to admin for manual routing.',
+        variant: routingResult.sellers_invited > 0 ? 'default' : undefined,
       });
       return rfq.id;
     } catch (err: unknown) {

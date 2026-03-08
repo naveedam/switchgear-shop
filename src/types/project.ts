@@ -42,3 +42,26 @@ export interface ProjectBomItem {
   created_at: string;
   updated_at: string;
 }
+
+// ============================================================
+// Future extensibility placeholder interfaces
+// ============================================================
+
+export interface SellerPerformanceScore {
+  sellerId: string;
+  avgResponseTimeHours: number;
+  quoteRate: number;
+  acceptanceRate: number;
+  onTimeDeliveryRate: number;
+  overallScore: number;
+}
+
+export interface PriceBenchmark {
+  componentType: string;
+  category: string;
+  avgPrice: number;
+  minPrice: number;
+  maxPrice: number;
+  sampleSize: number;
+  updatedAt: string;
+}

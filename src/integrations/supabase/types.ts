@@ -2568,6 +2568,7 @@ export type Database = {
       rfq_seller_invitations: {
         Row: {
           decline_reason: string | null
+          first_quote_at: string | null
           id: string
           invited_at: string
           matched_categories: string[] | null
@@ -2581,6 +2582,7 @@ export type Database = {
         }
         Insert: {
           decline_reason?: string | null
+          first_quote_at?: string | null
           id?: string
           invited_at?: string
           matched_categories?: string[] | null
@@ -2594,6 +2596,7 @@ export type Database = {
         }
         Update: {
           decline_reason?: string | null
+          first_quote_at?: string | null
           id?: string
           invited_at?: string
           matched_categories?: string[] | null
