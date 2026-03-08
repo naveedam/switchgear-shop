@@ -75,13 +75,13 @@ export function normalizeQuantity(value: unknown): number {
 /**
  * Normalize all fields on a BOM item (partial — works on any shape)
  */
-export function normalizeBomFields<T extends Record<string, unknown>>(item: T): T {
+export function normalizeBomFields(item: Record<string, unknown>): Record<string, unknown> {
   const result = { ...item };
-  if ('rated_current' in result) result.rated_current = normalizeRatedCurrent(result.rated_current as string) as any;
-  if ('rated_voltage' in result) result.rated_voltage = normalizeVoltage(result.rated_voltage as string) as any;
-  if ('poles' in result) result.poles = normalizePoles(result.poles as string) as any;
-  if ('breaking_capacity' in result) result.breaking_capacity = normalizeBreakingCapacity(result.breaking_capacity as string) as any;
-  if ('power_rating' in result) result.power_rating = normalizePowerRating(result.power_rating as string) as any;
-  if ('quantity' in result) result.quantity = normalizeQuantity(result.quantity) as any;
+  if ('rated_current' in result) result.rated_current = normalizeRatedCurrent(result.rated_current as string);
+  if ('rated_voltage' in result) result.rated_voltage = normalizeVoltage(result.rated_voltage as string);
+  if ('poles' in result) result.poles = normalizePoles(result.poles as string);
+  if ('breaking_capacity' in result) result.breaking_capacity = normalizeBreakingCapacity(result.breaking_capacity as string);
+  if ('power_rating' in result) result.power_rating = normalizePowerRating(result.power_rating as string);
+  if ('quantity' in result) result.quantity = normalizeQuantity(result.quantity);
   return result;
 }
