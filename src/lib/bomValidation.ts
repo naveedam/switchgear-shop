@@ -37,7 +37,7 @@ const validationRules: Record<string, ValidationRule> = {
   },
   CT: {
     label: 'Current Transformer',
-    requiredFields: ['ct_ratio', 'accuracy_class'],
+    requiredFields: ['rated_current'],
   },
   VFD: {
     label: 'Variable Frequency Drive',
@@ -70,6 +70,34 @@ const validationRules: Record<string, ValidationRule> = {
   Isolator: {
     label: 'Isolator',
     requiredFields: ['rated_current', 'poles'],
+  },
+  SMPS: {
+    label: 'SMPS',
+    requiredFields: ['rated_voltage', 'rated_current'],
+  },
+  'Control Transformer': {
+    label: 'Control Transformer',
+    requiredFields: ['power_rating', 'rated_voltage'],
+  },
+  'DOL Starter': {
+    label: 'DOL Starter',
+    requiredFields: ['power_rating'],
+  },
+  'Star Delta Starter': {
+    label: 'Star Delta Starter',
+    requiredFields: ['power_rating'],
+  },
+  'Push Button': {
+    label: 'Push Button',
+    requiredFields: [],
+  },
+  'Indicator Light': {
+    label: 'Indicator Light',
+    requiredFields: [],
+  },
+  'Selector Switch': {
+    label: 'Selector Switch',
+    requiredFields: [],
   },
 };
 
