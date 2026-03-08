@@ -505,11 +505,11 @@ const AdminRfqs: React.FC = () => {
                   </TableHeader>
                   <TableBody>
                     {invitations.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center text-muted-foreground">
-                          No invitations
-                        </TableCell>
-                      </TableRow>
+                       <TableRow>
+                         <TableCell colSpan={7} className="text-center text-muted-foreground">
+                           No invitations
+                         </TableCell>
+                       </TableRow>
                     ) : (
                       invitations.map(inv => (
                         <TableRow key={inv.id}>
