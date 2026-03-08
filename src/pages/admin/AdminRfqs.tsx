@@ -488,9 +488,15 @@ const AdminRfqs: React.FC = () => {
               ) : (
                 <Table>
                   <TableHeader>
-                    <TableRow>
-                      <TableHead>Seller</TableHead>
-                      <TableHead>Matched Categories</TableHead>
+                     <TableRow>
+                       <TableHead>Seller</TableHead>
+                       <TableHead>Matched Categories</TableHead>
+                       <TableHead>Method</TableHead>
+                       <TableHead>Notified</TableHead>
+                       <TableHead>Status</TableHead>
+                       <TableHead>Response Time</TableHead>
+                       <TableHead>Invited</TableHead>
+                     </TableRow>
                       <TableHead>Method</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Response Time</TableHead>
