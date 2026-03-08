@@ -87,6 +87,27 @@ Deno.serve(async (req: Request) => {
         .eq("status", "active");
 
       const activeIds = new Set((activeVendors || []).map((v: any) => v.id));
+
+      // Also check seller_onboarding: only approved sellers are eligible
+      const { data: approvedOnboarding } = await supabase
+        .from("seller_onboarding")
+        .select("user_id")
+        .eq("status", "approved");
+
+      const approvedIds = new Set(
+        (approvedOnboarding || []).map((o: any) => o.user_id)
+      );
+
+      // A seller must be both active in companies AND approved in onboarding
+      // If no onboarding records exist yet (legacy sellers), allow active vendors through
+      const hasOnboardingRecords = (approvedOnboarding || []).length > 0;
+
+      const eligibleIds = new Set(
+        [...activeIds].filter(
+          (id) => !hasOnboardingRecords || approvedIds.has(id)
+        )
+      );
+
       const vendorUpdated = new Map(
         (activeVendors || []).map((v: any) => [v.id, v.updated_at])
       );
