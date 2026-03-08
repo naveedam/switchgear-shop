@@ -7,11 +7,15 @@
  */
 export function normalizeRatedCurrent(value: string | null | undefined): string | null {
   if (!value) return null;
+  // CT ratio: "200/5A"
+  const ctMatch = value.trim().match(/^(\d+)\s*\/\s*(\d+)\s*(A|a)?$/i);
+  if (ctMatch) return `${ctMatch[1]}/${ctMatch[2]} A`;
+  // Ranges: "55-65A" or "23–32A"
+  const rangeMatch = value.trim().match(/^(\d+\.?\d*)\s*[-–]\s*(\d+\.?\d*)\s*(A|a|amp|amps)?$/i);
+  if (rangeMatch) return `${rangeMatch[1]}-${rangeMatch[2]} A`;
+  // Simple: "250A"
   const match = value.trim().match(/^(\d+\.?\d*)\s*(A|a|amp|amps)?$/i);
   if (match) return `${match[1]} A`;
-  // Handle ranges: "80-100A"
-  const rangeMatch = value.trim().match(/^(\d+\.?\d*)\s*[-–]\s*(\d+\.?\d*)\s*(A|a)?$/i);
-  if (rangeMatch) return `${rangeMatch[1]}-${rangeMatch[2]} A`;
   return value.trim();
 }
 
