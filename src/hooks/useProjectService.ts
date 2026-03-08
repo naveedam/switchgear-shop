@@ -351,8 +351,11 @@ export const useProjectService = () => {
       });
 
       toast({
-        title: 'RFQ Created',
-        description: `RFQ sent to ${routingResult.sellers_invited} verified sellers in ${routingResult.categories_detected.length || 'relevant'} categories.`,
+        title: routingResult.sellers_invited > 0 ? 'RFQ Created' : 'RFQ Created — Admin Review',
+        description: routingResult.sellers_invited > 0
+          ? `RFQ sent to ${routingResult.sellers_invited} verified sellers in ${routingResult.categories_detected.length || 'relevant'} categories.`
+          : 'No matching sellers found. RFQ has been sent to admin for manual routing.',
+        variant: routingResult.sellers_invited > 0 ? 'default' : undefined,
       });
       return rfq.id;
     } catch (err: unknown) {
