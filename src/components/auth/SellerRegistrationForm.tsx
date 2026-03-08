@@ -206,11 +206,13 @@ const SellerRegistrationForm: React.FC<SellerRegistrationFormProps> = ({ onSucce
       if (authError) throw authError;
 
       if (authData.user) {
+        const userId = authData.user.id;
+
         // Insert seller onboarding data
         const { error: onboardingError } = await supabase
           .from('seller_onboarding')
           .insert({
-            user_id: authData.user.id,
+            user_id: userId,
             company_name: data.companyName,
             company_description: data.companyDescription,
             business_type: data.businessType,
@@ -239,6 +241,33 @@ const SellerRegistrationForm: React.FC<SellerRegistrationFormProps> = ({ onSucce
           });
 
         if (onboardingError) throw onboardingError;
+
+        // Sync selected categories to seller_categories table for RFQ routing
+        const categoryRows = data.primaryProductCategories
+          .map(label => categoryMap[label])
+          .filter(Boolean)
+          .map(slug => ({
+            seller_id: userId,
+            category_slug: slug,
+            product_count: 0,
+          }));
+
+        if (categoryRows.length > 0) {
+          const { error: catError } = await supabase
+            .from('seller_categories')
+            .upsert(categoryRows, { onConflict: 'seller_id,category_slug' });
+
+          if (catError) {
+            console.warn('Failed to sync seller categories:', catError);
+          }
+        }
+
+        console.log(`🏪 SELLER_REGISTERED [${new Date().toISOString()}]`, {
+          userId,
+          email: data.email,
+          categories: data.primaryProductCategories,
+          categorySlugs: categoryRows.map(r => r.category_slug),
+        });
       }
 
       toast({
