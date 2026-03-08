@@ -142,6 +142,7 @@ const AdminRfqs: React.FC = () => {
     if (!selectedRfq || !selectedSellerId) return;
     setInvitingManually(true);
     try {
+      const now = new Date().toISOString();
       const { error } = await supabase
         .from('rfq_seller_invitations')
         .insert({
@@ -149,9 +150,20 @@ const AdminRfqs: React.FC = () => {
           seller_id: selectedSellerId,
           status: 'pending',
           routing_method: 'admin_manual',
+          notification_sent_at: now,
+          notification_channel: 'in_app',
         });
       if (error) throw error;
-      toast({ title: 'Seller Invited', description: 'Seller has been manually invited to this RFQ.' });
+
+      // Create in-app notification for the seller
+      await supabase.from('notifications').insert({
+        user_id: selectedSellerId,
+        title: `New RFQ: ${selectedRfq.rfq_number}`,
+        message: `You've been invited to quote on "${selectedRfq.title}" (${selectedRfq.total_items} items). View and submit your quote now.`,
+        type: 'rfq_invitation',
+      });
+
+      toast({ title: 'Seller Invited', description: 'Seller has been invited and notified.' });
       await loadInvitations(selectedRfq.id);
       setSelectedSellerId('');
     } catch (err) {
