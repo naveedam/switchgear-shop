@@ -84,6 +84,9 @@ const fieldLabels: Record<string, string> = {
   model_number: 'Model Number',
   category_slug: 'Category',
   component_type: 'Component Type',
+  coil_voltage: 'Coil Voltage',
+  ct_ratio: 'CT Ratio',
+  accuracy_class: 'Accuracy Class',
 };
 
 export function getFieldLabel(field: string): string {
