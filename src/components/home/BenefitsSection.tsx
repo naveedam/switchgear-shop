@@ -1,36 +1,36 @@
 import React from 'react';
-import { ShieldCheck, Truck, Clock, Award, CheckCircle, Headphones } from 'lucide-react';
+import { ShieldCheck, FileText, Lock, Users, ClipboardCheck, Handshake } from 'lucide-react';
 
 const benefits = [
   {
     icon: ShieldCheck,
-    title: "Verified Suppliers",
-    description: "Every seller is thoroughly vetted for quality, reliability, and compliance with industry standards.",
+    title: "Verified Sellers Only",
+    description: "Every seller undergoes GST verification, KYC validation, and onboarding approval before listing products.",
   },
   {
-    icon: Truck,
-    title: "Fast Shipping",
-    description: "Efficient logistics network ensures your orders reach you on time, every time across India.",
+    icon: Lock,
+    title: "Escrow-Protected Payments",
+    description: "Buyer payments are held in a secure escrow account. Funds are released to sellers only after confirmed delivery.",
   },
   {
-    icon: Headphones,
-    title: "24/7 Support",
-    description: "Our dedicated support team is available round-the-clock to assist with any queries.",
+    icon: FileText,
+    title: "GST-Compliant Invoicing",
+    description: "Automatic CGST/SGST/IGST calculation, HSN codes, and GSTR-1 ready invoices on every transaction.",
   },
   {
-    icon: Award,
-    title: "Quality Guaranteed",
-    description: "All products meet rigorous industry standards with authentic certifications.",
+    icon: ClipboardCheck,
+    title: "Controlled RFQ Routing",
+    description: "BOM-based RFQs are auto-routed only to verified sellers matched by product category and brand authorization.",
   },
   {
-    icon: CheckCircle,
-    title: "Secure Payments",
-    description: "Multiple payment options with enterprise-grade security for all transactions.",
+    icon: Users,
+    title: "Multi-Seller Quoting",
+    description: "Receive and compare quotes from multiple verified sellers side-by-side. Accept partial or full quotes per line item.",
   },
   {
-    icon: Clock,
-    title: "Quick Quotes",
-    description: "Get competitive quotes from multiple sellers within hours, not days.",
+    icon: Handshake,
+    title: "Early Partner Benefits",
+    description: "Join as a founding seller or buyer. Early partners receive priority support, reduced commission rates, and co-marketing.",
   },
 ];
 
@@ -39,9 +39,9 @@ const BenefitsSection: React.FC = () => {
     <section className="section-padding bg-background">
       <div className="container-wide">
         <div className="text-center mb-16">
-          <h2 className="section-title">Why Choose SwitchgearShop?</h2>
+          <h2 className="section-title">Built for Trust from Day One</h2>
           <p className="section-subtitle mx-auto">
-            India's trusted B2B marketplace for industrial electrical equipment
+            Every feature is designed to make B2B electrical procurement secure, compliant, and transparent.
           </p>
         </div>
 
