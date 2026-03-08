@@ -25,7 +25,7 @@ const validationRules: Record<string, ValidationRule> = {
   },
   Contactor: {
     label: 'Contactor',
-    requiredFields: ['rated_current', 'rated_voltage'],
+    requiredFields: ['rated_current', 'coil_voltage'],
   },
   'Overload Relay': {
     label: 'Overload Relay',
@@ -37,7 +37,7 @@ const validationRules: Record<string, ValidationRule> = {
   },
   CT: {
     label: 'Current Transformer',
-    requiredFields: ['rated_current'],
+    requiredFields: ['ct_ratio', 'accuracy_class'],
   },
   VFD: {
     label: 'Variable Frequency Drive',
