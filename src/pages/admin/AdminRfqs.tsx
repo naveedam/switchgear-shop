@@ -488,16 +488,11 @@ const AdminRfqs: React.FC = () => {
               ) : (
                 <Table>
                   <TableHeader>
-                     <TableRow>
-                       <TableHead>Seller</TableHead>
-                       <TableHead>Matched Categories</TableHead>
-                       <TableHead>Method</TableHead>
-                       <TableHead>Notified</TableHead>
-                       <TableHead>Status</TableHead>
-                       <TableHead>Response Time</TableHead>
-                       <TableHead>Invited</TableHead>
-                     </TableRow>
+                    <TableRow>
+                      <TableHead>Seller</TableHead>
+                      <TableHead>Matched Categories</TableHead>
                       <TableHead>Method</TableHead>
+                      <TableHead>Notified</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Response Time</TableHead>
                       <TableHead>Invited</TableHead>
@@ -505,11 +500,11 @@ const AdminRfqs: React.FC = () => {
                   </TableHeader>
                   <TableBody>
                     {invitations.length === 0 ? (
-                       <TableRow>
-                         <TableCell colSpan={7} className="text-center text-muted-foreground">
-                           No invitations
-                         </TableCell>
-                       </TableRow>
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center text-muted-foreground">
+                          No invitations
+                        </TableCell>
+                      </TableRow>
                     ) : (
                       invitations.map(inv => (
                         <TableRow key={inv.id}>
@@ -527,6 +522,15 @@ const AdminRfqs: React.FC = () => {
                                inv.routing_method === 'admin_manual' ? 'Manual' :
                                inv.routing_method || 'Unknown'}
                             </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {inv.notification_sent_at ? (
+                              <Badge className="bg-green-100 text-green-800 text-xs">
+                                ✓ {format(new Date(inv.notification_sent_at), 'dd MMM HH:mm')}
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-xs text-muted-foreground">Not sent</Badge>
+                            )}
                           </TableCell>
                           <TableCell>
                             <Badge className={inviteStatusColors[inv.status] || ''}>
