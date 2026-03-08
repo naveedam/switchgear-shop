@@ -200,6 +200,7 @@ Deno.serve(async (req: Request) => {
     );
 
     // 5. Create invitations
+    const now = new Date().toISOString();
     const newInvitations = [...sellerMap.values()]
       .filter((s) => !existingIds.has(s.seller_id))
       .map((s) => ({
@@ -209,6 +210,8 @@ Deno.serve(async (req: Request) => {
         matched_categories: s.categories,
         routing_method: "category_auto",
         routing_score: s.product_count,
+        notification_sent_at: now,
+        notification_channel: "in_app",
       }));
 
     if (newInvitations.length > 0) {
