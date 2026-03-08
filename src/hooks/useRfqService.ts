@@ -341,52 +341,65 @@
      return !error;
    };
  
-   const submitQuote = async (quoteId: string, sellerId: string, rfqId: string): Promise<boolean> => {
-     // Calculate totals
-     const { data: items } = await supabase
-       .from('seller_quote_items')
-       .select('total_price, tax_amount')
-       .eq('quote_id', quoteId);
- 
-     const totalAmount = items?.reduce((sum, i) => sum + (i.total_price - i.tax_amount), 0) || 0;
-     const taxAmount = items?.reduce((sum, i) => sum + i.tax_amount, 0) || 0;
-     const grandTotal = totalAmount + taxAmount;
- 
-     const { error } = await supabase
-       .from('seller_quotes')
-       .update({
-         status: 'submitted',
-         submitted_at: new Date().toISOString(),
-         total_amount: totalAmount,
-         tax_amount: taxAmount,
-         grand_total: grandTotal,
-       })
-       .eq('id', quoteId);
- 
-     if (error) return false;
- 
-     // Update invitation status
-     await supabase
-       .from('rfq_seller_invitations')
-       .update({ status: 'responded', responded_at: new Date().toISOString() })
-       .eq('rfq_id', rfqId)
-       .eq('seller_id', sellerId);
- 
-     // Update RFQ status
-     await supabase.from('rfqs').update({ status: 'partially_quoted' }).eq('id', rfqId);
- 
-     // Log audit
-     await supabase.from('rfq_audit_log').insert({
-       rfq_id: rfqId,
-       quote_id: quoteId,
-       action: 'quote_submitted',
-       actor_id: sellerId,
-       actor_type: 'seller',
-       details: { grandTotal },
-     });
- 
-     return true;
-   };
+    const submitQuote = async (quoteId: string, sellerId: string, rfqId: string): Promise<boolean> => {
+      // Calculate totals
+      const { data: items } = await supabase
+        .from('seller_quote_items')
+        .select('total_price, tax_amount')
+        .eq('quote_id', quoteId);
+
+      const totalAmount = items?.reduce((sum, i) => sum + (i.total_price - i.tax_amount), 0) || 0;
+      const taxAmount = items?.reduce((sum, i) => sum + i.tax_amount, 0) || 0;
+      const grandTotal = totalAmount + taxAmount;
+
+      const { error } = await supabase
+        .from('seller_quotes')
+        .update({
+          status: 'submitted',
+          submitted_at: new Date().toISOString(),
+          total_amount: totalAmount,
+          tax_amount: taxAmount,
+          grand_total: grandTotal,
+        })
+        .eq('id', quoteId);
+
+      if (error) return false;
+
+      // Update invitation status and record first_quote_at
+      const now = new Date().toISOString();
+      await supabase
+        .from('rfq_seller_invitations')
+        .update({
+          status: 'responded',
+          responded_at: now,
+          first_quote_at: now,
+        })
+        .eq('rfq_id', rfqId)
+        .eq('seller_id', sellerId)
+        .is('first_quote_at', null); // Only set if not already set
+
+      // Also update status for ones that already have first_quote_at
+      await supabase
+        .from('rfq_seller_invitations')
+        .update({ status: 'responded', responded_at: now })
+        .eq('rfq_id', rfqId)
+        .eq('seller_id', sellerId);
+
+      // Update RFQ status
+      await supabase.from('rfqs').update({ status: 'partially_quoted' }).eq('id', rfqId);
+
+      // Log audit
+      await supabase.from('rfq_audit_log').insert({
+        rfq_id: rfqId,
+        quote_id: quoteId,
+        action: 'quote_submitted',
+        actor_id: sellerId,
+        actor_type: 'seller',
+        details: { grandTotal },
+      });
+
+      return true;
+    };
  
    // ============ Quote Acceptance & Order Conversion ============
    const acceptQuoteItems = async (

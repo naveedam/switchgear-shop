@@ -335,6 +335,11 @@ export const useProjectService = () => {
         }
       }
 
+      // If no sellers were invited, set RFQ to admin_review
+      if (routingResult.sellers_invited === 0) {
+        await supabase.from('rfqs').update({ status: 'admin_review' }).eq('id', rfq.id);
+      }
+
       // Audit log
       await supabase.from('rfq_audit_log').insert({
         rfq_id: rfq.id,
