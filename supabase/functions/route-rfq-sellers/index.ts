@@ -251,12 +251,24 @@ Deno.serve(async (req: Request) => {
       },
     });
 
-    // 8. Create notifications for invited sellers
+    // 8. Get RFQ details for notification content
+    const { data: rfqDetails } = await supabase
+      .from("rfqs")
+      .select("rfq_number, title, total_items, expires_at")
+      .eq("id", rfqId)
+      .single();
+
+    // 9. Create notifications for invited sellers
     for (const inv of newInvitations) {
+      const categoryList = inv.matched_categories.join(", ") || "General";
+      const expiryNote = rfqDetails?.expires_at
+        ? ` Expires: ${new Date(rfqDetails.expires_at).toLocaleDateString("en-IN")}.`
+        : "";
+
       await supabase.from("notifications").insert({
         user_id: inv.seller_id,
-        title: "New RFQ Invitation",
-        message: `You have been invited to quote on a new RFQ. Categories: ${inv.matched_categories.join(", ") || "General"}`,
+        title: `New RFQ: ${rfqDetails?.rfq_number || "Quote Request"}`,
+        message: `You've been invited to quote on "${rfqDetails?.title || "RFQ"}" (${rfqDetails?.total_items || 0} items). Categories: ${categoryList}.${expiryNote} View and submit your quote now.`,
         type: "rfq_invitation",
       });
     }
