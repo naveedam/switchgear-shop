@@ -99,13 +99,13 @@ const ProductList: React.FC<ProductListProps> = ({ products }) => {
             <div className="col-span-2">
               {inStock ? (
                 <div className="flex items-center gap-1">
-                  <CheckCircle className="h-3.5 w-3.5 text-green-600" />
-                  <span className="text-xs text-green-700 font-medium">In Stock</span>
+                  <CheckCircle className="h-3.5 w-3.5 text-primary" />
+                  <span className="text-xs text-primary font-medium">In Stock</span>
                 </div>
               ) : (
                 <div className="flex items-center gap-1">
-                  <Clock className="h-3.5 w-3.5 text-amber-500" />
-                  <span className="text-xs text-amber-600">{product.leadTime || 'On request'}</span>
+                  <Clock className="h-3.5 w-3.5 text-destructive" />
+                  <span className="text-xs text-destructive">{product.leadTime || 'On request'}</span>
                 </div>
               )}
             </div>
