@@ -203,7 +203,7 @@ const RfqDetailPage = () => {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <Clock className="h-8 w-8 text-orange-600" />
+                <Clock className="h-8 w-8 text-muted-foreground" />
                 <div>
                   <p className="text-2xl font-bold">{rfq.validity_days}d</p>
                   <p className="text-sm text-muted-foreground">Validity</p>
