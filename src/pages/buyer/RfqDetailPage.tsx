@@ -192,7 +192,7 @@ const RfqDetailPage = () => {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <CheckCircle className="h-8 w-8 text-green-600" />
+                <CheckCircle className="h-8 w-8 text-primary" />
                 <div>
                   <p className="text-2xl font-bold">{selections.length}</p>
                   <p className="text-sm text-muted-foreground">Items Selected</p>
