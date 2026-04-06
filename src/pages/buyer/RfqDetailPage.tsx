@@ -234,25 +234,24 @@ const RfqDetailPage = () => {
                   </Card>
                 ) : (
                   <Card>
-                    <CardHeader>
-                      <CardTitle>Compare Quotes</CardTitle>
-                      <CardDescription>
-                        Select the best quote for each item. You can choose different sellers per item.
-                        <span className="text-green-600 ml-1">Green border = lowest price.</span>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base">Quote Comparison</CardTitle>
+                      <CardDescription className="text-xs">
+                        Select the best offer per item. Best price highlighted.
                       </CardDescription>
                     </CardHeader>
-                    <CardContent>
-                      <div className="border rounded-lg overflow-auto">
+                    <CardContent className="p-0">
+                      <div className="overflow-auto">
                         <Table>
                           <TableHeader>
-                            <TableRow>
-                              <TableHead className="sticky left-0 bg-background">Item</TableHead>
-                              <TableHead>Qty</TableHead>
+                            <TableRow className="bg-muted/50">
+                              <TableHead className="sticky left-0 bg-muted/50 text-xs font-semibold w-[180px]">Component</TableHead>
+                              <TableHead className="text-xs font-semibold w-[50px]">Qty</TableHead>
                               {quotes.map(quote => (
-                                <TableHead key={quote.id} className="min-w-[220px]">
-                                  <div>
-                                    <p className="font-medium">{quote.seller?.name}</p>
-                                    <p className="text-xs text-muted-foreground">{quote.quote_number}</p>
+                                <TableHead key={quote.id} className="min-w-[180px] text-xs">
+                                  <div className="space-y-0.5">
+                                    <p className="font-semibold text-foreground">{quote.seller?.name}</p>
+                                    <p className="text-[10px] text-muted-foreground font-normal">{quote.quote_number}</p>
                                   </div>
                                 </TableHead>
                               ))}
@@ -264,20 +263,20 @@ const RfqDetailPage = () => {
                               const worstLead = worstLeadPerItem.get(item.id);
 
                               return (
-                                <TableRow key={item.id}>
-                                  <TableCell className="sticky left-0 bg-background font-medium max-w-[200px]">
-                                    <p className="truncate">{item.description}</p>
+                                <TableRow key={item.id} className="hover:bg-muted/30">
+                                  <TableCell className="sticky left-0 bg-card text-xs font-medium w-[180px]">
+                                    <p className="truncate leading-tight">{item.description}</p>
                                     {item.preferred_brand && (
-                                      <p className="text-xs text-muted-foreground">Pref: {item.preferred_brand}</p>
+                                      <p className="text-[10px] text-muted-foreground mt-0.5">Brand: {item.preferred_brand}</p>
                                     )}
                                   </TableCell>
-                                  <TableCell>{item.quantity}</TableCell>
+                                  <TableCell className="text-xs">{item.quantity}</TableCell>
                                   {quotes.map(quote => {
                                     const quoteItem = quote.items?.find(qi => qi.rfq_item_id === item.id);
                                     if (!quoteItem) {
                                       return (
-                                        <TableCell key={quote.id} className="text-muted-foreground">
-                                          Not quoted
+                                        <TableCell key={quote.id} className="text-xs text-muted-foreground italic">
+                                          —
                                         </TableCell>
                                       );
                                     }
@@ -286,52 +285,44 @@ const RfqDetailPage = () => {
                                     const isWorstLead = worstLead && quoteItem.lead_time_days === worstLead && worstLead > 0;
 
                                     return (
-                                      <TableCell key={quote.id}>
+                                      <TableCell key={quote.id} className="p-1.5">
                                         <div
-                                          className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                                          className={`p-2 rounded border cursor-pointer transition-all ${
                                             isSelected(quoteItem.id)
-                                              ? 'border-primary bg-primary/5'
+                                              ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
                                               : isBestPrice
-                                                ? 'border-green-300 bg-green-50'
-                                                : 'hover:border-muted-foreground/50'
+                                                ? 'border-primary/40 bg-primary/5'
+                                                : 'border-transparent hover:border-border'
                                           }`}
                                           onClick={() => toggleSelection(quoteItem, quote)}
                                         >
-                                          <div className="flex items-start justify-between gap-2">
-                                            <div className="space-y-1">
-                                              <div className="flex items-center gap-1">
-                                                <p className="font-semibold">
+                                          <div className="flex items-center justify-between gap-2">
+                                            <div className="space-y-0.5">
+                                              <div className="flex items-center gap-1.5">
+                                                <span className="text-sm font-bold text-foreground">
                                                   <Currency value={quoteItem.unit_price} />
-                                                  <span className="text-xs text-muted-foreground ml-1">/unit</span>
-                                                </p>
+                                                </span>
                                                 {isBestPrice && (
-                                                  <Badge className="bg-green-100 text-green-800 text-[10px] h-4 px-1">
-                                                    <Award className="h-2.5 w-2.5 mr-0.5" /> Best
+                                                  <Badge variant="default" className="text-[9px] h-3.5 px-1">
+                                                    <Award className="h-2 w-2 mr-0.5" />Best
                                                   </Badge>
                                                 )}
                                               </div>
-                                              <p className="text-sm">
-                                                Total: <Currency value={quoteItem.total_price} />
-                                              </p>
-                                              {quoteItem.lead_time_days != null && (
-                                                <p className={`text-xs ${isWorstLead ? 'text-amber-600 font-medium' : 'text-muted-foreground'}`}>
-                                                  <Clock className="h-3 w-3 inline mr-1" />
-                                                  {quoteItem.lead_time_days} days
-                                                </p>
-                                              )}
+                                              <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                                                <span>Total: <Currency value={quoteItem.total_price} /></span>
+                                                {quoteItem.lead_time_days != null && (
+                                                  <span className={isWorstLead ? 'text-destructive font-medium' : ''}>
+                                                    {quoteItem.lead_time_days}d
+                                                  </span>
+                                                )}
+                                              </div>
                                               {quoteItem.brand && (
-                                                <Badge variant="outline" className="text-xs">
-                                                  {quoteItem.brand}
-                                                  {quoteItem.model_number && ` / ${quoteItem.model_number}`}
-                                                </Badge>
-                                              )}
-                                              {quoteItem.notes && (
-                                                <p className="text-xs text-muted-foreground italic mt-1 line-clamp-2">
-                                                  {quoteItem.notes}
+                                                <p className="text-[10px] text-muted-foreground">
+                                                  {quoteItem.brand}{quoteItem.model_number && ` / ${quoteItem.model_number}`}
                                                 </p>
                                               )}
                                             </div>
-                                            <Checkbox checked={isSelected(quoteItem.id)} />
+                                            <Checkbox checked={isSelected(quoteItem.id)} className="h-3.5 w-3.5" />
                                           </div>
                                         </div>
                                       </TableCell>
