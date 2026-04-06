@@ -103,13 +103,13 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         <div className="flex items-center gap-1">
           {inStock ? (
             <>
-              <CheckCircle className="h-3 w-3 text-green-600" />
-              <span className="text-xs text-green-700 font-medium">In Stock</span>
+              <CheckCircle className="h-3 w-3 text-primary" />
+              <span className="text-xs text-primary font-medium">In Stock</span>
             </>
           ) : product.leadTime ? (
             <>
-              <Clock className="h-3 w-3 text-amber-500" />
-              <span className="text-xs text-amber-600">{product.leadTime}</span>
+              <Clock className="h-3 w-3 text-destructive" />
+              <span className="text-xs text-destructive">{product.leadTime}</span>
             </>
           ) : (
             <>
