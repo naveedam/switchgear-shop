@@ -1,9 +1,8 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { 
+import {
   Accordion,
   AccordionContent,
   AccordionItem,
@@ -14,6 +13,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { ProductFilter as FilterType } from '@/types/product';
 import { Subcategory } from '@/types/category';
+import { Search, X } from 'lucide-react';
 
 interface ProductFilterProps {
   initialFilters?: FilterType;
@@ -21,6 +21,16 @@ interface ProductFilterProps {
   subcategories: Subcategory[];
   minMaxPrice: { min: number; max: number };
 }
+
+const BRAND_OPTIONS = [
+  'Siemens', 'Schneider Electric', 'ABB', 'L&T', 'Legrand',
+  'Havells', 'C&S Electric', 'BCH', 'Polycab', 'Omron',
+];
+
+const CURRENT_OPTIONS = ['16A', '25A', '32A', '40A', '63A', '100A', '125A', '160A', '200A', '250A', '400A', '630A', '800A'];
+const POLE_OPTIONS = ['1P', '2P', '3P', '3P+N', '4P'];
+const BREAKING_CAPACITY_OPTIONS = ['6kA', '10kA', '16kA', '25kA', '36kA', '50kA', '70kA'];
+const VOLTAGE_OPTIONS = ['230V', '240V', '415V', '440V', '690V'];
 
 const ProductFilter: React.FC<ProductFilterProps> = ({
   initialFilters,
@@ -34,36 +44,22 @@ const ProductFilter: React.FC<ProductFilterProps> = ({
     filters.maxPrice || minMaxPrice.max,
   ]);
   const [searchTerm, setSearchTerm] = useState(filters.search || '');
-  
+
   const handlePriceChange = (value: number[]) => {
     setPriceRange([value[0], value[1]]);
   };
-  
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
-  };
-  
+
   const handleSubcategoryChange = (subcategoryId: string, checked: boolean) => {
     setFilters(prev => ({
       ...prev,
       subcategoryId: checked ? subcategoryId : undefined,
     }));
   };
-  
+
   const handleInStockChange = (checked: boolean) => {
-    setFilters(prev => ({
-      ...prev,
-      inStock: checked,
-    }));
+    setFilters(prev => ({ ...prev, inStock: checked }));
   };
-  
-  const handleSortChange = (sortBy: FilterType['sortBy']) => {
-    setFilters(prev => ({
-      ...prev,
-      sortBy,
-    }));
-  };
-  
+
   const applyFilters = () => {
     onFilterChange({
       ...filters,
@@ -72,178 +68,185 @@ const ProductFilter: React.FC<ProductFilterProps> = ({
       maxPrice: priceRange[1],
     });
   };
-  
+
   const resetFilters = () => {
     setFilters({});
     setPriceRange([minMaxPrice.min, minMaxPrice.max]);
     setSearchTerm('');
     onFilterChange({});
   };
-  
+
+  const activeFilterCount = [
+    filters.subcategoryId,
+    filters.inStock,
+    searchTerm,
+    priceRange[0] !== minMaxPrice.min || priceRange[1] !== minMaxPrice.max,
+  ].filter(Boolean).length;
+
   return (
-    <Card>
-      <CardContent className="p-4">
-        <div className="mb-6">
-          <div className="relative">
-            <Input
-              placeholder="Search products..."
-              value={searchTerm}
-              onChange={handleSearchChange}
-              className="pr-10"
-            />
-            <Button
-              variant="ghost"
-              size="sm"
-              className="absolute right-0 top-0 h-full"
-              onClick={applyFilters}
-            >
-              Search
-            </Button>
-          </div>
+    <Card className="border-border">
+      <CardContent className="p-3">
+        {/* Search */}
+        <div className="relative mb-3">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Search products..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
+            className="pl-8 h-8 text-sm"
+          />
         </div>
-        
-        <Accordion type="multiple" defaultValue={['subcategories', 'price', 'availability', 'sort']}>
-          <AccordionItem value="subcategories">
-            <AccordionTrigger>Subcategories</AccordionTrigger>
-            <AccordionContent>
-              <div className="space-y-2">
-                {subcategories.map(subcategory => (
-                  <div key={subcategory.id} className="flex items-center space-x-2">
+
+        <Accordion type="multiple" defaultValue={['subcategories', 'brand', 'current', 'poles', 'price', 'availability']} className="space-y-0">
+          {/* Subcategories */}
+          <AccordionItem value="subcategories" className="border-b-0">
+            <AccordionTrigger className="py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:no-underline">
+              Category
+            </AccordionTrigger>
+            <AccordionContent className="pb-2">
+              <div className="space-y-1 max-h-40 overflow-y-auto">
+                {subcategories.map(sub => (
+                  <label key={sub.id} className="flex items-center gap-2 cursor-pointer py-0.5 px-1 rounded hover:bg-muted/50">
                     <Checkbox
-                      id={`subcategory-${subcategory.id}`}
-                      checked={filters.subcategoryId === subcategory.id}
-                      onCheckedChange={(checked) => 
-                        handleSubcategoryChange(subcategory.id, checked as boolean)
-                      }
+                      checked={filters.subcategoryId === sub.id}
+                      onCheckedChange={(c) => handleSubcategoryChange(sub.id, c as boolean)}
+                      className="h-3.5 w-3.5"
                     />
-                    <Label
-                      htmlFor={`subcategory-${subcategory.id}`}
-                      className="text-sm cursor-pointer"
-                    >
-                      {subcategory.name}
-                    </Label>
-                  </div>
+                    <span className="text-xs text-foreground">{sub.name}</span>
+                  </label>
                 ))}
               </div>
             </AccordionContent>
           </AccordionItem>
-          
-          <AccordionItem value="price">
-            <AccordionTrigger>Price Range</AccordionTrigger>
-            <AccordionContent>
-              <div className="px-2">
-                <Slider
-                  value={priceRange}
-                  min={minMaxPrice.min}
-                  max={minMaxPrice.max}
-                  step={100}
-                  onValueChange={handlePriceChange}
-                  className="my-6"
-                />
-                <div className="flex items-center justify-between text-sm">
-                  <span>₹{priceRange[0]}</span>
-                  <span>₹{priceRange[1]}</span>
-                </div>
+
+          {/* Brand */}
+          <AccordionItem value="brand" className="border-b-0">
+            <AccordionTrigger className="py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:no-underline">
+              Brand
+            </AccordionTrigger>
+            <AccordionContent className="pb-2">
+              <div className="space-y-1 max-h-40 overflow-y-auto">
+                {BRAND_OPTIONS.map(brand => (
+                  <label key={brand} className="flex items-center gap-2 cursor-pointer py-0.5 px-1 rounded hover:bg-muted/50">
+                    <Checkbox className="h-3.5 w-3.5" />
+                    <span className="text-xs text-foreground">{brand}</span>
+                  </label>
+                ))}
               </div>
             </AccordionContent>
           </AccordionItem>
-          
-          <AccordionItem value="availability">
-            <AccordionTrigger>Availability</AccordionTrigger>
-            <AccordionContent>
-              <div className="flex items-center space-x-2">
+
+          {/* Rated Current */}
+          <AccordionItem value="current" className="border-b-0">
+            <AccordionTrigger className="py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:no-underline">
+              Rated Current
+            </AccordionTrigger>
+            <AccordionContent className="pb-2">
+              <div className="flex flex-wrap gap-1">
+                {CURRENT_OPTIONS.map(val => (
+                  <button key={val} className="text-[11px] px-2 py-0.5 rounded border border-border hover:border-primary hover:bg-primary/5 text-foreground transition-colors">
+                    {val}
+                  </button>
+                ))}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* Poles */}
+          <AccordionItem value="poles" className="border-b-0">
+            <AccordionTrigger className="py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:no-underline">
+              Poles
+            </AccordionTrigger>
+            <AccordionContent className="pb-2">
+              <div className="flex flex-wrap gap-1">
+                {POLE_OPTIONS.map(val => (
+                  <button key={val} className="text-[11px] px-2 py-0.5 rounded border border-border hover:border-primary hover:bg-primary/5 text-foreground transition-colors">
+                    {val}
+                  </button>
+                ))}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* Breaking Capacity */}
+          <AccordionItem value="breaking" className="border-b-0">
+            <AccordionTrigger className="py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:no-underline">
+              Breaking Capacity
+            </AccordionTrigger>
+            <AccordionContent className="pb-2">
+              <div className="flex flex-wrap gap-1">
+                {BREAKING_CAPACITY_OPTIONS.map(val => (
+                  <button key={val} className="text-[11px] px-2 py-0.5 rounded border border-border hover:border-primary hover:bg-primary/5 text-foreground transition-colors">
+                    {val}
+                  </button>
+                ))}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* Voltage */}
+          <AccordionItem value="voltage" className="border-b-0">
+            <AccordionTrigger className="py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:no-underline">
+              Voltage
+            </AccordionTrigger>
+            <AccordionContent className="pb-2">
+              <div className="flex flex-wrap gap-1">
+                {VOLTAGE_OPTIONS.map(val => (
+                  <button key={val} className="text-[11px] px-2 py-0.5 rounded border border-border hover:border-primary hover:bg-primary/5 text-foreground transition-colors">
+                    {val}
+                  </button>
+                ))}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* Price */}
+          <AccordionItem value="price" className="border-b-0">
+            <AccordionTrigger className="py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:no-underline">
+              Price Range
+            </AccordionTrigger>
+            <AccordionContent className="pb-2">
+              <Slider
+                value={priceRange}
+                min={minMaxPrice.min}
+                max={minMaxPrice.max}
+                step={100}
+                onValueChange={handlePriceChange}
+                className="my-4"
+              />
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>₹{priceRange[0].toLocaleString()}</span>
+                <span>₹{priceRange[1].toLocaleString()}</span>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* Availability */}
+          <AccordionItem value="availability" className="border-b-0">
+            <AccordionTrigger className="py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:no-underline">
+              Availability
+            </AccordionTrigger>
+            <AccordionContent className="pb-2">
+              <label className="flex items-center gap-2 cursor-pointer py-0.5 px-1">
                 <Checkbox
-                  id="in-stock"
                   checked={filters.inStock}
-                  onCheckedChange={(checked) => 
-                    handleInStockChange(checked as boolean)
-                  }
+                  onCheckedChange={(c) => handleInStockChange(c as boolean)}
+                  className="h-3.5 w-3.5"
                 />
-                <Label
-                  htmlFor="in-stock"
-                  className="text-sm cursor-pointer"
-                >
-                  In Stock Only
-                </Label>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-          
-          <AccordionItem value="sort">
-            <AccordionTrigger>Sort By</AccordionTrigger>
-            <AccordionContent>
-              <div className="space-y-2">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="sort-newest"
-                    checked={filters.sortBy === 'newest'}
-                    onCheckedChange={(checked) => 
-                      checked && handleSortChange('newest')
-                    }
-                  />
-                  <Label
-                    htmlFor="sort-newest"
-                    className="text-sm cursor-pointer"
-                  >
-                    Newest
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="sort-price-asc"
-                    checked={filters.sortBy === 'price_asc'}
-                    onCheckedChange={(checked) => 
-                      checked && handleSortChange('price_asc')
-                    }
-                  />
-                  <Label
-                    htmlFor="sort-price-asc"
-                    className="text-sm cursor-pointer"
-                  >
-                    Price: Low to High
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="sort-price-desc"
-                    checked={filters.sortBy === 'price_desc'}
-                    onCheckedChange={(checked) => 
-                      checked && handleSortChange('price_desc')
-                    }
-                  />
-                  <Label
-                    htmlFor="sort-price-desc"
-                    className="text-sm cursor-pointer"
-                  >
-                    Price: High to Low
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="sort-rating"
-                    checked={filters.sortBy === 'rating'}
-                    onCheckedChange={(checked) => 
-                      checked && handleSortChange('rating')
-                    }
-                  />
-                  <Label
-                    htmlFor="sort-rating"
-                    className="text-sm cursor-pointer"
-                  >
-                    Highest Rated
-                  </Label>
-                </div>
-              </div>
+                <span className="text-xs text-foreground">In Stock Only</span>
+              </label>
             </AccordionContent>
           </AccordionItem>
         </Accordion>
-        
-        <div className="mt-6 flex items-center gap-2">
-          <Button onClick={applyFilters} className="flex-1">
-            Apply Filters
+
+        {/* Action Buttons */}
+        <div className="mt-3 flex gap-2">
+          <Button onClick={applyFilters} size="sm" className="flex-1 h-8 text-xs">
+            Apply{activeFilterCount > 0 && ` (${activeFilterCount})`}
           </Button>
-          <Button variant="outline" onClick={resetFilters}>
-            Reset
+          <Button variant="outline" size="sm" onClick={resetFilters} className="h-8 text-xs px-2">
+            <X className="h-3.5 w-3.5" />
           </Button>
         </div>
       </CardContent>
