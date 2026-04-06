@@ -1,129 +1,143 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Product } from '@/types/product';
-import { Star, ShoppingCart, ArrowRight } from 'lucide-react';
+import { ShoppingCart, CheckCircle, Clock, ShieldCheck, MapPin, Zap } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Currency } from '@/components/ui/currency';
+import { useCart } from '@/contexts/CartContext';
 
 interface ProductListProps {
   products: Product[];
 }
 
 const ProductList: React.FC<ProductListProps> = ({ products }) => {
-  const getTotalStock = (product: Product) => {
-    return product.variants.reduce((total, variant) => total + variant.stock, 0);
+  const { addToCart } = useCart();
+
+  const getSpecValue = (product: Product, name: string) => {
+    const spec = product.specifications.find(
+      s => s.name.toLowerCase().includes(name.toLowerCase())
+    );
+    return spec?.value;
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
+      {/* Table Header */}
+      <div className="hidden md:grid grid-cols-12 gap-2 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground border-b border-border">
+        <div className="col-span-4">Product</div>
+        <div className="col-span-2">Specs</div>
+        <div className="col-span-1">Brand</div>
+        <div className="col-span-2">Availability</div>
+        <div className="col-span-1">Price</div>
+        <div className="col-span-2">Action</div>
+      </div>
+
       {products.map((product) => {
         const lowestPrice = product.variants.reduce(
-          (lowest, variant) => Math.min(lowest, variant.price),
-          Infinity
+          (lowest, variant) => Math.min(lowest, variant.price), Infinity
         );
-        
-        const hasDiscount = product.variants.some(v => v.salePrice);
-        const inStock = getTotalStock(product) > 0;
-        
+        const inStock = product.variants.reduce((t, v) => t + v.stock, 0) > 0;
+        const ratedCurrent = getSpecValue(product, 'current');
+        const poles = getSpecValue(product, 'pole');
+        const breakingCapacity = getSpecValue(product, 'breaking');
+
         return (
-          <div 
-            key={product.id} 
-            className="flex flex-col md:flex-row border rounded-lg overflow-hidden bg-white shadow-sm hover:shadow-md transition duration-200"
+          <div
+            key={product.id}
+            className="grid grid-cols-1 md:grid-cols-12 gap-2 items-center px-3 py-2.5 border border-border rounded-lg hover:border-primary/20 transition-colors bg-card"
           >
-            {/* Product Image */}
-            <div className="md:w-1/4 max-w-xs">
-              <Link to={`/products/${product.slug}`}>
-                <img 
-                  src={product.featuredImage} 
-                  alt={product.name} 
-                  className="w-full h-48 md:h-full object-cover"
+            {/* Product Name + Image */}
+            <div className="col-span-4 flex items-center gap-3">
+              <Link to={`/products/${product.slug}`} className="shrink-0">
+                <img
+                  src={product.featuredImage}
+                  alt={product.name}
+                  className="w-12 h-12 object-contain rounded border border-border"
                 />
               </Link>
-            </div>
-            
-            {/* Product Details */}
-            <div className="flex-1 p-4 flex flex-col justify-between">
-              <div>
-                <div className="flex items-center text-sm text-gray-500 mb-1">
-                  <Link to={`/sellers/${product.sellerId}`} className="hover:text-brand-600">
-                    {product.sellerName}
-                  </Link>
-                  <span className="mx-2">•</span>
-                  <div className="flex items-center">
-                    <Star className="h-3.5 w-3.5 text-yellow-500 mr-1 fill-yellow-500" />
-                    <span>{product.rating.toFixed(1)}</span>
-                    <span className="ml-1">({product.reviewCount})</span>
-                  </div>
-                </div>
-                
+              <div className="min-w-0">
                 <Link to={`/products/${product.slug}`}>
-                  <h3 className="text-lg font-medium text-gray-900 mb-1 hover:text-brand-700 line-clamp-2">
+                  <p className="text-sm font-medium text-foreground truncate hover:text-primary transition-colors">
                     {product.name}
-                  </h3>
+                  </p>
                 </Link>
-                
-                <p className="text-sm text-gray-500 mb-2 line-clamp-2">
-                  {product.shortDescription || product.description.substring(0, 150)}
-                </p>
-                
-                {/* Badges and categories */}
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {!inStock && (
-                    <Badge variant="destructive">Out of Stock</Badge>
-                  )}
-                  {hasDiscount && (
-                    <Badge variant="secondary">Sale</Badge>
-                  )}
-                  {product.categories.slice(0, 2).map(category => (
-                    <Link 
-                      key={category.id} 
-                      to={`/categories/${category.slug}`}
-                    >
-                      <Badge variant="outline" className="bg-gray-50">
-                        {category.name}
-                      </Badge>
-                    </Link>
-                  ))}
-                </div>
-                
-                {/* Specifications */}
-                <div className="hidden md:block">
-                  <div className="grid grid-cols-2 gap-2 mt-2">
-                    {product.specifications.slice(0, 4).map((spec, index) => (
-                      <div key={index} className="text-xs text-gray-600">
-                        <span className="font-medium">{spec.name}:</span> {spec.value}
-                      </div>
-                    ))}
-                  </div>
+                <div className="flex items-center gap-1 mt-0.5">
+                  <Badge variant="outline" className="text-[9px] px-1 py-0 border-primary/30 text-primary">
+                    <ShieldCheck className="h-2 w-2 mr-0.5" />
+                    Verified
+                  </Badge>
+                  <Badge variant="outline" className="text-[9px] px-1 py-0 border-muted text-muted-foreground">
+                    <Zap className="h-2 w-2 mr-0.5" />
+                    Fast
+                  </Badge>
                 </div>
               </div>
-              
-              <div className="mt-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                <div>
-                  <div className="text-xl font-semibold text-gray-900">
-                    <Currency value={lowestPrice} />
-                  </div>
-                  {inStock ? (
-                    <p className="text-green-600 text-sm">In Stock</p>
-                  ) : (
-                    <p className="text-red-600 text-sm">Out of Stock</p>
-                  )}
-                </div>
-                
-                <div className="flex gap-2 w-full md:w-auto">
-                  <Button className="flex-1 md:flex-none" disabled={!inStock}>
-                    <ShoppingCart className="h-4 w-4 mr-2" />
-                    Add to Cart
-                  </Button>
-                  <Button variant="outline" className="flex-1 md:flex-none">
-                    <Link to={`/products/${product.slug}`} className="flex items-center">
-                      Details <ArrowRight className="h-4 w-4 ml-2" />
-                    </Link>
-                  </Button>
-                </div>
+            </div>
+
+            {/* Key Specs */}
+            <div className="col-span-2">
+              <div className="flex flex-wrap gap-1">
+                {ratedCurrent && (
+                  <span className="text-[11px] px-1.5 py-0.5 rounded bg-muted text-foreground">{ratedCurrent}</span>
+                )}
+                {poles && (
+                  <span className="text-[11px] px-1.5 py-0.5 rounded bg-muted text-foreground">{poles}</span>
+                )}
+                {breakingCapacity && (
+                  <span className="text-[11px] px-1.5 py-0.5 rounded bg-muted text-foreground">{breakingCapacity}</span>
+                )}
               </div>
+            </div>
+
+            {/* Brand */}
+            <div className="col-span-1">
+              <span className="text-xs font-medium text-foreground">{product.sellerName}</span>
+            </div>
+
+            {/* Availability */}
+            <div className="col-span-2">
+              {inStock ? (
+                <div className="flex items-center gap-1">
+                  <CheckCircle className="h-3.5 w-3.5 text-primary" />
+                  <span className="text-xs text-primary font-medium">In Stock</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1">
+                  <Clock className="h-3.5 w-3.5 text-destructive" />
+                  <span className="text-xs text-destructive">{product.leadTime || 'On request'}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Price */}
+            <div className="col-span-1">
+              <p className="text-sm font-bold text-foreground">
+                <Currency value={lowestPrice} />
+              </p>
+            </div>
+
+            {/* Action */}
+            <div className="col-span-2 flex gap-1.5">
+              <Button
+                size="sm"
+                className="h-7 text-xs flex-1"
+                disabled={!inStock}
+                onClick={() =>
+                  addToCart({
+                    productId: product.id,
+                    name: product.name,
+                    price: product.variants[0]?.price || 0,
+                    featuredImage: product.featuredImage
+                  })
+                }
+              >
+                <ShoppingCart className="h-3 w-3 mr-1" />
+                Add
+              </Button>
+              <Button variant="outline" size="sm" className="h-7 text-xs" asChild>
+                <Link to={`/products/${product.slug}`}>View</Link>
+              </Button>
             </div>
           </div>
         );
