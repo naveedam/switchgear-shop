@@ -28,7 +28,7 @@ const voltageFor = (p: number, indo = false) =>
 
 const DEFAULTS = {
   vendor_id: VENDOR_ID,
-  status: "pending",
+  status: "active",
   currency: "INR",
   tax_rate: 18.0,
   min_order_quantity: 1,
