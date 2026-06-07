@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-const VENDOR_ID = "88d52e69-1f14-46ba-bd94-f55ae0ba3ac9";
+const VENDOR_ID = "14c1b96b-52e0-4d74-ae89-4e87e3cdeceb";
 const BRANDS = {
   ABB: "4b442eb3-87ca-4e3f-bb4b-99550c0775cb",
   IndoAsian: "4a63e203-8a13-4bc7-bbde-71cb95786b60",
