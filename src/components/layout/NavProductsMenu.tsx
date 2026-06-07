@@ -16,25 +16,25 @@ const coreElectricalSections: NavSection[] = [
   {
     title: "Low Voltage Switchgear",
     items: [
-      { name: "MCB", href: "/products/low_voltage_switchgear" },
-      { name: "MCCB", href: "/products/low_voltage_switchgear" },
-      { name: "RCCB / ELCB", href: "/products/low_voltage_switchgear" },
-      { name: "Switch Disconnectors", href: "/products/low_voltage_switchgear" },
+      { name: "MCB", href: "/products?category=low_voltage_switchgear" },
+      { name: "MCCB", href: "/products?category=low_voltage_switchgear" },
+      { name: "RCCB / ELCB", href: "/products?category=low_voltage_switchgear" },
+      { name: "Switch Disconnectors", href: "/products?category=low_voltage_switchgear" },
     ],
   },
   {
     title: "Control & Motor Protection",
     items: [
-      { name: "Contactors", href: "/products/starters_and_switches" },
-      { name: "Motor Starters", href: "/products/starters_and_switches" },
-      { name: "Overload Relays", href: "/products/starters_and_switches" },
+      { name: "Contactors", href: "/products?category=starters_and_switches" },
+      { name: "Motor Starters", href: "/products?category=starters_and_switches" },
+      { name: "Overload Relays", href: "/products?category=starters_and_switches" },
     ],
   },
   {
     title: "Power Quality",
     items: [
-      { name: "Capacitors", href: "/products/capacitors_and_reactors" },
-      { name: "APFC Panels", href: "/products/capacitors_and_reactors" },
+      { name: "Capacitors", href: "/products?category=capacitors_and_reactors" },
+      { name: "APFC Panels", href: "/products?category=capacitors_and_reactors" },
     ],
   },
 ];
@@ -43,15 +43,15 @@ const measurementSections: NavSection[] = [
   {
     title: "Measurement & Instrumentation",
     items: [
-      { name: "Energy Meters", href: "/products/measuring_instruments" },
-      { name: "Multifunction Meters", href: "/products/testing_and_measuring_instruments" },
+      { name: "Energy Meters", href: "/products?category=measuring_instruments" },
+      { name: "Multifunction Meters", href: "/products?category=testing_and_measuring_instruments" },
     ],
   },
   {
     title: "Industrial Automation",
     items: [
-      { name: "VFDs", href: "/products/industrial_automation_vfd" },
-      { name: "Relays", href: "/products/relays" },
+      { name: "VFDs", href: "/products?category=industrial_automation_vfd" },
+      { name: "Relays", href: "/products?category=relays" },
     ],
   },
 ];
@@ -60,18 +60,18 @@ const accessoriesSections: NavSection[] = [
   {
     title: "Electrical Accessories",
     items: [
-      { name: "Wires & Cables", href: "/products/wires_and_cables" },
-      { name: "Industrial Plugs & Sockets", href: "/products/industrial_plugs_and_sockets" },
-      { name: "Switches & Sockets", href: "/products/switches_and_sockets" },
-      { name: "Conduits & Accessories", href: "/products/conduits_and_accessories" },
+      { name: "Wires & Cables", href: "/products?category=wires_and_cables" },
+      { name: "Industrial Plugs & Sockets", href: "/products?category=industrial_plugs_and_sockets" },
+      { name: "Switches & Sockets", href: "/products?category=switches_and_sockets" },
+      { name: "Conduits & Accessories", href: "/products?category=conduits_and_accessories" },
     ],
   },
 ];
 
 const quickAccessLinks: NavItem[] = [
-  { name: "MCB", href: "/products/low_voltage_switchgear", badge: "330 Products" },
-  { name: "Contactors", href: "/products/starters_and_switches" },
-  { name: "RCCB", href: "/products/low_voltage_switchgear" },
+  { name: "MCB", href: "/products?category=low_voltage_switchgear", badge: "330 Products" },
+  { name: "Contactors", href: "/products?category=starters_and_switches" },
+  { name: "RCCB", href: "/products?category=low_voltage_switchgear" },
 ];
 
 const applicationLinks: NavItem[] = [
@@ -140,7 +140,7 @@ const NavProductsMenu: React.FC = () => (
               </div>
             </div>
             <div className="mt-6 pt-4 border-t border-border flex justify-between items-center">
-              <Link to="/products/low_voltage_switchgear" className="text-sm font-medium text-primary hover:text-primary/80 flex items-center gap-1">
+              <Link to="/products?category=low_voltage_switchgear" className="text-sm font-medium text-primary hover:text-primary/80 flex items-center gap-1">
                 View All Products <ArrowRight className="h-4 w-4" />
               </Link>
               <span className="text-xs text-muted-foreground">330+ products from 4 brands</span>
