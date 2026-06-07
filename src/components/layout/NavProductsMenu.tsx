@@ -14,10 +14,8 @@ interface NavItem {
   href: string;
   badge?: string;
 }
-
 interface NavSection {
   title: string;
-  icon?: React.ReactNode;
   items: NavItem[];
 }
 
@@ -25,29 +23,25 @@ const coreElectricalSections: NavSection[] = [
   {
     title: "Low Voltage Switchgear",
     items: [
-      { name: "MCB", href: "/products?subcategory=mcb" },
-      { name: "MCCB", href: "/products?subcategory=mccb" },
-      { name: "ACB", href: "/products?subcategory=acb" },
-      { name: "RCCB / RCBO", href: "/products?subcategory=rccb-rcbo" },
-      { name: "Switch Disconnectors", href: "/products?subcategory=switch-disconnectors" },
+      { name: "MCB", href: "/products/low_voltage_switchgear" },
+      { name: "MCCB", href: "/products/low_voltage_switchgear" },
+      { name: "RCCB / ELCB", href: "/products/low_voltage_switchgear" },
+      { name: "Switch Disconnectors", href: "/products/low_voltage_switchgear" },
     ],
   },
   {
     title: "Control & Motor Protection",
     items: [
-      { name: "Contactors", href: "/products?subcategory=contactors" },
-      { name: "Overload Relays", href: "/products?subcategory=overload-relays" },
-      { name: "Motor Starters", href: "/products?subcategory=motor-starters" },
-      { name: "Control Relays", href: "/products?subcategory=control-relays" },
-      { name: "Timers", href: "/products?subcategory=timers" },
+      { name: "Contactors", href: "/products/starters_and_switches" },
+      { name: "Motor Starters", href: "/products/starters_and_switches" },
+      { name: "Overload Relays", href: "/products/starters_and_switches" },
     ],
   },
   {
     title: "Power Quality",
     items: [
-      { name: "Capacitors", href: "/products?subcategory=capacitors" },
-      { name: "Detuned Reactors", href: "/products?subcategory=detuned-reactors" },
-      { name: "APFC Panels", href: "/products?subcategory=apfc-panels" },
+      { name: "Capacitors", href: "/products/capacitors_and_reactors" },
+      { name: "APFC Panels", href: "/products/capacitors_and_reactors" },
     ],
   },
 ];
@@ -56,19 +50,15 @@ const measurementAutomationSections: NavSection[] = [
   {
     title: "Measurement & Instrumentation",
     items: [
-      { name: "Energy Meters", href: "/products?subcategory=energy-meters" },
-      { name: "Multifunction Meters", href: "/products?subcategory=multifunction-meters" },
-      { name: "CTs & PTs", href: "/products?subcategory=cts-pts" },
-      { name: "Panel Instruments", href: "/products?subcategory=panel-instruments" },
+      { name: "Energy Meters", href: "/products/measuring_instruments" },
+      { name: "Multifunction Meters", href: "/products/testing_and_measuring_instruments" },
     ],
   },
   {
     title: "Industrial Automation",
     items: [
-      { name: "PLCs", href: "/products?subcategory=plcs" },
-      { name: "HMIs", href: "/products?subcategory=hmis" },
-      { name: "VFDs", href: "/products?subcategory=vfds" },
-      { name: "Power Supplies", href: "/products?subcategory=power-supplies" },
+      { name: "VFDs", href: "/products/industrial_automation_vfd" },
+      { name: "Relays", href: "/products/relays" },
     ],
   },
 ];
@@ -77,20 +67,19 @@ const accessoriesSections: NavSection[] = [
   {
     title: "Electrical Accessories",
     items: [
-      { name: "Wires & Cables", href: "/products?category=wires-and-cables" },
-      { name: "Industrial Plugs & Sockets", href: "/products?category=industrial-plugs-and-sockets" },
-      { name: "Switches & Sockets", href: "/products?category=switches-and-sockets" },
-      { name: "Conduits & Accessories", href: "/products?category=conduits-and-accessories" },
+      { name: "Wires & Cables", href: "/products/wires_and_cables" },
+      { name: "Industrial Plugs & Sockets", href: "/products/industrial_plugs_and_sockets" },
+      { name: "Switches & Sockets", href: "/products/switches_and_sockets" },
+      { name: "Conduits & Accessories", href: "/products/conduits_and_accessories" },
     ],
   },
 ];
 
 const quickAccessLinks: NavItem[] = [
-  { name: "MCCBs", href: "/products?subcategory=mccb", badge: "Most Ordered" },
-  { name: "Contactors", href: "/products?subcategory=contactors" },
-  { name: "Control Relays", href: "/products?subcategory=control-relays" },
-  { name: "Energy Meters", href: "/products?subcategory=energy-meters" },
-  { name: "Panel Accessories", href: "/products?subcategory=panel-accessories" },
+  { name: "MCB - Single Pole", href: "/products/low_voltage_switchgear", badge: "330 Products" },
+  { name: "Contactors", href: "/products/starters_and_switches" },
+  { name: "RCCB", href: "/products/low_voltage_switchgear" },
+  { name: "Distribution Boards", href: "/products/low_voltage_switchgear" },
 ];
 
 const applicationLinks: NavItem[] = [
@@ -101,7 +90,7 @@ const applicationLinks: NavItem[] = [
   { name: "Industrial Automation", href: "/applications/industrial-automation" },
 ];
 
-const NavSection: React.FC<{ section: NavSection }> = ({ section }) => (
+const NavSectionBlock: React.FC<{ section: NavSection }> = ({ section }) => (
   <div className="mb-4 last:mb-0">
     <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
       {section.title}
@@ -125,7 +114,6 @@ const NavProductsMenu: React.FC = () => {
   return (
     <NavigationMenu>
       <NavigationMenuList className="gap-0">
-        {/* Products Mega Menu */}
         <NavigationMenuItem>
           <NavigationMenuTrigger className="bg-transparent hover:bg-secondary/50 data-[state=open]:bg-secondary/50">
             Products
@@ -133,39 +121,32 @@ const NavProductsMenu: React.FC = () => {
           <NavigationMenuContent>
             <div className="w-[900px] p-6 bg-background border rounded-lg shadow-xl">
               <div className="grid grid-cols-3 gap-8">
-                {/* Column 1: Core Electrical */}
                 <div className="space-y-1">
                   <div className="flex items-center gap-2 mb-4 pb-2 border-b border-border">
                     <Zap className="h-4 w-4 text-primary" />
                     <span className="font-semibold text-foreground">Core Electrical</span>
                   </div>
                   {coreElectricalSections.map((section) => (
-                    <NavSection key={section.title} section={section} />
+                    <NavSectionBlock key={section.title} section={section} />
                   ))}
                 </div>
-
-                {/* Column 2: Measurement & Automation */}
                 <div className="space-y-1">
                   <div className="flex items-center gap-2 mb-4 pb-2 border-b border-border">
                     <Gauge className="h-4 w-4 text-primary" />
                     <span className="font-semibold text-foreground">Measurement & Automation</span>
                   </div>
                   {measurementAutomationSections.map((section) => (
-                    <NavSection key={section.title} section={section} />
+                    <NavSectionBlock key={section.title} section={section} />
                   ))}
                 </div>
-
-                {/* Column 3: Accessories & Quick Access */}
                 <div className="space-y-1">
                   <div className="flex items-center gap-2 mb-4 pb-2 border-b border-border">
                     <Cable className="h-4 w-4 text-primary" />
                     <span className="font-semibold text-foreground">Accessories & Quick Access</span>
                   </div>
                   {accessoriesSections.map((section) => (
-                    <NavSection key={section.title} section={section} />
+                    <NavSectionBlock key={section.title} section={section} />
                   ))}
-                  
-                  {/* Quick Access Links */}
                   <div className="mt-6 pt-4 border-t border-border">
                     <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
                       Quick Access
@@ -192,25 +173,22 @@ const NavProductsMenu: React.FC = () => {
                   </div>
                 </div>
               </div>
-              
-              {/* Footer with View All */}
               <div className="mt-6 pt-4 border-t border-border flex justify-between items-center">
                 <Link
-                  to="/categories"
+                  to="/products/low_voltage_switchgear"
                   className="text-sm font-medium text-primary hover:text-primary/80 transition-colors flex items-center gap-1"
                 >
-                  View All Categories
+                  View All Products
                   <ArrowRight className="h-4 w-4" />
                 </Link>
                 <span className="text-xs text-muted-foreground">
-                  1000+ products from 50+ brands
+                  330+ products from 4 brands
                 </span>
               </div>
             </div>
           </NavigationMenuContent>
         </NavigationMenuItem>
 
-        {/* Applications Menu */}
         <NavigationMenuItem>
           <NavigationMenuTrigger className="bg-transparent hover:bg-secondary/50 data-[state=open]:bg-secondary/50">
             Applications
@@ -248,32 +226,18 @@ const NavProductsMenu: React.FC = () => {
           </NavigationMenuContent>
         </NavigationMenuItem>
 
-        {/* Brands Link */}
         <NavigationMenuItem>
-          <Link
-            to="/brands"
-            className="flex items-center justify-between rounded-md px-4 py-2 text-sm font-medium hover:bg-secondary/50 transition-colors"
-          >
+          <Link to="/brands" className="flex items-center rounded-md px-4 py-2 text-sm font-medium hover:bg-secondary/50 transition-colors">
             Brands
           </Link>
         </NavigationMenuItem>
-
-        {/* Sellers Link */}
         <NavigationMenuItem>
-          <Link
-            to="/sellers"
-            className="flex items-center justify-between rounded-md px-4 py-2 text-sm font-medium hover:bg-secondary/50 transition-colors"
-          >
+          <Link to="/sellers" className="flex items-center rounded-md px-4 py-2 text-sm font-medium hover:bg-secondary/50 transition-colors">
             Sellers
           </Link>
         </NavigationMenuItem>
-
-        {/* About Link */}
         <NavigationMenuItem>
-          <Link
-            to="/about"
-            className="flex items-center justify-between rounded-md px-4 py-2 text-sm font-medium hover:bg-secondary/50 transition-colors"
-          >
+          <Link to="/about" className="flex items-center rounded-md px-4 py-2 text-sm font-medium hover:bg-secondary/50 transition-colors">
             About
           </Link>
         </NavigationMenuItem>
