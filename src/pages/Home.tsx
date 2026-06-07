@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Product } from '@/types/product';
 import { Category } from '@/types/category';
 import { fetchCategories } from '@/services/categoryService';
+import { supabase } from '@/integrations/supabase/client';
 import HeroSection from '@/components/home/HeroSection';
 import BenefitsSection from '@/components/home/BenefitsSection';
 import CategoriesSection from '@/components/home/CategoriesSection';
@@ -10,43 +11,6 @@ import CtaSection from '@/components/home/CtaSection';
 import TestimonialsSection from '@/components/home/TestimonialsSection';
 import TrustSection from '@/components/home/TrustSection';
 
-// Mock featured products
-const mockVariant = {
-  id: '1',
-  name: 'Standard',
-  sku: 'CB-100',
-  price: 599.99,
-  stock: 25,
-};
-
-const mockFeaturedProducts: Product[] = Array.from({ length: 8 }, (_, i) => ({
-  id: (i + 1).toString(),
-  name: `Premium ${i % 2 === 0 ? 'Circuit Breaker' : 'Power Distribution Panel'} ${100 + i}`,
-  slug: `product-${i + 1}`,
-  description: 'High-quality switchgear product with advanced safety features and reliable performance.',
-  shortDescription: 'High-quality switchgear with advanced safety features.',
-  featuredImage: `https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&w=400&h=300`,
-  images: [`https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&w=400&h=300`],
-  categories: [{
-    id: '1',
-    name: 'Circuit Breakers',
-    slug: 'circuit-breakers',
-  }],
-  specifications: [
-    { name: 'Voltage', value: '240V' },
-    { name: 'Current Rating', value: '100A' },
-  ],
-  variants: [{ ...mockVariant, price: 499.99 + i * 100 }],
-  sellerId: (i % 3 + 1).toString(),
-  sellerName: `ElectroTech Solutions ${i % 3 + 1}`,
-  rating: 4 + (i % 10) / 10,
-  reviewCount: 10 + i,
-  createdAt: new Date(),
-  updatedAt: new Date(),
-  status: 'published',
-}));
-
-// Helper to get a relevant default image per category name
 const getDefaultCategoryImage = (categoryName: string) => {
   const normalized = categoryName.toLowerCase().replace(/&/g, 'and').replace(/[-_]/g, ' ').trim();
   switch (normalized) {
@@ -68,10 +32,65 @@ const Home: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   useEffect(() => {
-    setFeaturedProducts(mockFeaturedProducts);
-    
+    const loadFeaturedProducts = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('products')
+          .select(`*, brands(id, name), companies(id, name)`)
+          .eq('status', 'active')
+          .order('sort_order', { ascending: true })
+          .limit(8);
+
+        if (error) throw error;
+
+        const mapped: Product[] = (data || []).map((p: any) => {
+          let images: string[] = [];
+          try {
+            images = Array.isArray(p.Images)
+              ? p.Images
+              : typeof p.Images === 'string'
+              ? JSON.parse(p.Images)
+              : [];
+          } catch { images = []; }
+
+          return {
+            id: p.id,
+            name: p.name,
+            slug: p.id,
+            description: p.description || '',
+            shortDescription: p.description ? p.description.substring(0, 120) : '',
+            featuredImage: images[0] || null,
+            images,
+            categories: [{ id: p.category, name: p.category?.replace(/_/g, ' ') || '', slug: p.category }],
+            specifications: [
+              { name: 'Rated Current', value: p.rated_current },
+              { name: 'Poles', value: p.pole_count ? `${p.pole_count}P` : null },
+              { name: 'Breaking Capacity', value: p.breaking_capacity },
+            ].filter(s => s.value != null) as { name: string; value: string }[],
+            variants: [{ id: `${p.id}-v1`, name: 'Standard', sku: p.sku || p.id, price: Number(p.price), stock: p.stock_quantity || 0 }],
+            sellerId: p.vendor_id,
+            sellerName: p.companies?.name || 'M N Associates',
+            brandName: p.brands?.name || '',
+            rating: 0,
+            reviewCount: 0,
+            createdAt: new Date(p.created_at),
+            updatedAt: new Date(p.updated_at),
+            status: 'published',
+            minOrderQuantity: p.min_order_quantity || 1,
+            maxOrderQuantity: 1000,
+            leadTime: '3-5 days',
+            warranty: p.warranty_period || '12 months',
+            certification: p.iec_standards_compliance || [],
+          };
+        });
+        setFeaturedProducts(mapped);
+      } catch (err) {
+        console.error('Failed to load featured products:', err);
+      }
+    };
+
     const loadCategories = async () => {
       try {
         setLoading(true);
@@ -85,7 +104,8 @@ const Home: React.FC = () => {
         setLoading(false);
       }
     };
-    
+
+    loadFeaturedProducts();
     loadCategories();
   }, []);
 
@@ -102,13 +122,13 @@ const Home: React.FC = () => {
       setLoading(false);
     }
   };
-  
+
   return (
     <div className="min-h-screen bg-background">
       <HeroSection />
       <TrustSection />
       <BenefitsSection />
-      <CategoriesSection 
+      <CategoriesSection
         categories={categories}
         loading={loading}
         error={error}

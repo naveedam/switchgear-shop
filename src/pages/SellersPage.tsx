@@ -31,59 +31,42 @@ const SellersPage: React.FC = () => {
   const fetchSellers = async () => {
     try {
       setLoading(true);
-      
-      // Fetch only registered sellers who have completed onboarding
-      const { data: onboardedSellers, error: onboardingError } = await supabase
-        .from('seller_onboarding')
-        .select(`
-          id,
-          user_id,
-          company_name,
-          company_description,
-          contact_email,
-          contact_phone,
-          address,
-          city,
-          state,
-          country,
-          website,
-          created_at,
-          status
-        `)
-        .eq('status', 'approved')
-        .order('created_at', { ascending: false });
 
-      if (onboardingError) throw onboardingError;
+      const { data: companiesData, error: companiesError } = await supabase
+        .from('companies')
+        .select('id, name, email')
+        .order('name', { ascending: true });
 
-      if (!onboardedSellers || onboardedSellers.length === 0) {
+      if (companiesError) throw companiesError;
+      if (!companiesData || companiesData.length === 0) {
         setSellers([]);
         return;
       }
 
-      // Get product counts for each seller based on their user_id
       const sellersWithProducts = await Promise.all(
-        onboardedSellers.map(async (seller) => {
+        companiesData.map(async (company) => {
           const { count } = await supabase
             .from('products')
             .select('*', { count: 'exact', head: true })
-            .eq('vendor_id', seller.user_id)
+            .eq('vendor_id', company.id)
             .eq('status', 'active');
 
           return {
-            id: seller.user_id, // Use user_id for product linking
-            name: seller.company_name,
-            description: seller.company_description,
-            email: seller.contact_email,
-            phone: seller.contact_phone,
-            address: `${seller.address}, ${seller.city}, ${seller.state}, ${seller.country}`,
-            status: seller.status,
-            created_at: seller.created_at,
-            productCount: count || 0
+            id: company.id,
+            name: company.name,
+            description: null,
+            email: company.email,
+            phone: null,
+            address: null,
+            status: 'active',
+            created_at: new Date().toISOString(),
+            productCount: count || 0,
           };
         })
       );
 
-      setSellers(sellersWithProducts);
+      // Only show companies that have products
+      setSellers(sellersWithProducts.filter(s => s.productCount > 0));
     } catch (error) {
       console.error('Error fetching sellers:', error);
       toast({
@@ -98,7 +81,6 @@ const SellersPage: React.FC = () => {
 
   const filteredSellers = sellers.filter(seller =>
     seller.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    seller.address?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     seller.description?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -114,7 +96,6 @@ const SellersPage: React.FC = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Our Trusted Sellers</h1>
         <p className="text-lg text-gray-600">
@@ -122,12 +103,11 @@ const SellersPage: React.FC = () => {
         </p>
       </div>
 
-      {/* Search */}
       <div className="mb-6">
         <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4"/>
           <Input
-            placeholder="Search sellers by name, location, or specialization..."
+            placeholder="Search sellers by name or location..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -135,7 +115,6 @@ const SellersPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <Card>
           <CardContent className="p-6">
@@ -155,7 +134,7 @@ const SellersPage: React.FC = () => {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Active Products</p>
                 <p className="text-2xl font-bold">
-                  {sellers.reduce((sum, seller) => sum + seller.productCount, 0)}
+                  {sellers.reduce((sum, s) => sum + s.productCount, 0)}
                 </p>
               </div>
             </div>
@@ -167,16 +146,13 @@ const SellersPage: React.FC = () => {
               <Globe className="h-8 w-8 text-blue-600" />
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Locations</p>
-                <p className="text-2xl font-bold">
-                  {new Set(sellers.map(s => s.address?.split(',')[0]).filter(Boolean)).size}
-                </p>
+                <p className="text-2xl font-bold">1</p>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Sellers Grid */}
       {filteredSellers.length === 0 ? (
         <Card>
           <CardContent className="p-12 text-center">
@@ -185,19 +161,8 @@ const SellersPage: React.FC = () => {
               {searchTerm ? 'No sellers found' : 'No sellers available yet'}
             </h3>
             <p className="text-gray-600">
-              {searchTerm 
-                ? 'Try adjusting your search terms.' 
-                : 'Our trusted sellers will be listed here soon.'}
+              {searchTerm ? 'Try adjusting your search terms.' : 'Our trusted sellers will be listed here soon.'}
             </p>
-            {searchTerm && (
-              <Button 
-                variant="outline" 
-                onClick={() => setSearchTerm('')}
-                className="mt-4"
-              >
-                Clear Search
-              </Button>
-            )}
           </CardContent>
         </Card>
       ) : (
@@ -213,44 +178,20 @@ const SellersPage: React.FC = () => {
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
-                {seller.description && (
-                  <p className="text-sm text-gray-600 line-clamp-2">
-                    {seller.description}
-                  </p>
-                )}
-                
                 <div className="space-y-2">
-                  {seller.address && (
-                    <div className="flex items-center text-sm text-gray-600">
-                      <MapPin className="h-4 w-4 mr-2 flex-shrink-0" />
-                      <span className="truncate">{seller.address}</span>
-                    </div>
-                  )}
-                  
                   {seller.email && (
                     <div className="flex items-center text-sm text-gray-600">
                       <Mail className="h-4 w-4 mr-2 flex-shrink-0" />
                       <span className="truncate">{seller.email}</span>
                     </div>
                   )}
-                  
-                  {seller.phone && (
-                    <div className="flex items-center text-sm text-gray-600">
-                      <Phone className="h-4 w-4 mr-2 flex-shrink-0" />
-                      <span>{seller.phone}</span>
-                    </div>
-                  )}
                 </div>
-
                 <div className="pt-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    variant="outline"
+                    size="sm"
                     className="w-full"
-                    onClick={() => {
-                      // Navigate to seller's products
-                      window.location.href = `/products?vendor=${seller.id}`;
-                    }}
+                    onClick={() => { window.location.href = `/products?vendor=${seller.id}`; }}
                   >
                     View Products
                   </Button>
