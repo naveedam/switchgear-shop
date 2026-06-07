@@ -240,6 +240,51 @@ export type Database = {
         }
         Relationships: []
       }
+      broker_sessions: {
+        Row: {
+          access_token: string | null
+          base_url: string | null
+          broker: string
+          connected_at: string | null
+          consumer_key: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          session_token: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token?: string | null
+          base_url?: string | null
+          broker?: string
+          connected_at?: string | null
+          consumer_key?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          session_token?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string | null
+          base_url?: string | null
+          broker?: string
+          connected_at?: string | null
+          consumer_key?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          session_token?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       bulk_imports: {
         Row: {
           created_at: string
@@ -2258,6 +2303,24 @@ export type Database = {
           },
         ]
       }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
       project_bom_items: {
         Row: {
           accuracy_class: string | null
@@ -3740,6 +3803,105 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      signal_history: {
+        Row: {
+          confidence: number | null
+          created_at: string
+          entry_price: number | null
+          id: string
+          index: string | null
+          option_type: string | null
+          strategy: string | null
+          strength: string | null
+          strike: number | null
+          user_id: string
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string
+          entry_price?: number | null
+          id?: string
+          index?: string | null
+          option_type?: string | null
+          strategy?: string | null
+          strength?: string | null
+          strike?: number | null
+          user_id: string
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string
+          entry_price?: number | null
+          id?: string
+          index?: string | null
+          option_type?: string | null
+          strategy?: string | null
+          strength?: string | null
+          strike?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      trades: {
+        Row: {
+          closed_at: string | null
+          confidence: number | null
+          created_at: string
+          entry_price: number | null
+          exit_price: number | null
+          id: string
+          is_paper: boolean | null
+          option_type: string | null
+          order_id: string | null
+          pnl: number | null
+          quantity: number | null
+          status: string | null
+          stop_loss: number | null
+          strategy: string | null
+          strike: number | null
+          symbol: string | null
+          user_id: string
+        }
+        Insert: {
+          closed_at?: string | null
+          confidence?: number | null
+          created_at?: string
+          entry_price?: number | null
+          exit_price?: number | null
+          id?: string
+          is_paper?: boolean | null
+          option_type?: string | null
+          order_id?: string | null
+          pnl?: number | null
+          quantity?: number | null
+          status?: string | null
+          stop_loss?: number | null
+          strategy?: string | null
+          strike?: number | null
+          symbol?: string | null
+          user_id: string
+        }
+        Update: {
+          closed_at?: string | null
+          confidence?: number | null
+          created_at?: string
+          entry_price?: number | null
+          exit_price?: number | null
+          id?: string
+          is_paper?: boolean | null
+          option_type?: string | null
+          order_id?: string | null
+          pnl?: number | null
+          quantity?: number | null
+          status?: string | null
+          stop_loss?: number | null
+          strategy?: string | null
+          strike?: number | null
+          symbol?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {
