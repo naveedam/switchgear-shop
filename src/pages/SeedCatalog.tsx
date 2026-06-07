@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const VENDOR_ID = "88d52e69-1f14-46ba-bd94-f55ae0ba3ac9";
 const BRANDS = {
-  ABB: "4b442eb3-87ca-4e3f-bb4b-99550c0775c0",
+  ABB: "4b442eb3-87ca-4e3f-bb4b-99550c0775cb",
   IndoAsian: "4a63e203-8a13-4bc7-bbde-71cb95786b60",
   HPL: "4d33392e-b8fa-4969-adc2-74a29d69abca",
   Wipro: "49c95a1d-4229-471d-afc8-1cdb44a8d36b",
