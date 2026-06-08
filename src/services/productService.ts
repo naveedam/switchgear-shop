@@ -46,6 +46,9 @@ export const fetchCategoryProducts = async (
     if (filter.sellerId) {
       query = query.eq('vendor_id', filter.sellerId);
     }
+    if (filter.brandId) {
+      query = query.eq('brand_id', filter.brandId);
+    }
 
     // Sorting
     switch (filter.sortBy) {
