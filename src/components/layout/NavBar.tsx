@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, Menu as MenuIcon, X } from 'lucide-react';
@@ -12,6 +12,15 @@ import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/s
 
 const NavBar: React.FC = () => {
   const { logout } = useAuth();
+  const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = React.useState('');
+
+  const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && searchQuery.trim()) {
+      navigate(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
+      setSearchQuery('');
+    }
+  };
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   const handleLogout = () => {
@@ -44,6 +53,9 @@ const NavBar: React.FC = () => {
                 <Input
                   placeholder="Search by brand, model, or rating (e.g. Schneider 160A MCCB)"
                   className="pl-10 h-10 bg-secondary/50 border-border focus:bg-background transition-colors text-sm"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={handleSearch}
                 />
               </div>
             </div>
@@ -74,6 +86,9 @@ const NavBar: React.FC = () => {
                         <Input
                           placeholder="Search by brand, model, or rating..."
                           className="pl-10 text-sm"
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          onKeyDown={handleSearch}
                         />
                       </div>
                     </div>

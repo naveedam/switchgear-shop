@@ -26,6 +26,7 @@ import RegisterPage from './pages/auth/RegisterPage';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage';
 import AllCategories from './pages/AllCategories';
+import BrandsPage from './pages/BrandsPage';
 import AdminOrders from './pages/admin/AdminOrders';
 import AdminRfqs from './pages/admin/AdminRfqs';
 import AdminUsers from './pages/admin/AdminUsers';
@@ -115,6 +116,7 @@ function App() {
             <Route path="categories" element={<AllCategories />} />
             <Route path="categories/:categorySlug" element={<ProductListingPage />} />
             <Route path="products" element={<ProductListingPage />} />
+            <Route path="brands" element={<BrandsPage />} />
             <Route path="products/:productSlug" element={<ProductDetailPage />} />
             
             {/* Application pages */}
