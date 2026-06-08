@@ -143,7 +143,7 @@ const NavProductsMenu: React.FC = () => (
               <Link to="/products?category=low_voltage_switchgear" className="text-sm font-medium text-primary hover:text-primary/80 flex items-center gap-1">
                 View All Products <ArrowRight className="h-4 w-4" />
               </Link>
-              <span className="text-xs text-muted-foreground">330+ products from 4 brands</span>
+              <span className="text-xs text-muted-foreground">800+ products from 10 brands</span>
             </div>
           </div>
         </NavigationMenuContent>
