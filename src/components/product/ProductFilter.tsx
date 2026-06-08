@@ -23,8 +23,16 @@ interface ProductFilterProps {
 }
 
 const BRAND_OPTIONS = [
-  'Siemens', 'Schneider Electric', 'ABB', 'L&T', 'Legrand',
-  'Havells', 'C&S Electric', 'BCH', 'Polycab', 'Omron',
+  { name: 'ABB',               id: '4b442eb3-87ca-4e3f-bb4b-99550c0775cb' },
+  { name: 'Havells',           id: '8f88abf7-db43-423d-92b3-ffdbdc1c3446' },
+  { name: 'Schneider Electric',id: '633815cb-b043-42ac-bd72-b803c6bce1b6' },
+  { name: 'L&T',               id: 'c6775030-5d53-4e57-9151-a5be09ed1294' },
+  { name: 'Siemens',           id: 'f03caea4-145e-4207-89d0-907dc0ede710' },
+  { name: 'Legrand',           id: 'd4e1bb5c-d795-4c59-ad4e-677dffbb6a20' },
+  { name: 'Hager',             id: '6061c3df-0de5-4164-a0a2-26c6557db6c2' },
+  { name: 'HPL',               id: '4d33392e-b8fa-4969-adc2-74a29d69abca' },
+  { name: 'Indo Asian',        id: '4a63e203-8a13-4bc7-bbde-71cb95786b60' },
+  { name: 'Wipro',             id: '49c95a1d-4229-471d-afc8-1cdb44a8d36b' },
 ];
 
 const CURRENT_OPTIONS = ['16A', '25A', '32A', '40A', '63A', '100A', '125A', '160A', '200A', '250A', '400A', '630A', '800A'];
@@ -78,6 +86,7 @@ const ProductFilter: React.FC<ProductFilterProps> = ({
 
   const activeFilterCount = [
     filters.subcategoryId,
+    filters.brandId,
     filters.inStock,
     searchTerm,
     priceRange[0] !== minMaxPrice.min || priceRange[1] !== minMaxPrice.max,
@@ -128,9 +137,15 @@ const ProductFilter: React.FC<ProductFilterProps> = ({
             <AccordionContent className="pb-2">
               <div className="space-y-1 max-h-40 overflow-y-auto">
                 {BRAND_OPTIONS.map(brand => (
-                  <label key={brand} className="flex items-center gap-2 cursor-pointer py-0.5 px-1 rounded hover:bg-muted/50">
-                    <Checkbox className="h-3.5 w-3.5" />
-                    <span className="text-xs text-foreground">{brand}</span>
+                  <label key={brand.id} className="flex items-center gap-2 cursor-pointer py-0.5 px-1 rounded hover:bg-muted/50">
+                    <Checkbox
+                      className="h-3.5 w-3.5"
+                      checked={filters.brandId === brand.id}
+                      onCheckedChange={(checked) => {
+                        setFilters(prev => ({ ...prev, brandId: checked ? brand.id : undefined }));
+                      }}
+                    />
+                    <span className="text-xs text-foreground">{brand.name}</span>
                   </label>
                 ))}
               </div>

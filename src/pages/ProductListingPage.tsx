@@ -35,6 +35,7 @@ const ProductListingPage = () => {
   const maxPrice = searchParams.get('maxPrice') ? Number(searchParams.get('maxPrice')) : undefined;
   const inStock = searchParams.get('inStock') === 'true';
   const search = searchParams.get('search') || undefined;
+  const brandId = searchParams.get('brandId') || undefined;
   const page = Number(searchParams.get('page')) || 1;
   const limit = Number(searchParams.get('limit')) || 24;
 
@@ -49,6 +50,7 @@ const ProductListingPage = () => {
         const filters: FilterType = {
           categoryId: categorySlug,
           sellerId: undefined,
+          brandId,
           minPrice, maxPrice, inStock, search, sortBy
         };
         if (subcategoryId) filters.subcategoryId = subcategoryId;
@@ -67,6 +69,7 @@ const ProductListingPage = () => {
   const handleFilterChange = (filters: FilterType) => {
     const newParams = new URLSearchParams();
     if (filters.subcategoryId) newParams.set('subcategory', filters.subcategoryId);
+    if (filters.brandId) newParams.set('brandId', filters.brandId);
     if (filters.sortBy) newParams.set('sort', filters.sortBy);
     if (filters.minPrice) newParams.set('minPrice', filters.minPrice.toString());
     if (filters.maxPrice) newParams.set('maxPrice', filters.maxPrice.toString());
@@ -124,7 +127,7 @@ const ProductListingPage = () => {
         {/* Sidebar */}
         <div className="hidden lg:block w-56 shrink-0">
           <ProductFilter
-            initialFilters={{ subcategoryId, minPrice, maxPrice, inStock, search, sortBy }}
+            initialFilters={{ subcategoryId, brandId, minPrice, maxPrice, inStock, search, sortBy }}
             onFilterChange={handleFilterChange}
             subcategories={subcategories}
             minMaxPrice={{ min: 0, max: 100000 }}
