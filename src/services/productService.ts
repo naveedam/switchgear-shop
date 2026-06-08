@@ -24,7 +24,7 @@ export const fetchCategoryProducts = async (
 
     // Filters
     if (filter.categoryId) {
-      query = query.eq('category', filter.categoryId);
+      query = query.eq('category', filter.categoryId as any);
     }
     if (filter.subcategoryId) {
       query = query.eq('subcategory_id', filter.subcategoryId);
