@@ -58,6 +58,7 @@ import ProjectsPage from './pages/buyer/ProjectsPage';
 import ProjectDetailPage from './pages/buyer/ProjectDetailPage';
 import SellerRfqsPage from './pages/seller/SellerRfqsPage';
 import SellerQuotePage from './pages/seller/SellerQuotePage';
+import SeedCatalog2 from './pages/SeedCatalog2';
 
 
 import { Toaster } from './components/ui/toaster';
@@ -182,6 +183,7 @@ function App() {
           <Route path="/cart" element={<CartPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/order-success" element={<OrderSuccessPage />} />
+          <Route path="/seed-catalog-2" element={<SeedCatalog2 />} />
           
 
           
