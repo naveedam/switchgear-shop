@@ -1,0 +1,1 @@
+SELECT public.make_user_super_admin('naveedahmedm@hotmail.com');
