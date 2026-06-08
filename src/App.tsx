@@ -183,7 +183,11 @@ function App() {
           <Route path="/cart" element={<CartPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/order-success" element={<OrderSuccessPage />} />
-          <Route path="/seed-catalog-2" element={<SeedCatalog2 />} />
+          <Route path="/seed-catalog-2" element={
+            <ProtectedRoute requiredRole="admin">
+              <SeedCatalog2 />
+            </ProtectedRoute>
+          } />
           
 
           
