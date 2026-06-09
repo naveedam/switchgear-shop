@@ -121,7 +121,7 @@ const CheckoutPage: React.FC = () => {
           buyer_id: user.id,
           total_amount: totalAmount,
           shipping_address: shipping,
-          status: "pending_payment",
+          status: "pending",
           payment_status: "pending",
           payment_reference: utr,
           payment_proof_url: paymentProofUrl,
