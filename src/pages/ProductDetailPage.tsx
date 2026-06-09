@@ -79,17 +79,10 @@ const ProductDetailPage: React.FC = () => {
 
   const handleAddToCart = () => {
     addToCart({
-      id: `${product.id}-v1`,
       productId: product.id,
-      productName: product.name,
-      variantId: `${product.id}-v1`,
-      variantName: 'Standard',
+      name: product.name,
       price: Number(product.price),
-      quantity: 1,
-      sellerId: product.vendor_id,
-      sellerName: product.companies?.name || 'M N Associates',
-      sku: product.sku || product.id,
-      image: mainImage,
+      featuredImage: mainImage,
     });
   };
 
