@@ -51,6 +51,7 @@ export interface ProductFilter {
   categoryId?: string;
   subcategoryId?: string;
   sellerId?: string;
+  brandId?: string;
   minPrice?: number;
   maxPrice?: number;
   inStock?: boolean;
