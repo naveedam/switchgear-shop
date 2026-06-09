@@ -29,6 +29,7 @@ import AllCategories from './pages/AllCategories';
 import BrandsPage from './pages/BrandsPage';
 import AdminOrders from './pages/admin/AdminOrders';
 import AdminRfqs from './pages/admin/AdminRfqs';
+import AdminBuyerOutreach from './pages/admin/AdminBuyerOutreach';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminAnalytics from './pages/admin/AdminAnalytics';
 import AdminPermissions from './pages/admin/AdminPermissions';
@@ -224,6 +225,7 @@ function App() {
             <Route path="reports" element={<AdminReports />} />
             <Route path="ai-images" element={<AdminAIImages />} />
             <Route path="ai-products" element={<AdminAIProducts />} />
+            <Route path="buyer-outreach" element={<AdminBuyerOutreach />} />
             <Route path="ai-vendors" element={<AdminAIVendors />} />
           </Route>
           
