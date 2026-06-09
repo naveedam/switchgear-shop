@@ -79,7 +79,6 @@ const ProductDetailPage: React.FC = () => {
 
   const handleAddToCart = () => {
     addToCart({
-      id: `${product.id}-v1`,
       productId: product.id,
       productName: product.name,
       variantId: `${product.id}-v1`,
