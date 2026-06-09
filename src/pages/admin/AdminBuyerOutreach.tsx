@@ -1,14 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Trash2, Copy, Download, Mail } from 'lucide-react';
+import { Trash2, Copy, Download, Mail, RefreshCw } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 
-interface Lead {
-  id: number;
+interface Prospect {
+  id: string;
   name: string;
   role: string;
   company: string;
@@ -20,7 +21,8 @@ interface Lead {
   spend: string;
   notes: string;
   status: string;
-  addedAt: string;
+  score: number;
+  created_at: string;
 }
 
 const TEMPLATES: Record<string, { subject: string; body: string }> = {
@@ -84,31 +86,35 @@ SwitchgearShop.in`
   }
 };
 
-const SAMPLE_LEADS: Omit<Lead, "id" | "addedAt">[] = [
-  { name: "Suresh Babu", role: "Purchase Engineer", company: "Brigade Group", industry: "Real Estate / Developers", email: "", phone: "", city: "Bangalore", source: "LinkedIn", spend: "high", notes: "Procurement for residential towers, uses Havells and Legrand", status: "new" },
-  { name: "Kiran Reddy", role: "Sr. Procurement Manager", company: "Prestige Constructions", industry: "EPC / Construction", email: "", phone: "", city: "Bangalore", source: "LinkedIn", spend: "very_high", notes: "Large commercial projects, buys ABB and Schneider in bulk", status: "new" },
-  { name: "Mohammed Farooq", role: "Electrical Engineer", company: "Voltas Limited", industry: "Facilities Management", email: "", phone: "", city: "Bangalore", source: "IndiaMART", spend: "med", notes: "HVAC and electrical maintenance contracts", status: "new" },
-  { name: "Anand Krishnamurthy", role: "Panel Builder", company: "AK Electricals", industry: "Panel Builder", email: "", phone: "", city: "Bangalore", source: "Referral", spend: "med", notes: "Builds MCC and PCC panels, sources from Chamrajpet market", status: "new" },
-  { name: "Priya Nair", role: "Purchase Manager", company: "Manyata Tech Park", industry: "Data Center / IT Parks", email: "", phone: "", city: "Bangalore", source: "LinkedIn", spend: "high", notes: "Facility maintenance procurement, prefers vendor consolidation", status: "new" },
-  { name: "Deepak Yadav", role: "Procurement Head", company: "Sobha Limited", industry: "Real Estate / Developers", email: "", phone: "", city: "Bangalore", source: "LinkedIn", spend: "very_high", notes: "Luxury residential projects, quality focused", status: "new" },
+const SPEND_LABELS: Record<string, string> = {
+  low: "Under ₹50K", med: "₹50K–₹5L", high: "₹5L–₹25L", very_high: "Above ₹25L"
+};
+
+const SAMPLE_PROSPECTS = [
+  { name: "Suresh Babu", role: "Purchase Engineer", company: "Brigade Group", industry: "Real Estate / Developers", email: "", phone: "", city: "Bangalore", source: "LinkedIn", spend: "high", notes: "Procurement for residential towers, uses Havells and Legrand" },
+  { name: "Kiran Reddy", role: "Sr. Procurement Manager", company: "Prestige Constructions", industry: "EPC / Construction", email: "", phone: "", city: "Bangalore", source: "LinkedIn", spend: "very_high", notes: "Large commercial projects, buys ABB and Schneider in bulk" },
+  { name: "Mohammed Farooq", role: "Electrical Engineer", company: "Voltas Limited", industry: "Facilities Management", email: "", phone: "", city: "Bangalore", source: "IndiaMART", spend: "med", notes: "HVAC and electrical maintenance contracts" },
+  { name: "Anand Krishnamurthy", role: "Panel Builder", company: "AK Electricals", industry: "Panel Builder", email: "", phone: "", city: "Bangalore", source: "Referral", spend: "med", notes: "Builds MCC and PCC panels, sources from Chamrajpet market" },
+  { name: "Priya Nair", role: "Purchase Manager", company: "Manyata Tech Park", industry: "Data Center / IT Parks", email: "", phone: "", city: "Bangalore", source: "LinkedIn", spend: "high", notes: "Facility maintenance procurement, prefers vendor consolidation" },
+  { name: "Deepak Yadav", role: "Procurement Head", company: "Sobha Limited", industry: "Real Estate / Developers", email: "", phone: "", city: "Bangalore", source: "LinkedIn", spend: "very_high", notes: "Luxury residential projects, quality focused" },
 ];
 
-function scoreLead(lead: Lead): number {
+function calcScore(p: Partial<Prospect>): number {
   let s = 0;
-  if (["EPC / Construction", "Panel Builder", "Manufacturing"].includes(lead.industry)) s += 3;
-  if (["Data Center / IT Parks", "Facilities Management"].includes(lead.industry)) s += 2;
-  if (lead.spend === "very_high") s += 3;
-  else if (lead.spend === "high") s += 2;
-  else if (lead.spend === "med") s += 1;
-  if (lead.email) s += 1;
-  if (lead.phone) s += 1;
+  if (["EPC / Construction", "Panel Builder", "Manufacturing"].includes(p.industry || "")) s += 3;
+  if (["Data Center / IT Parks", "Facilities Management"].includes(p.industry || "")) s += 2;
+  if (p.spend === "very_high") s += 3;
+  else if (p.spend === "high") s += 2;
+  else if (p.spend === "med") s += 1;
+  if (p.email) s += 1;
+  if (p.phone) s += 1;
   return s;
 }
 
-function getPriority(score: number): { label: string; variant: "default" | "secondary" | "destructive" | "outline" } {
-  if (score >= 5) return { label: "High", variant: "default" };
-  if (score >= 3) return { label: "Medium", variant: "secondary" };
-  return { label: "Low", variant: "outline" };
+function getPriority(score: number) {
+  if (score >= 5) return { label: "High", variant: "default" as const };
+  if (score >= 3) return { label: "Medium", variant: "secondary" as const };
+  return { label: "Low", variant: "outline" as const };
 }
 
 function getTemplateKey(industry: string): string {
@@ -118,57 +124,100 @@ function getTemplateKey(industry: string): string {
   return "mfg";
 }
 
-const SPEND_LABELS: Record<string, string> = {
-  low: "Under ₹50K", med: "₹50K–₹5L", high: "₹5L–₹25L", very_high: "Above ₹25L"
-};
-
 const AdminBuyerOutreach: React.FC = () => {
-  const [leads, setLeads] = useState<Lead[]>([]);
+  const { user } = useAuth();
+  const [prospects, setProspects] = useState<Prospect[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [tab, setTab] = useState<"add" | "list" | "templates">("add");
   const [filterIndustry, setFilterIndustry] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
-  const [emailVisible, setEmailVisible] = useState<Record<number, boolean>>({});
+  const [emailVisible, setEmailVisible] = useState<Record<string, boolean>>({});
   const [form, setForm] = useState({
     name: "", role: "", company: "", industry: "",
     email: "", phone: "", city: "Bangalore",
     source: "LinkedIn", spend: "med", notes: ""
   });
 
-  const addLead = () => {
+  useEffect(() => { fetchProspects(); }, []);
+
+  const fetchProspects = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("prospects")
+        .select("*")
+        .order("score", { ascending: false })
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      setProspects(data || []);
+    } catch (err) {
+      console.error(err);
+      toast({ title: "Error", description: "Failed to load prospects", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addProspect = async () => {
     if (!form.name || !form.company) {
       toast({ title: "Required", description: "Name and company are required", variant: "destructive" });
       return;
     }
-    const lead: Lead = { ...form, id: Date.now(), addedAt: new Date().toLocaleDateString("en-IN"), status: "new" };
-    setLeads(prev => [...prev, lead]);
-    setForm({ name: "", role: "", company: "", industry: "", email: "", phone: "", city: "Bangalore", source: "LinkedIn", spend: "med", notes: "" });
-    setTab("list");
-    toast({ title: "Lead added", description: `${lead.name} from ${lead.company} added.` });
+    try {
+      setSaving(true);
+      const score = calcScore(form);
+      const { data, error } = await supabase
+        .from("prospects")
+        .insert([{ ...form, score, status: "new", created_by: user?.id }])
+        .select()
+        .single();
+      if (error) throw error;
+      setProspects(prev => [data, ...prev]);
+      setForm({ name: "", role: "", company: "", industry: "", email: "", phone: "", city: "Bangalore", source: "LinkedIn", spend: "med", notes: "" });
+      setTab("list");
+      toast({ title: "Prospect added", description: `${data.name} from ${data.company} saved.` });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const loadSamples = () => {
-    const samples = SAMPLE_LEADS.map(s => ({ ...s, id: Date.now() + Math.random(), addedAt: new Date().toLocaleDateString("en-IN") }));
-    setLeads(prev => [...prev, ...samples]);
-    setTab("list");
-    toast({ title: "Sample leads loaded", description: `${samples.length} Bangalore leads added.` });
+  const loadSamples = async () => {
+    try {
+      setSaving(true);
+      const rows = SAMPLE_PROSPECTS.map(s => ({ ...s, score: calcScore(s), status: "new", created_by: user?.id }));
+      const { data, error } = await supabase.from("prospects").insert(rows).select();
+      if (error) throw error;
+      setProspects(prev => [...(data || []), ...prev]);
+      setTab("list");
+      toast({ title: "Sample leads loaded", description: `${data?.length} Bangalore prospects added.` });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const updateStatus = (id: number, status: string) => {
-    setLeads(prev => prev.map(l => l.id === id ? { ...l, status } : l));
+  const updateStatus = async (id: string, status: string) => {
+    const { error } = await supabase.from("prospects").update({ status }).eq("id", id);
+    if (!error) setProspects(prev => prev.map(p => p.id === id ? { ...p, status } : p));
   };
 
-  const deleteLead = (id: number) => {
-    setLeads(prev => prev.filter(l => l.id !== id));
+  const deleteProspect = async (id: string) => {
+    const { error } = await supabase.from("prospects").delete().eq("id", id);
+    if (!error) {
+      setProspects(prev => prev.filter(p => p.id !== id));
+      toast({ title: "Deleted" });
+    }
   };
 
-  const toggleEmail = (id: number) => {
-    setEmailVisible(prev => ({ ...prev, [id]: !prev[id] }));
-  };
-
-  const generateEmail = (lead: Lead): string => {
-    const key = getTemplateKey(lead.industry);
-    const tmpl = TEMPLATES[key];
-    return tmpl.body.replace("[Name]", lead.name.split(" ")[0]).replace("[Company]", lead.company);
+  const generateEmail = (p: Prospect): string => {
+    const key = getTemplateKey(p.industry);
+    return TEMPLATES[key].body
+      .replace("[Name]", p.name.split(" ")[0])
+      .replace("[Company]", p.company);
   };
 
   const copyToClipboard = (text: string) => {
@@ -177,45 +226,49 @@ const AdminBuyerOutreach: React.FC = () => {
   };
 
   const exportCSV = () => {
-    const headers = ["Name","Role","Company","Industry","Email","Phone","City","Source","Spend","Status","Notes","Added"];
-    const rows = leads.map(l => [l.name,l.role,l.company,l.industry,l.email,l.phone,l.city,l.source,l.spend,l.status,l.notes,l.addedAt].map(v => `"${v||""}"`).join(","));
+    const headers = ["Name","Role","Company","Industry","Email","Phone","City","Source","Spend","Status","Score","Notes","Created"];
+    const rows = prospects.map(p => [p.name,p.role,p.company,p.industry,p.email,p.phone,p.city,p.source,p.spend,p.status,p.score,p.notes,p.created_at].map(v => `"${v||""}"`).join(","));
     const csv = [headers.join(","), ...rows].join("\n");
     const a = document.createElement("a");
     a.href = "data:text/csv;charset=utf-8," + encodeURIComponent(csv);
-    a.download = "switchgearshop_leads.csv";
+    a.download = "switchgearshop_prospects.csv";
     a.click();
   };
 
-  const filtered = leads
-    .filter(l => (!filterIndustry || l.industry === filterIndustry) && (!filterStatus || l.status === filterStatus))
-    .sort((a, b) => scoreLead(b) - scoreLead(a));
+  const filtered = prospects
+    .filter(p => (!filterIndustry || p.industry === filterIndustry) && (!filterStatus || p.status === filterStatus));
 
   const stats = {
-    total: leads.length,
-    high: leads.filter(l => scoreLead(l) >= 5).length,
-    emailed: leads.filter(l => l.status === "emailed").length,
-    replied: leads.filter(l => l.status === "replied").length,
+    total: prospects.length,
+    high: prospects.filter(p => p.score >= 5).length,
+    emailed: prospects.filter(p => p.status === "emailed").length,
+    replied: prospects.filter(p => p.status === "replied").length,
   };
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold mb-1">Buyer Outreach</h1>
-        <p className="text-sm text-muted-foreground">Build your target list of purchase engineers and procurement managers in Bangalore.</p>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold mb-1">Buyer Outreach</h1>
+          <p className="text-sm text-muted-foreground">CRM for purchase engineers and procurement managers in Bangalore.</p>
+        </div>
+        <Button variant="outline" size="sm" onClick={fetchProspects}>
+          <RefreshCw className="h-4 w-4 mr-1" /> Refresh
+        </Button>
       </div>
 
       <div className="flex gap-2 mb-6 border-b">
         {(["add","list","templates"] as const).map(t => (
           <button key={t} onClick={() => setTab(t)}
             className={`px-4 py-2 text-sm capitalize border-b-2 transition-colors ${tab === t ? "border-primary font-medium" : "border-transparent text-muted-foreground"}`}>
-            {t === "add" ? "Add lead" : t === "list" ? `Target list (${leads.length})` : "Email templates"}
+            {t === "add" ? "Add prospect" : t === "list" ? `Prospects (${prospects.length})` : "Email templates"}
           </button>
         ))}
       </div>
 
       {tab === "add" && (
         <Card>
-          <CardHeader><CardTitle className="text-base">New lead</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-base">New prospect</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div><label className="text-xs text-muted-foreground mb-1 block">Contact name *</label>
@@ -230,7 +283,7 @@ const AdminBuyerOutreach: React.FC = () => {
                 <select className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
                   value={form.industry} onChange={e => setForm(p => ({...p, industry: e.target.value}))}>
                   <option value="">Select industry</option>
-                  {["EPC / Construction","Manufacturing","Data Center / IT Parks","Real Estate / Developers","Facilities Management","Electrical Contractor","Panel Builder","Government / PSU"].map(i => <option key={i}>{i}</option>)}
+                  {["EPC / Construction","Manufacturing","Data Center / IT Parks","Real Estate / Developers","Facilities Management","Electrical Contractor","Panel Builder","Government / PSU","Hospitality","Healthcare"].map(i => <option key={i}>{i}</option>)}
                 </select></div>
             </div>
             <div className="grid grid-cols-3 gap-4">
@@ -239,13 +292,13 @@ const AdminBuyerOutreach: React.FC = () => {
               <div><label className="text-xs text-muted-foreground mb-1 block">Phone</label>
                 <Input value={form.phone} onChange={e => setForm(p => ({...p, phone: e.target.value}))} placeholder="+91 98xxxxxxxx" /></div>
               <div><label className="text-xs text-muted-foreground mb-1 block">City</label>
-                <Input value={form.city} onChange={e => setForm(p => ({...p, city: e.target.value}))} placeholder="Bangalore" /></div>
+                <Input value={form.city} onChange={e => setForm(p => ({...p, city: e.target.value}))} /></div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div><label className="text-xs text-muted-foreground mb-1 block">Source</label>
                 <select className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
                   value={form.source} onChange={e => setForm(p => ({...p, source: e.target.value}))}>
-                  {["LinkedIn","IndiaMART","Referral","Cold outreach","Conference","Trade directory"].map(s => <option key={s}>{s}</option>)}
+                  {["LinkedIn","IndiaMART","Referral","Cold outreach","Conference","Trade directory","Chamrajpet market visit"].map(s => <option key={s}>{s}</option>)}
                 </select></div>
               <div><label className="text-xs text-muted-foreground mb-1 block">Est. monthly spend</label>
                 <select className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
@@ -259,8 +312,12 @@ const AdminBuyerOutreach: React.FC = () => {
             <div><label className="text-xs text-muted-foreground mb-1 block">Notes</label>
               <Input value={form.notes} onChange={e => setForm(p => ({...p, notes: e.target.value}))} placeholder="Brands used, pain points, project type..." /></div>
             <div className="flex gap-3 pt-2">
-              <Button onClick={addLead}>Add to list</Button>
-              <Button variant="outline" onClick={loadSamples}>Load sample Bangalore leads</Button>
+              <Button onClick={addProspect} disabled={saving}>
+                {saving ? "Saving..." : "Save prospect"}
+              </Button>
+              <Button variant="outline" onClick={loadSamples} disabled={saving}>
+                Load sample Bangalore leads
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -269,7 +326,7 @@ const AdminBuyerOutreach: React.FC = () => {
       {tab === "list" && (
         <div>
           <div className="grid grid-cols-4 gap-4 mb-6">
-            {[["Total leads", stats.total], ["High priority", stats.high], ["Emailed", stats.emailed], ["Replied", stats.replied]].map(([label, val]) => (
+            {[["Total", stats.total], ["High priority", stats.high], ["Emailed", stats.emailed], ["Replied", stats.replied]].map(([label, val]) => (
               <div key={label as string} className="bg-muted/50 rounded-lg p-4 text-center">
                 <div className="text-2xl font-bold">{val}</div>
                 <div className="text-xs text-muted-foreground mt-1">{label}</div>
@@ -290,54 +347,63 @@ const AdminBuyerOutreach: React.FC = () => {
               <option value="emailed">Emailed</option>
               <option value="replied">Replied</option>
               <option value="qualified">Qualified</option>
+              <option value="disqualified">Disqualified</option>
             </select>
-            <Button variant="outline" size="sm" onClick={exportCSV}><Download className="h-4 w-4 mr-1" /> Export CSV</Button>
+            <Button variant="outline" size="sm" onClick={exportCSV}>
+              <Download className="h-4 w-4 mr-1" /> CSV
+            </Button>
           </div>
 
-          {filtered.length === 0 ? (
-            <p className="text-muted-foreground text-sm py-8 text-center">No leads yet. Add some in the "Add lead" tab.</p>
+          {loading ? (
+            <div className="text-center py-12 text-muted-foreground">Loading prospects...</div>
+          ) : filtered.length === 0 ? (
+            <p className="text-muted-foreground text-sm py-8 text-center">No prospects yet. Add some in the "Add prospect" tab.</p>
           ) : (
             <div className="space-y-3">
-              {filtered.map(lead => {
-                const score = scoreLead(lead);
-                const prio = getPriority(score);
-                const emailShown = emailVisible[lead.id];
-                const emailText = generateEmail(lead);
-                const tmplKey = getTemplateKey(lead.industry);
+              {filtered.map(prospect => {
+                const prio = getPriority(prospect.score);
+                const emailShown = emailVisible[prospect.id];
+                const emailText = generateEmail(prospect);
+                const tmplKey = getTemplateKey(prospect.industry);
                 return (
-                  <Card key={lead.id}>
+                  <Card key={prospect.id}>
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between mb-2">
                         <div>
-                          <span className="font-medium text-sm">{lead.name}</span>
-                          {lead.role && <span className="text-muted-foreground text-sm"> · {lead.role}</span>}
-                          <div className="text-xs text-muted-foreground mt-0.5">{lead.company} · {lead.city} · {lead.industry}</div>
+                          <span className="font-medium text-sm">{prospect.name}</span>
+                          {prospect.role && <span className="text-muted-foreground text-sm"> · {prospect.role}</span>}
+                          <div className="text-xs text-muted-foreground mt-0.5">{prospect.company} · {prospect.city} · {prospect.industry}</div>
                         </div>
                         <div className="flex items-center gap-2">
                           <Badge variant={prio.variant}>{prio.label}</Badge>
-                          <button onClick={() => deleteLead(lead.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button>
+                          <span className="text-xs text-muted-foreground">Score: {prospect.score}</span>
+                          <button onClick={() => deleteProspect(prospect.id)} className="text-muted-foreground hover:text-destructive ml-1">
+                            <Trash2 className="h-4 w-4" />
+                          </button>
                         </div>
                       </div>
 
                       <div className="flex flex-wrap gap-2 mb-3">
-                        <Badge variant="outline">{SPEND_LABELS[lead.spend]}</Badge>
-                        <Badge variant="secondary">{lead.source}</Badge>
-                        {lead.email && <span className="text-xs text-muted-foreground self-center">{lead.email}</span>}
-                        {lead.phone && <span className="text-xs text-muted-foreground self-center">{lead.phone}</span>}
+                        <Badge variant="outline">{SPEND_LABELS[prospect.spend]}</Badge>
+                        <Badge variant="secondary">{prospect.source}</Badge>
+                        {prospect.email && <span className="text-xs text-muted-foreground self-center">{prospect.email}</span>}
+                        {prospect.phone && <span className="text-xs text-muted-foreground self-center">{prospect.phone}</span>}
                       </div>
 
-                      {lead.notes && <p className="text-xs text-muted-foreground mb-3">{lead.notes}</p>}
+                      {prospect.notes && <p className="text-xs text-muted-foreground mb-3">{prospect.notes}</p>}
 
                       <div className="flex gap-2 flex-wrap">
                         <select className="h-8 px-2 rounded-md border border-input bg-background text-xs"
-                          value={lead.status} onChange={e => updateStatus(lead.id, e.target.value)}>
+                          value={prospect.status} onChange={e => updateStatus(prospect.id, e.target.value)}>
                           <option value="new">New</option>
                           <option value="emailed">Emailed</option>
                           <option value="replied">Replied</option>
                           <option value="qualified">Qualified</option>
+                          <option value="disqualified">Disqualified</option>
                         </select>
-                        <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => toggleEmail(lead.id)}>
-                          <Mail className="h-3 w-3 mr-1" />{emailShown ? "Hide email" : "Generate email"}
+                        <Button variant="outline" size="sm" className="h-8 text-xs"
+                          onClick={() => setEmailVisible(prev => ({ ...prev, [prospect.id]: !prev[prospect.id] }))}>
+                          <Mail className="h-3 w-3 mr-1" />{emailShown ? "Hide" : "Generate email"}
                         </Button>
                       </div>
 
@@ -365,7 +431,9 @@ const AdminBuyerOutreach: React.FC = () => {
             <Card key={key}>
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm capitalize">{key === "epc" ? "EPC / Construction" : key === "mfg" ? "Manufacturing" : key === "panel" ? "Panel Builder" : "Facilities Management"}</CardTitle>
+                  <CardTitle className="text-sm">
+                    {key === "epc" ? "EPC / Construction" : key === "mfg" ? "Manufacturing" : key === "panel" ? "Panel Builder" : "Facilities Management"}
+                  </CardTitle>
                   <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => copyToClipboard(tmpl.body)}>
                     <Copy className="h-3 w-3 mr-1" /> Copy
                   </Button>
