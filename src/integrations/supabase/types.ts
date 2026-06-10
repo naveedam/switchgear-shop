@@ -2496,6 +2496,63 @@ export type Database = {
           },
         ]
       }
+      prospects: {
+        Row: {
+          city: string | null
+          company: string
+          created_at: string | null
+          created_by: string | null
+          email: string | null
+          id: string
+          industry: string | null
+          name: string
+          notes: string | null
+          phone: string | null
+          role: string | null
+          score: number | null
+          source: string | null
+          spend: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          city?: string | null
+          company: string
+          created_at?: string | null
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          industry?: string | null
+          name: string
+          notes?: string | null
+          phone?: string | null
+          role?: string | null
+          score?: number | null
+          source?: string | null
+          spend?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          city?: string | null
+          company?: string
+          created_at?: string | null
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          industry?: string | null
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          role?: string | null
+          score?: number | null
+          source?: string | null
+          spend?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       rfq_audit_log: {
         Row: {
           action: string

@@ -191,6 +191,11 @@ function App() {
               <div />
             </ProtectedRoute>
           } />
+          <Route path="/seed-catalog-4" element={
+            <ProtectedRoute requiredRole="admin">
+              <SeedCatalog4 />
+            </ProtectedRoute>
+          } />
           
 
           
