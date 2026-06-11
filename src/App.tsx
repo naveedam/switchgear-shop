@@ -229,6 +229,7 @@ function App() {
             <Route path="ai-products" element={<AdminAIProducts />} />
             <Route path="buyer-outreach" element={<AdminBuyerOutreach />} />
             <Route path="ai-vendors" element={<AdminAIVendors />} />
+            <Route path="catalog-ingestion" element={<CatalogIngestion />} />
           </Route>
           
           {/* Seller routes - protected */}
