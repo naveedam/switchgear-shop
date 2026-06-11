@@ -371,6 +371,51 @@ export type Database = {
           },
         ]
       }
+      catalog_ingestion_jobs: {
+        Row: {
+          admin_id: string
+          committed_count: number | null
+          created_at: string | null
+          error_message: string | null
+          extracted_count: number | null
+          file_name: string
+          file_type: string
+          id: string
+          raw_extracted: Json | null
+          status: string
+          storage_path: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          admin_id: string
+          committed_count?: number | null
+          created_at?: string | null
+          error_message?: string | null
+          extracted_count?: number | null
+          file_name: string
+          file_type: string
+          id?: string
+          raw_extracted?: Json | null
+          status?: string
+          storage_path?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          admin_id?: string
+          committed_count?: number | null
+          created_at?: string | null
+          error_message?: string | null
+          extracted_count?: number | null
+          file_name?: string
+          file_type?: string
+          id?: string
+          raw_extracted?: Json | null
+          status?: string
+          storage_path?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       catalog_products: {
         Row: {
           brand_id: string | null

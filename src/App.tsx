@@ -11,6 +11,7 @@ import AdminSettings from './pages/admin/AdminSettings';
 import AdminAIImages from './pages/admin/AdminAIImages';
 import AdminAIProducts from './pages/admin/AdminAIProducts';
 import AdminAIVendors from './pages/admin/AdminAIVendors';
+import CatalogIngestion from './pages/admin/CatalogIngestion';
 import AdminCarts from './pages/admin/AdminCarts';
 import AdminEscrow from './pages/admin/AdminEscrow';
 import EditProduct from './pages/admin/EditProduct';
@@ -228,6 +229,7 @@ function App() {
             <Route path="ai-products" element={<AdminAIProducts />} />
             <Route path="buyer-outreach" element={<AdminBuyerOutreach />} />
             <Route path="ai-vendors" element={<AdminAIVendors />} />
+            <Route path="catalog-ingestion" element={<CatalogIngestion />} />
           </Route>
           
           {/* Seller routes - protected */}

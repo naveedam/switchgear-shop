@@ -16,7 +16,8 @@ import {
   Building,
   ShoppingCart,
   Wallet,
-  FileQuestion
+  FileQuestion,
+  Upload
 } from 'lucide-react';
 
 const menuItems = [
@@ -29,6 +30,11 @@ const menuItems = [
     name: 'Products',
     href: '/admin/products',
     icon: ShoppingBag,
+  },
+  {
+    name: 'Catalog import',
+    href: '/admin/catalog-ingestion',
+    icon: Upload,
   },
   {
     name: 'Product Requests',
