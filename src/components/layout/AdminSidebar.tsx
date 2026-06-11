@@ -16,7 +16,8 @@ import {
   Building,
   ShoppingCart,
   Wallet,
-  FileQuestion
+  FileQuestion,
+  Upload
 } from 'lucide-react';
 
 const menuItems = [
