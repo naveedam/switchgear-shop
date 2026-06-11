@@ -32,6 +32,11 @@ const menuItems = [
     icon: ShoppingBag,
   },
   {
+    name: 'Catalog import',
+    href: '/admin/catalog-ingestion',
+    icon: Upload,
+  },
+  {
     name: 'Product Requests',
     href: '/admin/product-requests',
     icon: FileQuestion,
