@@ -422,7 +422,7 @@ const CatalogIngestion: React.FC = () => {
         const slice = toInsert.slice(i, i + BATCH);
         const { error, data } = await supabase
           .from('products')
-          .upsert(slice, { onConflict: 'sku', ignoreDuplicates: true })
+          .upsert(slice as any, { onConflict: 'sku', ignoreDuplicates: true })
           .select('id');
         if (error) throw error;
         committed += data?.length || 0;
