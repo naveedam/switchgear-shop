@@ -387,10 +387,6 @@ const CatalogIngestion: React.FC = () => {
 
   const selectedCount = products.filter(p => p.selected).length;
 
-  const updateProduct = (id: string, patch: Partial<ExtractedProduct>) => {
-    setProducts(prev => prev.map(p => p.id === id ? { ...p, ...patch } : p));
-  };
-  // FIX: id field is _id
   const updateP = (id: string, patch: Partial<ExtractedProduct>) => {
     setProducts(prev => prev.map(p => p._id === id ? { ...p, ...patch } : p));
   };
