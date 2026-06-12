@@ -12,7 +12,6 @@ const corsHeaders = {
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-
   try {
     const { job_id, storage_path } = await req.json();
     if (!job_id || !storage_path) {
@@ -22,12 +21,59 @@ serve(async (req) => {
     }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
-
     await supabase.from("catalog_ingestion_jobs")
       .update({ status: "extracting", updated_at: new Date().toISOString() })
       .eq("id", job_id);
 
-    // Fetch existing products for matching
+    // Step 1: Fetch PDF from Supabase storage
+    const pdfUrl = "https://hdoefblcoavpzvfiiglm.supabase.co/storage/v1/object/public/product-images/" + storage_path;
+    console.log("Fetching PDF:", pdfUrl);
+    const pdfRes = await fetch(pdfUrl);
+    if (!pdfRes.ok) throw new Error("Failed to fetch PDF: " + pdfRes.status);
+    const pdfSize = pdfRes.headers.get("content-length") || "";
+    console.log("PDF size:", pdfSize);
+
+    // Step 2: Start resumable upload to Gemini File API
+    const startHeaders: Record<string, string> = {
+      "X-Goog-Upload-Protocol": "resumable",
+      "X-Goog-Upload-Command": "start",
+      "X-Goog-Upload-Header-Content-Type": "application/pdf",
+      "Content-Type": "application/json",
+    };
+    if (pdfSize) startHeaders["X-Goog-Upload-Header-Content-Length"] = pdfSize;
+
+    const startRes = await fetch(
+      "https://generativelanguage.googleapis.com/upload/v1beta/files?key=" + GEMINI_API_KEY,
+      { method: "POST", headers: startHeaders, body: JSON.stringify({ file: { display_name: storage_path } }) }
+    );
+    if (!startRes.ok) throw new Error("Gemini upload start failed: " + await startRes.text());
+    const uploadUrl = startRes.headers.get("x-goog-upload-url");
+    if (!uploadUrl) throw new Error("No upload URL from Gemini");
+    console.log("Got upload URL");
+
+    // Step 3: Stream PDF to Gemini
+    const uploadHeaders: Record<string, string> = {
+      "Content-Type": "application/pdf",
+      "X-Goog-Upload-Command": "upload, finalize",
+    };
+    if (pdfSize) {
+      uploadHeaders["X-Goog-Upload-Offset"] = "0";
+      uploadHeaders["Content-Length"] = pdfSize;
+    }
+    const uploadRes = await fetch(uploadUrl, {
+      method: "POST",
+      headers: uploadHeaders,
+      body: pdfRes.body,
+      // @ts-ignore
+      duplex: "half",
+    });
+    if (!uploadRes.ok) throw new Error("Gemini upload failed: " + await uploadRes.text());
+    const uploadData = await uploadRes.json();
+    const fileUri = uploadData.file?.uri;
+    if (!fileUri) throw new Error("No file URI: " + JSON.stringify(uploadData));
+    console.log("Uploaded to Gemini:", fileUri);
+
+    // Step 4: Fetch existing products
     const { data: products } = await supabase.from("products")
       .select("id, name, brand, category")
       .eq("status", "active")
@@ -35,84 +81,47 @@ serve(async (req) => {
     const productNames = (products || []).map((p: any) => p.name).join("\n");
     const productMap = new Map((products || []).map((p: any) => [p.name, p.id]));
 
-    // Download PDF from Supabase (edge function has no size/CORS limits)
-    const pdfUrl = `${SUPABASE_URL}/storage/v1/object/public/product-images/${storage_path}`;
-    console.log("Fetching PDF from:", pdfUrl);
-    const pdfRes = await fetch(pdfUrl);
-    if (!pdfRes.ok) throw new Error(`Failed to fetch PDF: ${pdfRes.status}`);
+    // Step 5: Call Gemini with file URI
+    console.log("Calling Gemini generateContent...");
+    const prompt = "Extract ALL products from this electrical switchgear catalog PDF.\n\nFor each product provide:\n- name: full product name with specs\n- sku: part/catalog number if visible\n- brand: manufacturer\n- price: numeric price or 0\n- category_hint: one of: low_voltage_switchgear, wires_and_cables, switches_and_sockets, relays, starters_and_switches, testing_and_measuring_instruments\n- description: brief technical description\n- matched_existing_name: closest match from this list or null:\n" + productNames + "\n- confidence: high|medium|low\n\nRespond ONLY with valid JSON, no markdown fences:\n{\"products\":[{\"name\":\"...\",\"sku\":\"...\",\"brand\":\"...\",\"price\":0,\"category_hint\":\"...\",\"description\":\"...\",\"matched_existing_name\":null,\"confidence\":\"medium\"}],\"catalog_brand\":\"...\"}";
 
-    const pdfBuffer = await pdfRes.arrayBuffer();
-    console.log("PDF size:", pdfBuffer.byteLength, "bytes");
-
-    // Convert to base64
-    const pdfBytes = new Uint8Array(pdfBuffer);
-    let binary = "";
-    const chunkSize = 8192;
-    for (let i = 0; i < pdfBytes.length; i += chunkSize) {
-      binary += String.fromCharCode(...pdfBytes.subarray(i, i + chunkSize));
-    }
-    const pdfBase64 = btoa(binary);
-    console.log("Base64 length:", pdfBase64.length);
-
-    // Call Gemini with inline PDF data
     const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + GEMINI_API_KEY,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          contents: [{
-            parts: [
-              { inline_data: { mime_type: "application/pdf", data: pdfBase64 } },
-              { text: `Extract ALL products from this electrical switchgear catalog PDF.
-
-For each product provide:
-- name: full product name with specs
-- sku: part/catalog number if visible
-- brand: manufacturer
-- price: numeric price or 0
-- category_hint: one of: low_voltage_switchgear, wires_and_cables, switches_and_sockets, relays, starters_and_switches, testing_and_measuring_instruments
-- description: brief technical description
-- matched_existing_name: closest match from this list or null:
-${productNames}
-- confidence: high|medium|low
-
-Respond ONLY with valid JSON, no markdown:
-{"products":[{"name":"...","sku":"...","brand":"...","price":0,"category_hint":"...","description":"...","matched_existing_name":null,"confidence":"medium"}],"catalog_brand":"..."}` },
-            ],
-          }],
-          generationConfig: { temperature: 0.1, maxOutputTokens: 8192 },
+          contents: [{ parts: [{ file_data: { mime_type: "application/pdf", file_uri: fileUri } }, { text: prompt }] }],
+          generationConfig: { temperature: 0.1, maxOutputTokens: 65536 },
         }),
       }
     );
 
     const geminiData = await geminiRes.json();
-    console.log("Gemini status:", geminiRes.status);
-    if (!geminiRes.ok) throw new Error(`Gemini error: ${JSON.stringify(geminiData)}`);
-
+    const finishReason = geminiData.candidates?.[0]?.finishReason;
     const rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
-    console.log("Response length:", rawText.length);
+    console.log("Gemini status:", geminiRes.status, "finish:", finishReason, "length:", rawText.length);
+    if (!geminiRes.ok) throw new Error("Gemini error: " + JSON.stringify(geminiData).slice(0, 300));
 
+    // Parse response
     let parsed: any = { products: [] };
     try {
-      // Strip markdown fences and extract JSON
-      let cleaned = rawText.trim();
-      const fenceMatch = cleaned.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-      if (fenceMatch) cleaned = fenceMatch[1].trim();
+      const cleaned = rawText.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
       parsed = JSON.parse(cleaned);
     } catch {
-      throw new Error("Unparseable response: " + rawText.slice(0, 300));
+      try {
+        const lastBrace = rawText.lastIndexOf("}");
+        const firstBrace = rawText.indexOf("{");
+        if (firstBrace > -1 && lastBrace > firstBrace) {
+          parsed = JSON.parse(rawText.slice(firstBrace, lastBrace + 1));
+        }
+      } catch {
+        console.error("Parse failed:", rawText.slice(0, 300));
+      }
     }
 
     const extractedProducts = parsed.products || [];
     console.log("Extracted:", extractedProducts.length, "products");
-
-    let auto_applied = 0;
-    for (const p of extractedProducts) {
-      if (p.confidence === "high" && p.matched_existing_name && productMap.get(p.matched_existing_name)) {
-        auto_applied++;
-      }
-    }
 
     const summary = {
       total_images_extracted: extractedProducts.length,
@@ -120,7 +129,7 @@ Respond ONLY with valid JSON, no markdown:
       high_confidence: extractedProducts.filter((p: any) => p.confidence === "high").length,
       medium_confidence: extractedProducts.filter((p: any) => p.confidence === "medium").length,
       low_confidence: extractedProducts.filter((p: any) => p.confidence === "low").length,
-      auto_applied,
+      auto_applied: 0,
       catalog_brand: parsed.catalog_brand || "unknown",
       matches: extractedProducts.map((p: any, i: number) => ({
         image_url: null,
@@ -137,7 +146,7 @@ Respond ONLY with valid JSON, no markdown:
     await supabase.from("catalog_ingestion_jobs").update({
       status: "preview",
       extracted_count: extractedProducts.length,
-      committed_count: auto_applied,
+      committed_count: 0,
       raw_extracted: summary,
       updated_at: new Date().toISOString(),
     }).eq("id", job_id);
