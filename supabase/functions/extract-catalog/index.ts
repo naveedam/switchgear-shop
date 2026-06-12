@@ -95,7 +95,11 @@ Respond ONLY with valid JSON, no markdown:
 
     let parsed: any = { products: [] };
     try {
-      parsed = JSON.parse(rawText.replace(/```json|```/g, "").trim());
+      // Strip markdown fences and extract JSON
+      let cleaned = rawText.trim();
+      const fenceMatch = cleaned.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+      if (fenceMatch) cleaned = fenceMatch[1].trim();
+      parsed = JSON.parse(cleaned);
     } catch {
       throw new Error("Unparseable response: " + rawText.slice(0, 300));
     }
