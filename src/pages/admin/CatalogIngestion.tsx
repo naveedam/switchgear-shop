@@ -146,6 +146,7 @@ const CatalogIngestion: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
   const [fileType, setFileType] = useState<FileType | null>(null);
   const [jobId, setJobId] = useState<string | null>(null);
+  const [storagePath, setStoragePath] = useState<string | null>(null);
   const [extracting, setExtracting] = useState(false);
   const [extractProgress, setExtractProgress] = useState(0);
   const [extractMessage, setExtractMessage] = useState('');
@@ -260,6 +261,7 @@ const CatalogIngestion: React.FC = () => {
           file_type: fileType,
           storage_path: storagePath,
           status: 'extracting',
+        setStoragePath(storagePath);
         })
         .select()
         .single();
@@ -317,26 +319,57 @@ const CatalogIngestion: React.FC = () => {
   };
 
   const runMockPdfExtract = async () => {
-    setExtracting(true);
-    setExtractProgress(20);
-    setExtractMessage('Calling AI extractor…');
-    await new Promise(r => setTimeout(r, 1200));
-    const mock: ExtractedProduct[] = [
-      { _id: crypto.randomUUID(), selected: true, name: 'MCB 32A C-Curve SP', sku: 'MCB-32A-C-SP', price: 285, brand: 'Havells', category_hint: 'low_voltage_switchgear', description: '32A Single Pole Miniature Circuit Breaker, C-Curve.' },
-      { _id: crypto.randomUUID(), selected: true, name: 'RCCB 40A 30mA 2P', sku: 'RCCB-40A-30-2P', price: 1850, brand: 'Schneider', category_hint: 'low_voltage_switchgear', description: '40A 30mA double pole Residual Current Circuit Breaker.' },
-      { _id: crypto.randomUUID(), selected: true, name: 'Contactor 25A AC3', sku: 'CON-25A-AC3', price: 920, brand: 'L&T', category_hint: 'starters_and_switches', description: '3-pole 25A AC-3 contactor for motor switching.' },
-      { _id: crypto.randomUUID(), selected: true, name: 'Digital Multimeter 600V', sku: 'DMM-600V-AUTO', price: 2400, brand: 'Fluke', category_hint: 'testing_and_measuring_instruments', description: 'Auto-ranging digital multimeter, CAT III 600V.' },
-    ];
-    setProducts(mock);
-    setExtractProgress(100);
-    setExtractMessage(`${mock.length} products extracted (mock).`);
-    setExtracting(false);
-    if (jobId) {
-      await supabase.from('catalog_ingestion_jobs').update({
-        status: 'preview', extracted_count: mock.length, raw_extracted: mock as any,
-      }).eq('id', jobId);
+    if (!jobId || !storagePath) {
+      toast({ title: 'Missing job or file path', variant: 'destructive' });
+      return;
     }
-    setStep('preview');
+    setExtracting(true);
+    setExtractProgress(10);
+    setExtractMessage('Uploading to AI extractor…');
+    try {
+      const { data, error } = await supabase.functions.invoke('extract-catalog', {
+        body: { job_id: jobId, storage_path: storagePath },
+      });
+      if (error) throw new Error(error.message);
+      const summary = data as {
+        total_images_extracted: number;
+        total_processed: number;
+        high_confidence: number;
+        auto_applied: number;
+        matches: Array<{
+          image_url: string;
+          matched_product_id: string | null;
+          matched_name: string | null;
+          confidence: string;
+          product_type: string;
+          brand: string;
+          image_index: number;
+        }>;
+      };
+      const extracted: ExtractedProduct[] = (summary.matches || [])
+        .filter(m => m.matched_name)
+        .map(m => ({
+          _id: crypto.randomUUID(),
+          selected: m.confidence === 'high',
+          name: m.matched_name!,
+          sku: '',
+          price: 0,
+          brand: m.brand,
+          category_hint: 'low_voltage_switchgear',
+          description: m.product_type,
+          image_url: m.image_url,
+        }));
+      setProducts(extracted);
+      setExtractProgress(100);
+      setExtractMessage(
+        `${summary.total_images_extracted} images found · ${summary.high_confidence} high-confidence matches · ${summary.auto_applied} auto-applied`
+      );
+      setStep('preview');
+    } catch (e: any) {
+      toast({ title: 'Extraction failed', description: e.message, variant: 'destructive' });
+    } finally {
+      setExtracting(false);
+    }
   };
 
   const applyMappingToProducts = async () => {
