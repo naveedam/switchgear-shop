@@ -319,48 +319,29 @@ const CatalogIngestion: React.FC = () => {
   };
 
   const runMockPdfExtract = async () => {
-    if (!file || !jobId) {
+    if (!file || !jobId || !storagePath) {
       toast({ title: 'Missing file or job', variant: 'destructive' });
       return;
     }
     setExtracting(true);
     setExtractProgress(10);
-    setExtractMessage('Uploading PDF to Gemini…');
+    setExtractMessage('Connecting to Gemini AI...');
     try {
-      const GEMINI_KEY = 'REPLACE_WITH_GEMINI_KEY';
+      const GEMINI_KEY = 'AQ.Ab8RN6I86RadYEOFnrUZDtjNEqjk7LLfgK0guKQh6y9iuNjnYw';
+      const publicUrl = `https://hdoefblcoavpzvfiiglm.supabase.co/storage/v1/object/public/product-images/${storagePath}`;
 
-      // Step 1: Upload PDF directly from browser to Gemini File API
-      setExtractProgress(20);
-      const uploadRes = await fetch(
-        `https://generativelanguage.googleapis.com/upload/v1beta/files?key=${GEMINI_KEY}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/pdf',
-            'X-Goog-Upload-Protocol': 'raw',
-            'X-Goog-Upload-Header-Content-Type': 'application/pdf',
-          },
-          body: file,
-        }
-      );
-      if (!uploadRes.ok) throw new Error(`Gemini upload failed: ${await uploadRes.text()}`);
-      const uploadData = await uploadRes.json();
-      const fileUri = uploadData.file?.uri;
-      if (!fileUri) throw new Error('No file URI from Gemini');
-
-      setExtractProgress(40);
-      setExtractMessage('Extracting products with Gemini AI…');
-
-      // Step 2: Fetch existing products for matching
-      const { data: products } = await supabase.from('products')
+      setExtractProgress(30);
+      setExtractMessage('Fetching products for matching...');
+      const { data: existingProducts } = await supabase
+        .from('products')
         .select('id, name, brand, category')
         .eq('status', 'active')
         .limit(500);
-      const productNames = (products || []).map((p: any) => p.name).join('\n');
-      const productMap = new Map((products || []).map((p: any) => [p.name, p.id]));
+      const productNames = (existingProducts || []).map((p: any) => p.name).join('\n');
 
-      // Step 3: Send to Gemini 2.5 Flash for extraction
-      setExtractProgress(60);
+      setExtractProgress(50);
+      setExtractMessage('Extracting products with Gemini AI...');
+
       const geminiRes = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`,
         {
@@ -369,7 +350,7 @@ const CatalogIngestion: React.FC = () => {
           body: JSON.stringify({
             contents: [{
               parts: [
-                { file_data: { mime_type: 'application/pdf', file_uri: fileUri } },
+                { file_data: { mime_type: 'application/pdf', file_uri: publicUrl } },
                 { text: `Extract ALL products from this electrical switchgear catalog PDF.
 
 For each product provide:
@@ -391,33 +372,37 @@ Respond ONLY with valid JSON, no markdown:
           }),
         }
       );
-      if (!geminiRes.ok) throw new Error(`Gemini API error: ${await geminiRes.text()}`);
+
+      if (!geminiRes.ok) {
+        const errText = await geminiRes.text();
+        throw new Error(`Gemini API error: ${errText}`);
+      }
+
       const geminiData = await geminiRes.json();
       const rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
 
       setExtractProgress(85);
-      setExtractMessage('Parsing results…');
+      setExtractMessage('Parsing results...');
 
       let parsed: any = { products: [] };
       try {
         parsed = JSON.parse(rawText.replace(/```json|```/g, '').trim());
       } catch {
-        throw new Error('Gemini returned unparseable response: ' + rawText.slice(0, 200));
+        throw new Error('Could not parse Gemini response: ' + rawText.slice(0, 300));
       }
 
       const extractedProducts: ExtractedProduct[] = (parsed.products || []).map((p: any) => ({
         _id: crypto.randomUUID(),
         selected: p.confidence === 'high',
-        name: p.name,
+        name: p.name || '',
         sku: p.sku || '',
-        price: p.price || 0,
+        price: Number(p.price) || 0,
         brand: p.brand || '',
         category_hint: p.category_hint || 'low_voltage_switchgear',
         description: p.description || '',
         image_url: undefined,
       }));
 
-      // Save to DB
       await supabase.from('catalog_ingestion_jobs').update({
         status: 'preview',
         extracted_count: extractedProducts.length,
@@ -436,7 +421,7 @@ Respond ONLY with valid JSON, no markdown:
     }
   };
 
-  const applyMappingToProducts = async () => {
+    const applyMappingToProducts = async () => {
     const out: ExtractedProduct[] = rawRows.map((r, idx) => {
       const get = (f: FieldKey) => mapping[f] ? String(r[mapping[f]] ?? '').trim() : '';
       const priceStr = get('price').replace(/[^\d.]/g, '');
