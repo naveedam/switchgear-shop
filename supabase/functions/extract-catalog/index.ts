@@ -1,9 +1,7 @@
-// supabase/functions/extract-catalog/index.ts
-// Sends PDF pages directly to Claude as a document for product extraction
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY")!;
+const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY")!;
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
@@ -35,8 +33,32 @@ serve(async (req) => {
       .download(storage_path);
     if (downloadError || !fileData) throw new Error(`Failed to download PDF: ${downloadError?.message}`);
 
+    console.log("PDF downloaded, uploading to Gemini File API...");
+
+    // Upload PDF to Gemini File API
     const pdfBuffer = await fileData.arrayBuffer();
-    const pdfBase64 = btoa(String.fromCharCode(...new Uint8Array(pdfBuffer)));
+    const uploadResponse = await fetch(
+      `https://generativelanguage.googleapis.com/upload/v1beta/files?key=${GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/pdf",
+          "X-Goog-Upload-Protocol": "raw",
+          "X-Goog-Upload-Header-Content-Type": "application/pdf",
+        },
+        body: pdfBuffer,
+      }
+    );
+
+    if (!uploadResponse.ok) {
+      const err = await uploadResponse.text();
+      throw new Error(`Gemini file upload failed: ${err}`);
+    }
+
+    const uploadData = await uploadResponse.json();
+    const fileUri = uploadData.file?.uri;
+    if (!fileUri) throw new Error("No file URI returned from Gemini File API");
+    console.log("File uploaded to Gemini:", fileUri);
 
     // Fetch existing products for matching
     const { data: products } = await supabase.from("products")
@@ -44,42 +66,38 @@ serve(async (req) => {
       .eq("status", "active")
       .limit(500);
     const productNames = (products || []).map((p: any) => p.name).join("\n");
+    const productMap = new Map((products || []).map((p: any) => [p.name, p.id]));
 
-    // Send entire PDF to Claude as a document
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01",
-        "anthropic-beta": "pdfs-2024-09-25",
-      },
-      body: JSON.stringify({
-        model: "claude-opus-4-5",
-        max_tokens: 8000,
-        messages: [{
-          role: "user",
-          content: [
-            {
-              type: "document",
-              source: { type: "base64", media_type: "application/pdf", data: pdfBase64 },
-            },
-            {
-              type: "text",
-              text: `You are extracting product data from an electrical switchgear supplier catalog PDF.
+    // Send to Gemini 2.5 Flash for extraction
+    const geminiResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              {
+                file_data: {
+                  mime_type: "application/pdf",
+                  file_uri: fileUri,
+                },
+              },
+              {
+                text: `You are extracting product data from an electrical switchgear supplier catalog PDF.
 
-Extract ALL products you can find in this catalog. For each product identify:
-- name: full product name with specs (e.g. "Schneider iC60N MCB 32A C-Curve 2P")
+Extract ALL products you can find. For each product identify:
+- name: full product name with specs (e.g. "Havells 32A MCB C-Curve SP")
 - sku: part number or catalog number if visible
 - brand: manufacturer brand
 - price: price if shown (number only, 0 if not shown)
 - category_hint: one of: low_voltage_switchgear, wires_and_cables, switches_and_sockets, relays, starters_and_switches, testing_and_measuring_instruments
 - description: brief technical description
-
-Also try to match each product to the closest name in this existing product list:
+- matched_existing_name: best match from this existing product list or null if no close match:
 ${productNames}
+- confidence: high if name+specs match closely, medium if partial, low if uncertain
 
-Respond ONLY with valid JSON, no preamble, no markdown:
+Respond ONLY with valid JSON, no preamble, no markdown backticks:
 {
   "products": [
     {
@@ -89,45 +107,47 @@ Respond ONLY with valid JSON, no preamble, no markdown:
       "price": 0,
       "category_hint": "...",
       "description": "...",
-      "matched_existing_name": "exact name from list or null",
+      "matched_existing_name": "...",
       "confidence": "high|medium|low"
     }
   ],
   "total_pages_scanned": 0,
   "catalog_brand": "..."
 }`,
-            },
-          ],
-        }],
-      }),
-    });
+              },
+            ],
+          }],
+          generationConfig: {
+            temperature: 0.1,
+            maxOutputTokens: 8192,
+          },
+        }),
+      }
+    );
 
-    const claudeData = await response.json();
-    if (!response.ok) throw new Error(`Claude API error: ${JSON.stringify(claudeData)}`);
+    const geminiData = await geminiResponse.json();
+    console.log("Gemini response status:", geminiResponse.status);
+    if (!geminiResponse.ok) throw new Error(`Gemini API error: ${JSON.stringify(geminiData)}`);
 
-    const rawText = claudeData.content?.[0]?.text || "{}";
+    const rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+    console.log("Gemini response length:", rawText.length);
+
     let parsed: any = { products: [] };
     try {
       parsed = JSON.parse(rawText.replace(/```json|```/g, "").trim());
     } catch {
-      console.error("Failed to parse Claude response:", rawText.slice(0, 500));
+      console.error("Failed to parse Gemini response:", rawText.slice(0, 500));
+      throw new Error("Gemini returned unparseable response: " + rawText.slice(0, 200));
     }
 
     const extractedProducts = parsed.products || [];
+    console.log(`Extracted ${extractedProducts.length} products`);
 
-    // Auto-apply high-confidence matches that have an existing product match
-    const productMap = new Map((products || []).map((p: any) => [p.name, p.id]));
     let auto_applied = 0;
     for (const p of extractedProducts) {
       if (p.confidence === "high" && p.matched_existing_name) {
         const pid = productMap.get(p.matched_existing_name);
-        if (pid) {
-          // Update description/sku if we have better data
-          await supabase.from("products").update({
-            updated_at: new Date().toISOString(),
-          }).eq("id", pid);
-          auto_applied++;
-        }
+        if (pid) auto_applied++;
       }
     }
 
@@ -147,7 +167,6 @@ Respond ONLY with valid JSON, no preamble, no markdown:
         product_type: p.description,
         brand: p.brand,
         image_index: i,
-        // Pass full product data for preview/commit
         extracted_product: p,
       })),
     };
