@@ -318,107 +318,34 @@ const CatalogIngestion: React.FC = () => {
     }
   };
 
-  const fileToBase64 = (f: File): Promise<string> =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve((reader.result as string).split(',')[1]);
-      reader.onerror = reject;
-      reader.readAsDataURL(f);
-    });
-
   const runMockPdfExtract = async () => {
-    if (!file || !jobId || !storagePath) {
-      toast({ title: 'Missing file or job', variant: 'destructive' });
+    if (!jobId || !storagePath) {
+      toast({ title: 'Missing job or file path', variant: 'destructive' });
       return;
     }
     setExtracting(true);
     setExtractProgress(10);
-    setExtractMessage('Connecting to Gemini AI...');
+    setExtractMessage('Sending to AI extractor...');
     try {
-      const GEMINI_KEY = 'AQ.Ab8RN6I86RadYEOFnrUZDtjNEqjk7LLfgK0guKQh6y9iuNjnYw';
-      setExtractProgress(30);
-      setExtractMessage('Fetching products for matching...');
-      const { data: existingProducts } = await supabase
-        .from('products')
-        .select('id, name, brand, category')
-        .eq('status', 'active')
-        .limit(500);
-      const productNames = (existingProducts || []).map((p: any) => p.name).join('\n');
-
-      setExtractProgress(50);
-      setExtractMessage('Extracting products with Gemini AI...');
-
-      const geminiRes = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{
-              parts: [
-                { inline_data: { mime_type: 'application/pdf', data: await fileToBase64(file) } },
-                { text: `Extract ALL products from this electrical switchgear catalog PDF.
-
-For each product provide:
-- name: full product name with specs
-- sku: part/catalog number if visible
-- brand: manufacturer
-- price: numeric price or 0
-- category_hint: one of: low_voltage_switchgear, wires_and_cables, switches_and_sockets, relays, starters_and_switches, testing_and_measuring_instruments
-- description: brief technical description
-- matched_existing_name: closest match from this list or null:
-${productNames}
-- confidence: high|medium|low
-
-Respond ONLY with valid JSON, no markdown:
-{"products":[{"name":"...","sku":"...","brand":"...","price":0,"category_hint":"...","description":"...","matched_existing_name":null,"confidence":"medium"}],"catalog_brand":"..."}` },
-              ],
-            }],
-            generationConfig: { temperature: 0.1, maxOutputTokens: 8192 },
-          }),
-        }
-      );
-
-      if (!geminiRes.ok) {
-        const errText = await geminiRes.text();
-        throw new Error(`Gemini API error: ${errText}`);
-      }
-
-      const geminiData = await geminiRes.json();
-      const rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
-
-      setExtractProgress(85);
-      setExtractMessage('Parsing results...');
-
-      let parsed: any = { products: [] };
-      try {
-        parsed = JSON.parse(rawText.replace(/```json|```/g, '').trim());
-      } catch {
-        throw new Error('Could not parse Gemini response: ' + rawText.slice(0, 300));
-      }
-
-      const extractedProducts: ExtractedProduct[] = (parsed.products || []).map((p: any) => ({
+      const { data, error } = await supabase.functions.invoke('extract-catalog', {
+        body: { job_id: jobId, storage_path: storagePath },
+      });
+      if (error) throw new Error(error.message);
+      const summary = data as any;
+      const extracted: ExtractedProduct[] = (summary.matches || []).map((m: any) => ({
         _id: crypto.randomUUID(),
-        selected: p.confidence === 'high',
-        name: p.name || '',
-        sku: p.sku || '',
-        price: Number(p.price) || 0,
-        brand: p.brand || '',
-        category_hint: p.category_hint || 'low_voltage_switchgear',
-        description: p.description || '',
+        selected: m.confidence === 'high',
+        name: m.extracted_product?.name || m.matched_name || '',
+        sku: m.extracted_product?.sku || '',
+        price: m.extracted_product?.price || 0,
+        brand: m.extracted_product?.brand || m.brand || '',
+        category_hint: m.extracted_product?.category_hint || 'low_voltage_switchgear',
+        description: m.extracted_product?.description || m.product_type || '',
         image_url: undefined,
       }));
-
-      await supabase.from('catalog_ingestion_jobs').update({
-        status: 'preview',
-        extracted_count: extractedProducts.length,
-        raw_extracted: extractedProducts as any,
-        updated_at: new Date().toISOString(),
-      }).eq('id', jobId);
-
-      setProducts(extractedProducts);
+      setProducts(extracted);
       setExtractProgress(100);
-      setExtractMessage(`${extractedProducts.length} products extracted · ${extractedProducts.filter(p => p.selected).length} high-confidence`);
+      setExtractMessage(`${extracted.length} products extracted · ${extracted.filter(p => p.selected).length} high-confidence`);
       setStep('preview');
     } catch (e: any) {
       toast({ title: 'Extraction failed', description: e.message, variant: 'destructive' });
