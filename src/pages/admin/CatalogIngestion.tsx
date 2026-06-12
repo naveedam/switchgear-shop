@@ -318,6 +318,14 @@ const CatalogIngestion: React.FC = () => {
     }
   };
 
+  const fileToBase64 = (f: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve((reader.result as string).split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(f);
+    });
+
   const runMockPdfExtract = async () => {
     if (!file || !jobId || !storagePath) {
       toast({ title: 'Missing file or job', variant: 'destructive' });
@@ -328,8 +336,6 @@ const CatalogIngestion: React.FC = () => {
     setExtractMessage('Connecting to Gemini AI...');
     try {
       const GEMINI_KEY = 'AQ.Ab8RN6I86RadYEOFnrUZDtjNEqjk7LLfgK0guKQh6y9iuNjnYw';
-      const publicUrl = `https://hdoefblcoavpzvfiiglm.supabase.co/storage/v1/object/public/product-images/${storagePath}`;
-
       setExtractProgress(30);
       setExtractMessage('Fetching products for matching...');
       const { data: existingProducts } = await supabase
@@ -350,7 +356,7 @@ const CatalogIngestion: React.FC = () => {
           body: JSON.stringify({
             contents: [{
               parts: [
-                { file_data: { mime_type: 'application/pdf', file_uri: publicUrl } },
+                { inline_data: { mime_type: 'application/pdf', data: await fileToBase64(file) } },
                 { text: `Extract ALL products from this electrical switchgear catalog PDF.
 
 For each product provide:
