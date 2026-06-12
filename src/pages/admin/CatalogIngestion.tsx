@@ -261,12 +261,12 @@ const CatalogIngestion: React.FC = () => {
           file_type: fileType,
           storage_path: storagePath,
           status: 'extracting',
-        setStoragePath(storagePath);
         })
         .select()
         .single();
       if (jobErr) throw jobErr;
       setJobId(jobData.id);
+      setStoragePath(storagePath);
       setStep('extract');
       loadJobs();
     } catch (e: any) {
