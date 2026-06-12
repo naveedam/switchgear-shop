@@ -356,8 +356,7 @@ const CatalogIngestion: React.FC = () => {
         .select('id, name, brand, category')
         .eq('status', 'active')
         .limit(500);
-      const productNames = (products || []).map((p: any) => p.name).join('
-');
+      const productNames = (products || []).map((p: any) => p.name).join('\n');
       const productMap = new Map((products || []).map((p: any) => [p.name, p.id]));
 
       // Step 3: Send to Gemini 2.5 Flash for extraction
