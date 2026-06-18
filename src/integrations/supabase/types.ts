@@ -2674,8 +2674,11 @@ export type Database = {
           description: string
           id: string
           line_number: number
+          manufacturer: string | null
           matched_product_id: string | null
+          part_number: string | null
           preferred_brand: string | null
+          product_family: string | null
           quantity: number
           rating_specs: string | null
           rfq_id: string
@@ -2690,8 +2693,11 @@ export type Database = {
           description: string
           id?: string
           line_number: number
+          manufacturer?: string | null
           matched_product_id?: string | null
+          part_number?: string | null
           preferred_brand?: string | null
+          product_family?: string | null
           quantity?: number
           rating_specs?: string | null
           rfq_id: string
@@ -2706,8 +2712,11 @@ export type Database = {
           description?: string
           id?: string
           line_number?: number
+          manufacturer?: string | null
           matched_product_id?: string | null
+          part_number?: string | null
           preferred_brand?: string | null
+          product_family?: string | null
           quantity?: number
           rating_specs?: string | null
           rfq_id?: string
@@ -2811,17 +2820,24 @@ export type Database = {
       rfqs: {
         Row: {
           bom_id: string | null
-          buyer_id: string
+          buyer_id: string | null
           categories_detected: string[] | null
           created_at: string
+          customer_company: string | null
+          customer_email: string | null
+          customer_name: string | null
+          customer_phone: string | null
           expires_at: string | null
           id: string
           notes: string | null
           quoted_items: number | null
+          raw_message: string | null
           reference_documents: string[] | null
           required_delivery_date: string | null
           rfq_number: string
           sellers_invited: number | null
+          source: Database["public"]["Enums"]["rfq_source"]
+          source_file_url: string | null
           status: string
           title: string
           total_items: number | null
@@ -2830,17 +2846,24 @@ export type Database = {
         }
         Insert: {
           bom_id?: string | null
-          buyer_id: string
+          buyer_id?: string | null
           categories_detected?: string[] | null
           created_at?: string
+          customer_company?: string | null
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
           expires_at?: string | null
           id?: string
           notes?: string | null
           quoted_items?: number | null
+          raw_message?: string | null
           reference_documents?: string[] | null
           required_delivery_date?: string | null
           rfq_number: string
           sellers_invited?: number | null
+          source?: Database["public"]["Enums"]["rfq_source"]
+          source_file_url?: string | null
           status?: string
           title: string
           total_items?: number | null
@@ -2849,17 +2872,24 @@ export type Database = {
         }
         Update: {
           bom_id?: string | null
-          buyer_id?: string
+          buyer_id?: string | null
           categories_detected?: string[] | null
           created_at?: string
+          customer_company?: string | null
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
           expires_at?: string | null
           id?: string
           notes?: string | null
           quoted_items?: number | null
+          raw_message?: string | null
           reference_documents?: string[] | null
           required_delivery_date?: string | null
           rfq_number?: string
           sellers_invited?: number | null
+          source?: Database["public"]["Enums"]["rfq_source"]
+          source_file_url?: string | null
           status?: string
           title?: string
           total_items?: number | null
@@ -3539,7 +3569,12 @@ export type Database = {
         Row: {
           available_quantity: number | null
           brand: string | null
+          compatibility_notes: string | null
+          compatibility_type:
+            | Database["public"]["Enums"]["quote_compatibility_type"]
+            | null
           created_at: string
+          exact_match: boolean
           id: string
           is_available: boolean | null
           lead_time_days: number | null
@@ -3547,18 +3582,28 @@ export type Database = {
           notes: string | null
           product_id: string | null
           quote_id: string
+          quoted_part_number: string | null
           quoted_quantity: number
+          refurbished_available: boolean
+          replacement_available: boolean
           rfq_item_id: string
           status: string
+          stock_available: boolean
           tax_amount: number | null
           tax_rate: number | null
           total_price: number
           unit_price: number
+          warranty_months: number | null
         }
         Insert: {
           available_quantity?: number | null
           brand?: string | null
+          compatibility_notes?: string | null
+          compatibility_type?:
+            | Database["public"]["Enums"]["quote_compatibility_type"]
+            | null
           created_at?: string
+          exact_match?: boolean
           id?: string
           is_available?: boolean | null
           lead_time_days?: number | null
@@ -3566,18 +3611,28 @@ export type Database = {
           notes?: string | null
           product_id?: string | null
           quote_id: string
+          quoted_part_number?: string | null
           quoted_quantity: number
+          refurbished_available?: boolean
+          replacement_available?: boolean
           rfq_item_id: string
           status?: string
+          stock_available?: boolean
           tax_amount?: number | null
           tax_rate?: number | null
           total_price: number
           unit_price: number
+          warranty_months?: number | null
         }
         Update: {
           available_quantity?: number | null
           brand?: string | null
+          compatibility_notes?: string | null
+          compatibility_type?:
+            | Database["public"]["Enums"]["quote_compatibility_type"]
+            | null
           created_at?: string
+          exact_match?: boolean
           id?: string
           is_available?: boolean | null
           lead_time_days?: number | null
@@ -3585,13 +3640,18 @@ export type Database = {
           notes?: string | null
           product_id?: string | null
           quote_id?: string
+          quoted_part_number?: string | null
           quoted_quantity?: number
+          refurbished_available?: boolean
+          replacement_available?: boolean
           rfq_item_id?: string
           status?: string
+          stock_available?: boolean
           tax_amount?: number | null
           tax_rate?: number | null
           total_price?: number
           unit_price?: number
+          warranty_months?: number | null
         }
         Relationships: [
           {
@@ -4022,6 +4082,7 @@ export type Database = {
         Args: { p_seller_order_id: string }
         Returns: string
       }
+      generate_intake_rfq_number: { Args: never; Returns: string }
       generate_quote_number: { Args: { p_seller_id: string }; Returns: string }
       generate_rfq_number: { Args: never; Returns: string }
       get_component_demand: {
@@ -4119,7 +4180,22 @@ export type Database = {
         | "testing_and_measuring_instruments"
         | "capacitors_and_reactors"
         | "admin_panel"
+      quote_compatibility_type:
+        | "exact"
+        | "direct_replacement"
+        | "new_generation"
+        | "refurbished"
+        | "alternative"
       reference_type: "invoice" | "payment" | "adjustment"
+      rfq_source:
+        | "whatsapp"
+        | "email"
+        | "phone"
+        | "web"
+        | "pdf"
+        | "excel"
+        | "image"
+        | "manual"
       settlement_status:
         | "pending"
         | "eligible"
@@ -4307,7 +4383,24 @@ export const Constants = {
         "capacitors_and_reactors",
         "admin_panel",
       ],
+      quote_compatibility_type: [
+        "exact",
+        "direct_replacement",
+        "new_generation",
+        "refurbished",
+        "alternative",
+      ],
       reference_type: ["invoice", "payment", "adjustment"],
+      rfq_source: [
+        "whatsapp",
+        "email",
+        "phone",
+        "web",
+        "pdf",
+        "excel",
+        "image",
+        "manual",
+      ],
       settlement_status: [
         "pending",
         "eligible",

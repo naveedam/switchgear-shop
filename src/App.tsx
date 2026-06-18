@@ -30,6 +30,8 @@ import AllCategories from './pages/AllCategories';
 import BrandsPage from './pages/BrandsPage';
 import AdminOrders from './pages/admin/AdminOrders';
 import AdminRfqs from './pages/admin/AdminRfqs';
+import RfqIntake from './pages/admin/RfqIntake';
+import RfqCompare from './pages/admin/RfqCompare';
 import AdminBuyerOutreach from './pages/admin/AdminBuyerOutreach';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminAnalytics from './pages/admin/AdminAnalytics';
@@ -214,6 +216,8 @@ function App() {
             <Route path="subcategories/:id" element={<EditSubcategory />} />
             <Route path="orders" element={<AdminOrders />} />
             <Route path="rfqs" element={<AdminRfqs />} />
+            <Route path="rfq-intake" element={<RfqIntake />} />
+            <Route path="rfqs/:rfqId" element={<RfqCompare />} />
             <Route path="escrow" element={<AdminEscrow />} />
             <Route path="carts" element={<AdminCarts />} />
             <Route path="users" element={<AdminUsers />} />

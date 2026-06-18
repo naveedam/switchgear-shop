@@ -17,15 +17,23 @@
  import { useToast } from '@/hooks/use-toast';
  import { supabase } from '@/integrations/supabase/client';
  
- interface QuoteLineItem {
-   rfqItemId: string;
-   isQuoting: boolean;
-   unitPrice: number;
-   availableQty: number;
-   leadTimeDays: number;
-   brand: string;
-   notes: string;
- }
+interface QuoteLineItem {
+  rfqItemId: string;
+  isQuoting: boolean;
+  unitPrice: number;
+  availableQty: number;
+  leadTimeDays: number;
+  brand: string;
+  notes: string;
+  quotedPartNumber: string;
+  exactMatch: boolean;
+  replacementAvailable: boolean;
+  refurbishedAvailable: boolean;
+  stockAvailable: boolean;
+  warrantyMonths: number;
+  compatibilityType: '' | 'exact' | 'direct_replacement' | 'new_generation' | 'refurbished' | 'alternative';
+  compatibilityNotes: string;
+}
  
  const SellerQuotePage = () => {
    const { rfqId } = useParams<{ rfqId: string }>();
@@ -86,18 +94,26 @@
            .eq('quote_id', quoteData.id);
  
          const itemMap = new Map<string, QuoteLineItem>();
-         (items || []).forEach((item: any) => {
-           const existing = existingItems?.find((ei: any) => ei.rfq_item_id === item.id);
-           itemMap.set(item.id, {
-             rfqItemId: item.id,
-             isQuoting: !!existing,
-             unitPrice: existing?.unit_price || 0,
-             availableQty: existing?.available_quantity || item.quantity,
-             leadTimeDays: existing?.lead_time_days || 7,
-             brand: existing?.brand || '',
-             notes: existing?.notes || '',
-           });
-         });
+          (items || []).forEach((item: any) => {
+            const existing = existingItems?.find((ei: any) => ei.rfq_item_id === item.id);
+            itemMap.set(item.id, {
+              rfqItemId: item.id,
+              isQuoting: !!existing,
+              unitPrice: existing?.unit_price || 0,
+              availableQty: existing?.available_quantity || item.quantity,
+              leadTimeDays: existing?.lead_time_days || 7,
+              brand: existing?.brand || '',
+              notes: existing?.notes || '',
+              quotedPartNumber: existing?.quoted_part_number || item.part_number || '',
+              exactMatch: existing?.exact_match ?? (item.part_number ? true : false),
+              replacementAvailable: existing?.replacement_available || false,
+              refurbishedAvailable: existing?.refurbished_available || false,
+              stockAvailable: existing?.stock_available || false,
+              warrantyMonths: existing?.warranty_months || 12,
+              compatibilityType: existing?.compatibility_type || '',
+              compatibilityNotes: existing?.compatibility_notes || '',
+            });
+          });
          setLineItems(itemMap);
        }
  
@@ -138,22 +154,30 @@
    const handleSave = async () => {
      if (!quote) return;
  
-     const itemsToSave: Partial<SellerQuoteItem>[] = [];
-     lineItems.forEach((item, itemId) => {
-       if (item.isQuoting && item.unitPrice > 0) {
-         itemsToSave.push({
-           rfq_item_id: itemId,
-           quoted_quantity: item.availableQty,
-           available_quantity: item.availableQty,
-           unit_price: item.unitPrice,
-           tax_rate: 18,
-           lead_time_days: item.leadTimeDays,
-           brand: item.brand || undefined,
-           notes: item.notes || undefined,
-           is_available: true,
-         });
-       }
-     });
+    const itemsToSave: any[] = [];
+    lineItems.forEach((item, itemId) => {
+      if (item.isQuoting && item.unitPrice > 0) {
+        itemsToSave.push({
+          rfq_item_id: itemId,
+          quoted_quantity: item.availableQty,
+          available_quantity: item.availableQty,
+          unit_price: item.unitPrice,
+          tax_rate: 18,
+          lead_time_days: item.leadTimeDays,
+          brand: item.brand || undefined,
+          notes: item.notes || undefined,
+          is_available: true,
+          quoted_part_number: item.quotedPartNumber || undefined,
+          exact_match: item.exactMatch,
+          replacement_available: item.replacementAvailable,
+          refurbished_available: item.refurbishedAvailable,
+          stock_available: item.stockAvailable,
+          warranty_months: item.warrantyMonths || undefined,
+          compatibility_type: item.compatibilityType || undefined,
+          compatibility_notes: item.compatibilityNotes || undefined,
+        });
+      }
+    });
  
      const success = await saveQuoteItems(quote.id, user!.id, itemsToSave);
      if (success) {
@@ -268,8 +292,9 @@
                                )}
                              </div>
  
-                             {lineItem.isQuoting && (
-                               <div className="grid gap-3 md:grid-cols-4 mt-4 pt-4 border-t">
+                              {lineItem.isQuoting && (
+                                <>
+                                <div className="grid gap-3 md:grid-cols-4 mt-4 pt-4 border-t">
                                  <div>
                                    <Label className="text-xs">Unit Price (₹)</Label>
                                    <Input
@@ -313,8 +338,62 @@
                                      disabled={quote?.status === 'submitted'}
                                    />
                                  </div>
-                               </div>
-                             )}
+                                </div>
+                                <div className="grid gap-3 md:grid-cols-3 mt-3">
+                                  <div>
+                                    <Label className="text-xs">Quoted Part Number</Label>
+                                    <Input
+                                      className="font-mono"
+                                      value={lineItem.quotedPartNumber}
+                                      onChange={(e) => updateLineItem(item.id, 'quotedPartNumber', e.target.value)}
+                                      placeholder={(item as any).part_number || ''}
+                                      disabled={quote?.status === 'submitted'}
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label className="text-xs">Warranty (months)</Label>
+                                    <Input
+                                      type="number"
+                                      value={lineItem.warrantyMonths}
+                                      onChange={(e) => updateLineItem(item.id, 'warrantyMonths', parseInt(e.target.value) || 0)}
+                                      disabled={quote?.status === 'submitted'}
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label className="text-xs">Compatibility</Label>
+                                    <select
+                                      className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                                      value={lineItem.compatibilityType}
+                                      onChange={(e) => updateLineItem(item.id, 'compatibilityType', e.target.value)}
+                                      disabled={quote?.status === 'submitted'}
+                                    >
+                                      <option value="">—</option>
+                                      <option value="exact">Exact match</option>
+                                      <option value="direct_replacement">Direct replacement</option>
+                                      <option value="new_generation">New generation</option>
+                                      <option value="refurbished">Refurbished</option>
+                                      <option value="alternative">Alternative</option>
+                                    </select>
+                                  </div>
+                                </div>
+                                <div className="flex flex-wrap gap-4 mt-3 text-sm">
+                                  <label className="flex items-center gap-2"><Checkbox checked={lineItem.exactMatch} onCheckedChange={(c) => updateLineItem(item.id, 'exactMatch', !!c)} disabled={quote?.status === 'submitted'} />Exact match</label>
+                                  <label className="flex items-center gap-2"><Checkbox checked={lineItem.replacementAvailable} onCheckedChange={(c) => updateLineItem(item.id, 'replacementAvailable', !!c)} disabled={quote?.status === 'submitted'} />Replacement available</label>
+                                  <label className="flex items-center gap-2"><Checkbox checked={lineItem.refurbishedAvailable} onCheckedChange={(c) => updateLineItem(item.id, 'refurbishedAvailable', !!c)} disabled={quote?.status === 'submitted'} />Refurbished available</label>
+                                  <label className="flex items-center gap-2"><Checkbox checked={lineItem.stockAvailable} onCheckedChange={(c) => updateLineItem(item.id, 'stockAvailable', !!c)} disabled={quote?.status === 'submitted'} />In stock</label>
+                                </div>
+                                <div className="mt-3">
+                                  <Label className="text-xs">Compatibility / replacement notes</Label>
+                                  <Textarea
+                                    rows={2}
+                                    value={lineItem.compatibilityNotes}
+                                    onChange={(e) => updateLineItem(item.id, 'compatibilityNotes', e.target.value)}
+                                    placeholder="e.g. ABB PP886 is direct replacement for obsolete PP865 in 800xA systems"
+                                    disabled={quote?.status === 'submitted'}
+                                  />
+                                 </div>
+                                </>
+                              )}
                            </div>
                          </div>
                        </div>
