@@ -10,8 +10,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2, Sparkles, Trash2, Plus, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import * as XLSX from 'xlsx';
 
 type Source = 'whatsapp' | 'email' | 'phone' | 'web' | 'pdf' | 'excel' | 'image' | 'manual';
+
+// TODO: replace with a seller picker once there's more than one active seller.
+const MN_ASSOCIATES_SELLER_ID = '458d0e72-c507-4682-9b92-210f9c13dbd2';
 
 interface IntakeItem {
   manufacturer: string;
@@ -60,6 +64,27 @@ const RfqIntake: React.FC = () => {
       reader.readAsDataURL(f);
     });
 
+  const isSpreadsheet = (f: File) => {
+    const name = f.name.toLowerCase();
+    return (
+      f.type.includes('spreadsheet') ||
+      f.type === 'text/csv' ||
+      name.endsWith('.xlsx') ||
+      name.endsWith('.xls') ||
+      name.endsWith('.csv')
+    );
+  };
+
+  const parseSpreadsheetToText = async (f: File): Promise<string> => {
+    const buf = await f.arrayBuffer();
+    const wb = XLSX.read(buf, { type: 'array' });
+    return wb.SheetNames.map((name) => {
+      const sheet = wb.Sheets[name];
+      const csv = XLSX.utils.sheet_to_csv(sheet);
+      return `## Sheet: ${name}\n${csv}`;
+    }).join('\n\n');
+  };
+
   const handleParse = async () => {
     if (!rawText.trim() && !file) {
       toast({ title: 'Nothing to parse', description: 'Paste a message or attach a file.', variant: 'destructive' });
@@ -68,11 +93,15 @@ const RfqIntake: React.FC = () => {
     setParsing(true);
     try {
       const payload: any = {};
-      if (rawText.trim()) payload.text = rawText.trim();
-      if (file) {
+      let combinedText = rawText.trim();
+      if (file && isSpreadsheet(file)) {
+        const sheetText = await parseSpreadsheetToText(file);
+        combinedText = combinedText ? `${combinedText}\n\n${sheetText}` : sheetText;
+      } else if (file) {
         payload.fileBase64 = await readFileAsBase64(file);
         payload.mimeType = file.type;
       }
+      if (combinedText) payload.text = combinedText;
       const { data, error } = await supabase.functions.invoke('parse-rfq-intake', { body: payload });
       if (error) throw error;
       const c = data?.customer || {};
@@ -151,6 +180,14 @@ const RfqIntake: React.FC = () => {
       })) as any;
       const { error: itemsErr } = await supabase.from('rfq_items').insert(itemRows);
       if (itemsErr) throw itemsErr;
+
+      const { error: inviteErr } = await supabase
+        .from('rfq_seller_invitations')
+        .insert({ rfq_id: rfqRow.id, seller_id: MN_ASSOCIATES_SELLER_ID } as any);
+      if (inviteErr) {
+        console.error('Seller invite failed:', inviteErr);
+        toast({ title: 'RFQ created, but seller invite failed', description: inviteErr.message, variant: 'destructive' });
+      }
 
       toast({ title: 'RFQ created', description: rfqRow.rfq_number });
       navigate(`/admin/rfqs/${rfqRow.id}`);

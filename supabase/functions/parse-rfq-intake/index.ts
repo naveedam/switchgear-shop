@@ -1,5 +1,8 @@
 // Parse RFQ intake message / file into structured line items via OpenAI GPT-4o
-import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
 
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')!;
 
