@@ -17,7 +17,8 @@ import {
   ShoppingCart,
   Wallet,
   FileQuestion,
-  Upload
+  Upload,
+  MessageSquare
 } from 'lucide-react';
 
 const menuItems = [
@@ -45,6 +46,11 @@ const menuItems = [
     name: 'Orders',
     href: '/admin/orders',
     icon: Box,
+  },
+  {
+    name: 'RFQ Intake',
+    href: '/admin/rfq-intake',
+    icon: MessageSquare,
   },
   {
     name: 'RFQs',
