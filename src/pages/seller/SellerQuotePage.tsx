@@ -292,8 +292,9 @@ interface QuoteLineItem {
                                )}
                              </div>
  
-                             {lineItem.isQuoting && (
-                               <div className="grid gap-3 md:grid-cols-4 mt-4 pt-4 border-t">
+                              {lineItem.isQuoting && (
+                                <>
+                                <div className="grid gap-3 md:grid-cols-4 mt-4 pt-4 border-t">
                                  <div>
                                    <Label className="text-xs">Unit Price (₹)</Label>
                                    <Input
@@ -390,7 +391,9 @@ interface QuoteLineItem {
                                     placeholder="e.g. ABB PP886 is direct replacement for obsolete PP865 in 800xA systems"
                                     disabled={quote?.status === 'submitted'}
                                   />
-                                </div>
+                                 </div>
+                                </>
+                              )}
                            </div>
                          </div>
                        </div>
