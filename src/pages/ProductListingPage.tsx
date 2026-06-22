@@ -21,8 +21,12 @@ import { Badge } from '@/components/ui/badge';
 import { fetchCategoryProducts } from '@/services/productService';
 
 const ProductListingPage = () => {
-  const { categorySlug } = useParams();
+  const { categorySlug: categorySlugParam } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
+
+  // Support both /categories/:categorySlug and legacy /products?category=X
+  const categorySlug = categorySlugParam || searchParams.get('category') || undefined;
+
   const [products, setProducts] = useState<Product[]>([]);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -64,7 +68,7 @@ const ProductListingPage = () => {
       }
     };
     loadData();
-  }, [categorySlug, subcategoryId, sortBy, minPrice, maxPrice, inStock, search, page, limit]);
+  }, [categorySlug, subcategoryId, sortBy, minPrice, maxPrice, inStock, search, page, limit, brandId]);
 
   const handleFilterChange = (filters: FilterType) => {
     const newParams = new URLSearchParams();
@@ -141,7 +145,7 @@ const ProductListingPage = () => {
             <div className="flex items-center gap-2">
               <Package className="h-5 w-5 text-primary" />
               <h1 className="text-lg font-bold text-foreground">
-                {subcategoryName || categoryName || 'Products'}
+                {subcategoryName || categoryName || 'All Products'}
               </h1>
               <span className="text-xs text-muted-foreground">
                 ({totalCount} results{search ? ` for "${search}"` : ''})

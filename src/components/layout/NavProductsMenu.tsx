@@ -10,31 +10,34 @@ import {
 import { Zap, Gauge, Cable, ArrowRight } from "lucide-react";
 
 interface NavItem { name: string; href: string; badge?: string; }
-interface NavSection { title: string; items: NavItem[]; }
+interface NavSection { title: string; href: string; items: NavItem[]; }
 
 const coreElectricalSections: NavSection[] = [
   {
     title: "Low Voltage Switchgear",
+    href: "/categories/low_voltage_switchgear",
     items: [
-      { name: "MCB", href: "/products?category=low_voltage_switchgear" },
-      { name: "MCCB", href: "/products?category=low_voltage_switchgear" },
-      { name: "RCCB / ELCB", href: "/products?category=low_voltage_switchgear" },
-      { name: "Switch Disconnectors", href: "/products?category=low_voltage_switchgear" },
+      { name: "MCB",                  href: "/categories/low_voltage_switchgear?search=MCB" },
+      { name: "MCCB",                 href: "/categories/low_voltage_switchgear?search=MCCB" },
+      { name: "RCCB / ELCB",         href: "/categories/low_voltage_switchgear?search=RCCB" },
+      { name: "Switch Disconnectors", href: "/categories/low_voltage_switchgear?search=Disconnector" },
     ],
   },
   {
     title: "Control & Motor Protection",
+    href: "/categories/starters_and_switches",
     items: [
-      { name: "Contactors", href: "/products?category=starters_and_switches" },
-      { name: "Motor Starters", href: "/products?category=starters_and_switches" },
-      { name: "Overload Relays", href: "/products?category=starters_and_switches" },
+      { name: "Contactors",      href: "/categories/starters_and_switches?search=Contactor" },
+      { name: "Motor Starters",  href: "/categories/starters_and_switches?search=Starter" },
+      { name: "Overload Relays", href: "/categories/starters_and_switches?search=Overload" },
     ],
   },
   {
     title: "Power Quality",
+    href: "/categories/capacitors_and_reactors",
     items: [
-      { name: "Capacitors", href: "/products?category=capacitors_and_reactors" },
-      { name: "APFC Panels", href: "/products?category=capacitors_and_reactors" },
+      { name: "Capacitors",   href: "/categories/capacitors_and_reactors?search=Capacitor" },
+      { name: "APFC Panels",  href: "/categories/capacitors_and_reactors?search=APFC" },
     ],
   },
 ];
@@ -42,16 +45,18 @@ const coreElectricalSections: NavSection[] = [
 const measurementSections: NavSection[] = [
   {
     title: "Measurement & Instrumentation",
+    href: "/categories/measuring_instruments",
     items: [
-      { name: "Energy Meters", href: "/products?category=measuring_instruments" },
-      { name: "Multifunction Meters", href: "/products?category=testing_and_measuring_instruments" },
+      { name: "Energy Meters",       href: "/categories/measuring_instruments?search=Energy+Meter" },
+      { name: "Multifunction Meters", href: "/categories/measuring_instruments?search=Multifunction" },
     ],
   },
   {
     title: "Industrial Automation",
+    href: "/categories/industrial_automation_vfd",
     items: [
-      { name: "VFDs", href: "/products?category=industrial_automation_vfd" },
-      { name: "Relays", href: "/products?category=relays" },
+      { name: "VFDs",   href: "/categories/industrial_automation_vfd?search=VFD" },
+      { name: "Relays", href: "/categories/relays" },
     ],
   },
 ];
@@ -59,36 +64,44 @@ const measurementSections: NavSection[] = [
 const accessoriesSections: NavSection[] = [
   {
     title: "Electrical Accessories",
+    href: "/categories/wires_and_cables",
     items: [
-      { name: "Wires & Cables", href: "/products?category=wires_and_cables" },
-      { name: "Industrial Plugs & Sockets", href: "/products?category=industrial_plugs_and_sockets" },
-      { name: "Switches & Sockets", href: "/products?category=switches_and_sockets" },
-      { name: "Conduits & Accessories", href: "/products?category=conduits_and_accessories" },
+      { name: "Wires & Cables",              href: "/categories/wires_and_cables" },
+      { name: "Industrial Plugs & Sockets",  href: "/categories/industrial_plugs_and_sockets" },
+      { name: "Switches & Sockets",          href: "/categories/switches_and_sockets" },
+      { name: "Conduits & Accessories",      href: "/categories/conduits_and_accessories" },
     ],
   },
 ];
 
 const quickAccessLinks: NavItem[] = [
-  { name: "MCB", href: "/products?category=low_voltage_switchgear", badge: "330 Products" },
-  { name: "Contactors", href: "/products?category=starters_and_switches" },
-  { name: "RCCB", href: "/products?category=low_voltage_switchgear" },
+  { name: "MCB",       href: "/categories/low_voltage_switchgear?search=MCB", badge: "330+ Products" },
+  { name: "Contactors", href: "/categories/starters_and_switches?search=Contactor" },
+  { name: "RCCB",      href: "/categories/low_voltage_switchgear?search=RCCB" },
 ];
 
 const applicationLinks: NavItem[] = [
-  { name: "Panel Building", href: "/applications/panel-building" },
-  { name: "Power Distribution", href: "/applications/power-distribution" },
+  { name: "Panel Building",        href: "/applications/panel-building" },
+  { name: "Power Distribution",    href: "/applications/power-distribution" },
   { name: "Motor Control Centers", href: "/applications/motor-control-centers" },
-  { name: "Energy Management", href: "/applications/energy-management" },
+  { name: "Energy Management",     href: "/applications/energy-management" },
   { name: "Industrial Automation", href: "/applications/industrial-automation" },
 ];
 
 const NavBlock: React.FC<{ section: NavSection }> = ({ section }) => (
   <div className="mb-4 last:mb-0">
-    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">{section.title}</h4>
+    <Link
+      to={section.href}
+      className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 hover:text-primary transition-colors"
+    >
+      {section.title}
+    </Link>
     <ul className="space-y-1">
       {section.items.map((item) => (
         <li key={item.name}>
-          <Link to={item.href} className="block text-sm text-foreground hover:text-primary transition-colors py-1">{item.name}</Link>
+          <Link to={item.href} className="block text-sm text-foreground hover:text-primary transition-colors py-1">
+            {item.name}
+          </Link>
         </li>
       ))}
     </ul>
@@ -140,10 +153,10 @@ const NavProductsMenu: React.FC = () => (
               </div>
             </div>
             <div className="mt-6 pt-4 border-t border-border flex justify-between items-center">
-              <Link to="/products?category=low_voltage_switchgear" className="text-sm font-medium text-primary hover:text-primary/80 flex items-center gap-1">
+              <Link to="/products" className="text-sm font-medium text-primary hover:text-primary/80 flex items-center gap-1">
                 View All Products <ArrowRight className="h-4 w-4" />
               </Link>
-              <span className="text-xs text-muted-foreground">1,184+ products from 15 brands</span>
+              <span className="text-xs text-muted-foreground">3,951+ products from top brands</span>
             </div>
           </div>
         </NavigationMenuContent>
