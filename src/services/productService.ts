@@ -7,7 +7,7 @@ interface ProductResult {
 }
 
 
-const BRAND_MAP: Record<string, string> = {
+export const BRAND_MAP: Record<string, string> = {
   '9e8951f2-4972-4c69-b5b2-e4efc0d60f9c': '3D',
   '809da01c-56bd-418f-8b3d-43ef87e8a36c': '3M',
   'e2df9ada-5c15-434d-a5b5-f935daa37cc5': '9 Electric',

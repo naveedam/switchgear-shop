@@ -1,110 +1,111 @@
 import React from 'react';
-import { Button } from '@/components/ui/button';
-import { Link } from 'react-router-dom';
-import { ArrowRight, Shield, Zap, Award, FileText, Lock } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Search, ArrowRight, ShieldCheck, FileText, Lock } from 'lucide-react';
 
-const HeroSection: React.FC = () => {
+const QUICK_SEARCHES = [
+  { label: 'ABB MCB', query: 'ABB MCB', category: 'low_voltage_switchgear' },
+  { label: 'Havells MCCB', query: 'Havells MCCB', category: 'low_voltage_switchgear' },
+  { label: 'Schneider contactor', query: 'Schneider contactor', category: 'starters_and_switches' },
+  { label: 'L&T overload relay', query: 'overload relay', category: 'starters_and_switches' },
+  { label: 'RR Kabel 4mm', query: 'RR Kabel 4', category: 'wires_and_cables' },
+  { label: 'Siemens VFD', query: 'Siemens VFD', category: 'industrial_automation_vfd' },
+];
+
+interface HeroSectionProps {
+  stats: { products: number; brands: number; categories: number };
+}
+
+const HeroSection: React.FC<HeroSectionProps> = ({ stats }) => {
+  const navigate = useNavigate();
+  const [query, setQuery] = React.useState('');
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (query.trim()) navigate(`/products?search=${encodeURIComponent(query.trim())}`);
+  };
+
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-background via-background to-secondary/30">
-      <div className="container-wide section-padding">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
-          {/* Content */}
-          <div className="space-y-8 animate-fade-in-up">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/5 border border-primary/10 rounded-full text-sm text-primary font-medium">
-              <Shield className="h-4 w-4" />
-              Verified &amp; GST-Compliant B2B Marketplace
-            </div>
-            
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight">
-              Premium Switchgear
-              <span className="block text-primary">Solutions</span>
-            </h1>
-            
-            <p className="text-lg md:text-xl text-muted-foreground max-w-xl leading-relaxed">
-              India's purpose-built B2B marketplace for industrial electrical equipment. Every seller is verified, every invoice is GST-compliant, and every payment is escrow-protected.
-            </p>
-            
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Button asChild size="lg" className="h-12 px-8 text-base">
-                <Link to="/products">
-                  Browse Products
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Link>
-              </Button>
-              <Button asChild variant="outline" size="lg" className="h-12 px-8 text-base">
-                <Link to="/register?role=seller">
-                  Apply as Seller
-                </Link>
-              </Button>
-            </div>
-
-            {/* Trust Pillars — honest, verifiable claims */}
-            <div className="grid grid-cols-3 gap-6 pt-8 border-t border-border">
-              <div className="flex items-start gap-3">
-                <Shield className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                <div>
-                  <div className="text-sm font-semibold text-foreground">Verified Sellers</div>
-                  <div className="text-xs text-muted-foreground">GST &amp; KYC checked</div>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <Lock className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                <div>
-                  <div className="text-sm font-semibold text-foreground">Escrow Payments</div>
-                  <div className="text-xs text-muted-foreground">Funds released on delivery</div>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <FileText className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                <div>
-                  <div className="text-sm font-semibold text-foreground">GST Invoicing</div>
-                  <div className="text-xs text-muted-foreground">CGST/SGST/IGST compliant</div>
-                </div>
-              </div>
-            </div>
+    <section className="border-b border-border bg-background">
+      <div className="max-w-6xl mx-auto px-6 py-10 grid lg:grid-cols-2 gap-10 items-center">
+        <div>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-50 border border-green-200 rounded-full text-xs text-green-700 font-medium mb-5 dark:bg-green-950 dark:border-green-800 dark:text-green-400">
+            <ShieldCheck className="h-3.5 w-3.5" />
+            GST-compliant · verified sellers · escrow payments
           </div>
-
-          {/* Visual */}
-          <div className="relative hidden lg:block">
-            <div className="relative aspect-square max-w-lg mx-auto">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-primary/5 rounded-3xl transform rotate-6" />
-              <div className="absolute inset-0 bg-gradient-to-br from-secondary to-secondary/50 rounded-3xl transform -rotate-3" />
-              
-              <div className="relative rounded-2xl overflow-hidden shadow-elevated">
-                <img 
-                  src="https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&w=800&h=800"
-                  alt="Industrial switchgear equipment"
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-primary/20 to-transparent" />
-              </div>
-
-              <div className="absolute -bottom-6 -left-6 bg-card rounded-xl shadow-elevated p-4 flex items-center gap-3 animate-fade-in">
-                <div className="h-12 w-12 rounded-lg bg-success/10 flex items-center justify-center">
-                  <Zap className="h-6 w-6 text-success" />
-                </div>
-                <div>
-                  <div className="font-semibold text-foreground">Fast Delivery</div>
-                  <div className="text-sm text-muted-foreground">Pan-India shipping</div>
-                </div>
-              </div>
-
-              <div className="absolute -top-6 -right-6 bg-card rounded-xl shadow-elevated p-4 flex items-center gap-3 animate-fade-in" style={{ animationDelay: '0.2s' }}>
-                <div className="h-12 w-12 rounded-lg bg-warning/10 flex items-center justify-center">
-                  <Award className="h-6 w-6 text-warning" />
-                </div>
-                <div>
-                  <div className="font-semibold text-foreground">Quality Assured</div>
-                  <div className="text-sm text-muted-foreground">BIS &amp; IEC certified</div>
-                </div>
-              </div>
+          <h1 className="text-3xl font-semibold text-foreground leading-snug tracking-tight mb-3">
+            The procurement platform<br />for panel builders and OEMs
+          </h1>
+          <p className="text-sm text-muted-foreground leading-relaxed mb-6 max-w-md">
+            Search {stats.products.toLocaleString()} products across {stats.brands} brands.
+            Get GST invoices, compare quotes, and manage BOMs — built for purchase engineers.
+          </p>
+          <div className="flex gap-3 mb-7">
+            <Link
+              to="/products"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 transition-colors"
+            >
+              <Search className="h-3.5 w-3.5" />
+              Browse products
+            </Link>
+            <Link
+              to="/buyer/bom/upload"
+              className="inline-flex items-center gap-2 px-4 py-2 border border-border rounded-md text-sm text-foreground hover:bg-secondary transition-colors"
+            >
+              Upload BOM
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+          <div className="flex gap-5">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <ShieldCheck className="h-3.5 w-3.5 text-green-600" />
+              BIS / IEC certified stock
+            </div>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <FileText className="h-3.5 w-3.5 text-green-600" />
+              CGST/SGST invoices
+            </div>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Lock className="h-3.5 w-3.5 text-green-600" />
+              Escrow-protected
             </div>
           </div>
         </div>
+        <div>
+          <form onSubmit={handleSearch} className="relative mb-3">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <input
+              type="text"
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder='Search by model, brand, or spec — e.g. "Siemens 3RT2 18A"'
+              className="w-full h-11 pl-10 pr-4 border border-border rounded-md text-sm bg-background focus:outline-none focus:ring-1 focus:ring-primary text-foreground placeholder:text-muted-foreground"
+            />
+          </form>
+          <div className="flex flex-wrap gap-1.5 mb-5">
+            {QUICK_SEARCHES.map(q => (
+              <button
+                key={q.label}
+                onClick={() => navigate(`/categories/${q.category}?search=${encodeURIComponent(q.query)}`)}
+                className="px-2.5 py-1 bg-secondary border border-border rounded-full text-xs text-muted-foreground hover:text-primary hover:border-primary/40 transition-colors"
+              >
+                {q.label}
+              </button>
+            ))}
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { num: stats.products.toLocaleString(), label: 'products' },
+              { num: stats.brands, label: 'brands' },
+              { num: stats.categories, label: 'categories' },
+            ].map(s => (
+              <div key={s.label} className="bg-secondary border border-border rounded-lg p-3 text-center">
+                <div className="text-xl font-semibold text-foreground">{s.num}</div>
+                <div className="text-xs text-muted-foreground mt-0.5">{s.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
-
-      <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-primary/5 to-transparent pointer-events-none" />
     </section>
   );
 };
