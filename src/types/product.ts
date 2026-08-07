@@ -35,6 +35,7 @@ export interface Product {
   variants: ProductVariant[];
   sellerId: string;
   sellerName: string;
+  brandName: string;
   rating: number;
   reviewCount: number;
   createdAt: Date;
