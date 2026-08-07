@@ -38,7 +38,7 @@ const CATEGORIES: Omit<CategoryStat, 'count'>[] = [
     iconColor: 'text-green-600 dark:text-green-400',
   },
   {
-    slug: 'measuring_instruments',
+    slug: 'testing_and_measuring_instruments',
     name: 'Meters and instruments',
     description: 'Energy meters, multifunction meters',
     icon: <Gauge className="h-5 w-5" />,

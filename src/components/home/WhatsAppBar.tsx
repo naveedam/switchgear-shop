@@ -11,7 +11,7 @@ const WhatsAppBar: React.FC = () => (
       <p className="text-xs text-muted-foreground mt-0.5">BOMs, obsolete parts, bulk quantities — we respond within 2 hours.</p>
     </div>
     <a
-      href="https://wa.me/919999999999?text=Hi%2C%20I%20need%20help%20finding%20a%20product%20on%20SwitchgearShop"
+      href="https://wa.me/919986058837?text=Hi%2C%20I%20need%20help%20finding%20a%20product%20on%20SwitchgearShop"
       target="_blank"
       rel="noopener noreferrer"
       className="shrink-0 flex items-center gap-2 px-4 py-2 bg-[#25D366] text-white rounded-md text-xs font-medium hover:bg-[#20b858] transition-colors"
