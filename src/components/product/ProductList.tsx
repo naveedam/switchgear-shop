@@ -92,7 +92,7 @@ const ProductList: React.FC<ProductListProps> = ({ products }) => {
 
             {/* Brand */}
             <div className="col-span-1">
-              <span className="text-xs font-medium text-foreground">{product.sellerName}</span>
+              <span className="text-xs font-medium text-foreground">{product.brandName}</span>
             </div>
 
             {/* Availability */}
