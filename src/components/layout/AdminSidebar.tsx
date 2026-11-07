@@ -18,7 +18,8 @@ import {
   Wallet,
   FileQuestion,
   Upload,
-  MessageSquare
+  MessageSquare,
+  HardHat
 } from 'lucide-react';
 
 const menuItems = [
@@ -51,6 +52,11 @@ const menuItems = [
     name: 'RFQ Intake',
     href: '/admin/rfq-intake',
     icon: MessageSquare,
+  },
+  {
+    name: 'Services',
+    href: '/admin/services',
+    icon: HardHat,
   },
   {
     name: 'RFQs',

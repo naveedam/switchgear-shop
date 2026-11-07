@@ -44,6 +44,7 @@ const NavBar: React.FC = () => {
             {/* Desktop Navigation */}
             <div className="hidden lg:flex items-center space-x-1">
               <NavProductsMenu />
+              <Link to="/services" className="px-3 py-2 text-sm font-medium text-foreground hover:text-primary">Services</Link>
             </div>
 
             {/* Search Bar - Desktop */}
@@ -116,6 +117,14 @@ const NavBar: React.FC = () => {
                           className="block px-4 py-3 rounded-lg hover:bg-secondary text-foreground font-medium"
                         >
                           Brands
+                        </Link>
+                      </SheetClose>
+                      <SheetClose asChild>
+                        <Link 
+                          to="/services" 
+                          className="block px-4 py-3 rounded-lg hover:bg-secondary text-foreground font-medium"
+                        >
+                          Services
                         </Link>
                       </SheetClose>
                       <SheetClose asChild>
