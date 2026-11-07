@@ -14,10 +14,14 @@ const esc = (s: unknown) =>
   String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const slugify = (s: string) =>
   s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80).replace(/-+$/g, '');
-const titleCase = (s: string) => s.replace(/[-_]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+const SMALL = new Set(['and', 'of', 'for', 'the', 'to', 'in']);
+const titleCase = (s: string) =>
+  s.replace(/[-_]+/g, ' ').split(' ').map((w, i) => (i > 0 && SMALL.has(w) ? w : w.charAt(0).toUpperCase() + w.slice(1))).join(' ');
 const clip = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1).trimEnd() + '…' : s);
+// Catalog names sometimes repeat the brand ("Havells Havells Industrial ..."); collapse consecutive duplicate words.
+const cleanName = (n: string) => (n || '').replace(/\b([\w.-]+)(\s+\1\b)+/gi, '$1').replace(/\s+/g, ' ').trim();
 const productPath = (p: { id: string; name: string }) => {
-  const slug = slugify(p.name || '');
+  const slug = slugify(cleanName(p.name));
   return `/products/${slug ? slug + '-' : ''}${p.id}`;
 };
 
@@ -104,6 +108,7 @@ async function productPage(req: any, res: any, rawSlug: string) {
   try { images = Array.isArray(p.Images) ? p.Images : typeof p.Images === 'string' ? JSON.parse(p.Images) : []; } catch { images = []; }
   images = images.filter(u => typeof u === 'string' && /^https?:\/\//.test(u));
 
+  p.name = cleanName(p.name);
   const brand = p.brands?.name as string | undefined;
   const catName = p.category ? titleCase(p.category) : '';
   const catSlug = p.category ? String(p.category).replace(/_/g, '-') : '';
@@ -117,7 +122,9 @@ async function productPage(req: any, res: any, rawSlug: string) {
   ] as [string, unknown][]).filter(([, v]) => v != null && v !== '');
 
   const idBits = [brand, p.model_number || p.sku].filter(Boolean).join(' ');
-  const title = clip(`${p.name}${brand && !p.name.toLowerCase().includes(brand.toLowerCase()) ? ' – ' + brand : ''} | SwitchgearShop.in`, 70);
+  const baseTitle = `${p.name}${brand && !p.name.toLowerCase().includes(brand.toLowerCase()) ? ' – ' + brand : ''}`;
+  const SUFFIX = ' | SwitchgearShop.in';
+  const title = baseTitle.length + SUFFIX.length <= 70 ? baseTitle + SUFFIX : clip(baseTitle, 70);
   const descBase = (p.description && String(p.description).trim()) ||
     `${p.name}${idBits ? ` (${idBits})` : ''}${catName ? `, ${catName.toLowerCase()}` : ''}.`;
   const description = clip(`${descBase} Request a quote from verified sellers on SwitchgearShop.in, India's B2B switchgear marketplace.`, 158);
@@ -183,7 +190,7 @@ async function categoryPage(req: any, res: any, slug: string) {
   const jsonLd: object[] = [
     {
       '@context': 'https://schema.org', '@type': 'CollectionPage', name, url: canonical,
-      mainEntity: { '@type': 'ItemList', itemListElement: items.slice(0, 30).map((p, i) => ({ '@type': 'ListItem', position: i + 1, url: SITE + productPath(p), name: p.name })) },
+      mainEntity: { '@type': 'ItemList', itemListElement: items.slice(0, 30).map((p, i) => ({ '@type': 'ListItem', position: i + 1, url: SITE + productPath(p), name: cleanName(p.name) })) },
     },
     {
       '@context': 'https://schema.org', '@type': 'BreadcrumbList',
@@ -194,7 +201,7 @@ async function categoryPage(req: any, res: any, slug: string) {
 <nav><a href="/">Home</a> › <a href="/categories">Categories</a></nav>
 <h1>${esc(name)}</h1>
 <p>${total.toLocaleString('en-IN')} products. Request quotes from verified sellers.</p>
-<ul>${items.map(p => `<li><a href="${esc(productPath(p))}">${esc(p.name)}</a>${p.brands?.name ? ` – ${esc(p.brands.name)}` : ''}</li>`).join('')}</ul>
+<ul>${items.map(p => `<li><a href="${esc(productPath(p))}">${esc(cleanName(p.name))}</a>${p.brands?.name ? ` – ${esc(p.brands.name)}` : ''}</li>`).join('')}</ul>
 </main>`;
   send(res, 200, render(await getTemplate(req), { title, description, canonical, jsonLd, body }));
 }
