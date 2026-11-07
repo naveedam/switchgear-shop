@@ -63,6 +63,10 @@ import ProjectsPage from './pages/buyer/ProjectsPage';
 import ProjectDetailPage from './pages/buyer/ProjectDetailPage';
 import SellerRfqsPage from './pages/seller/SellerRfqsPage';
 import SellerQuotePage from './pages/seller/SellerQuotePage';
+import ServicesPage from './pages/services/ServicesPage';
+import ServiceRequestPage from './pages/services/ServiceRequestPage';
+import ServiceJoinPage from './pages/services/ServiceJoinPage';
+import AdminServices from './pages/admin/AdminServices';
 
 
 
@@ -119,6 +123,9 @@ function App() {
             <Route index element={<Index />} />
             <Route path="sellers" element={<SellersPage />} />
             <Route path="contact" element={<ContactPage />} />
+            <Route path="services" element={<ServicesPage />} />
+            <Route path="services/request" element={<ServiceRequestPage />} />
+            <Route path="services/join" element={<ServiceJoinPage />} />
             <Route path="categories" element={<AllCategories />} />
             <Route path="categories/:categorySlug" element={<ProductListingPage />} />
             <Route path="products" element={<ProductListingPage />} />
@@ -217,6 +224,7 @@ function App() {
             <Route path="orders" element={<AdminOrders />} />
             <Route path="rfqs" element={<AdminRfqs />} />
             <Route path="rfq-intake" element={<RfqIntake />} />
+            <Route path="services" element={<AdminServices />} />
             <Route path="rfqs/:rfqId" element={<RfqCompare />} />
             <Route path="escrow" element={<AdminEscrow />} />
             <Route path="carts" element={<AdminCarts />} />
