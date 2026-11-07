@@ -5,6 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ShoppingCart, ArrowLeft } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
+import { usePageMeta } from '@/hooks/usePageMeta';
+
+// URLs look like /products/<name-slug>-<uuid>; older links are just /products/<uuid>
+const UUID_AT_END = /([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i;
 
 const PLACEHOLDER = "https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&w=600&q=80";
 
@@ -13,15 +17,16 @@ const ProductDetailPage: React.FC = () => {
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const { addToCart } = useCart();
+  const productId = productSlug?.match(UUID_AT_END)?.[1] ?? productSlug;
 
   useEffect(() => {
     const fetchProduct = async () => {
-      if (!productSlug) return;
+      if (!productId) return;
       try {
         const { data, error } = await supabase
           .from('products')
           .select('*, brands(id, name), companies(id, name)')
-          .eq('id', productSlug)
+          .eq('id', productId)
           .single();
         if (error) throw error;
         setProduct(data);
@@ -32,7 +37,12 @@ const ProductDetailPage: React.FC = () => {
       }
     };
     fetchProduct();
-  }, [productSlug]);
+  }, [productId]);
+
+  usePageMeta({
+    title: product ? `${product.name}${product.brands?.name ? ' – ' + product.brands.name : ''} | SwitchgearShop.in` : undefined,
+    description: product?.description ? String(product.description).slice(0, 155) : undefined,
+  });
 
   if (loading) return (
     <div className="container mx-auto px-4 py-8 flex items-center justify-center min-h-96">
