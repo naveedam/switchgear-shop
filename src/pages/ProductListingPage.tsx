@@ -14,6 +14,7 @@ import { Grid3X3, List, Package } from 'lucide-react';
 import ProductList from '@/components/product/ProductList';
 import ProductGrid from '@/components/product/ProductGrid';
 import { Product, ProductFilter as FilterType } from '@/types/product';
+import { usePageMeta } from '@/hooks/usePageMeta';
 import { fetchSubcategories, getCategoryDisplayName } from '@/services/subcategoryService';
 import { Subcategory } from '@/types/category';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink } from '@/components/ui/breadcrumb';
@@ -102,6 +103,10 @@ const ProductListingPage = () => {
     const sel = subcategories.find(s => s.id === subcategoryId);
     subcategoryName = sel?.name || '';
   }
+
+  usePageMeta({
+    title: categoryName ? `${subcategoryName ? subcategoryName + ' – ' : ''}${categoryName} | SwitchgearShop.in` : 'All Switchgear Products | SwitchgearShop.in',
+  });
 
   return (
     <Container className="py-4">

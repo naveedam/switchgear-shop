@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
+import { usePageMeta } from '@/hooks/usePageMeta';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { fetchTrades, fetchTradeSupply, FALLBACK_TRADES, SERVICES_WA_NUMBER, waLink } from '@/services/servicesService';
 
@@ -21,6 +22,10 @@ const faqs = [
 ];
 
 const ServicesPage: React.FC = () => {
+  usePageMeta({
+    title: 'Skilled Trades on Demand in Peenya, Bangalore | SwitchgearShop.in',
+    description: 'Hire verified welders, turners, fitters, CNC operators, electricians and draftsmen by the day or job in Peenya. No permanent hire or contractor needed.',
+  });
   const { data: trades = FALLBACK_TRADES } = useQuery({ queryKey: ['service-trades'], queryFn: fetchTrades, staleTime: 600_000 });
   const { data: supply = {} } = useQuery({ queryKey: ['service-supply'], queryFn: fetchTradeSupply, staleTime: 300_000 });
   const wa = waLink(SERVICES_WA_NUMBER, 'Hi SwitchgearShop, I need a skilled worker.\n\nTrade:\nWork:\nLocation:\nWhen:');
