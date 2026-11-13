@@ -15,18 +15,25 @@ import MultiSellerNotice from "@/components/checkout/MultiSellerNotice";
 import CartBySeller from "@/components/checkout/CartBySeller";
 import { Store, CreditCard, MapPin, FileText, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { payOrderWithRazorpay } from "@/lib/razorpay";
 
+// Nodal / escrow account for NEFT/RTGS. Set these in Vercel env vars.
 const BANK_ACCOUNT = {
-  accountNumber: "123456789012",
-  ifsc: "SBIN0000123",
-  bankName: "State Bank of India",
-  accountName: "SwitchgearShop Pvt Ltd",
+  accountNumber: import.meta.env.VITE_ESCROW_ACCOUNT_NUMBER ?? "",
+  ifsc: import.meta.env.VITE_ESCROW_IFSC ?? "",
+  bankName: import.meta.env.VITE_ESCROW_BANK_NAME ?? "",
+  accountName: import.meta.env.VITE_ESCROW_ACCOUNT_NAME ?? "SwitchgearShop",
 };
+const BANK_TRANSFER_ENABLED = Boolean(BANK_ACCOUNT.accountNumber && BANK_ACCOUNT.ifsc);
+const ONLINE_PAYMENTS_ENABLED = import.meta.env.VITE_RAZORPAY_ENABLED !== "false";
+
+type PaymentMethod = "razorpay" | "bank_transfer";
 
 const initialAddress = { street: "", city: "", state: "", zipCode: "", country: "India" };
 
 const CheckoutPage: React.FC = () => {
-  const { clearCart } = useCart();
+  const { cart, clearCart } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
   
@@ -39,6 +46,9 @@ const CheckoutPage: React.FC = () => {
   const [buyerEmail, setBuyerEmail] = useState(user?.email || "");
   const [buyerPhone, setBuyerPhone] = useState("");
   const [isB2B, setIsB2B] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
+    ONLINE_PAYMENTS_ENABLED ? "razorpay" : "bank_transfer",
+  );
   const [utr, setUtr] = useState("");
   const [paymentProof, setPaymentProof] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
@@ -91,7 +101,7 @@ const CheckoutPage: React.FC = () => {
 
   const handlePaymentNext = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!utr) {
+    if (paymentMethod === "bank_transfer" && !utr.trim()) {
       setError("Please enter UTR number.");
       return;
     }
@@ -105,8 +115,9 @@ const CheckoutPage: React.FC = () => {
 
     try {
       let paymentProofUrl: string | null = null;
-      if (paymentProof) {
-        const fileName = `${user.id}/${Date.now()}_${paymentProof.name}`;
+      if (paymentMethod === "bank_transfer" && paymentProof) {
+        const safeName = paymentProof.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+        const fileName = `${user.id}/${Date.now()}_${safeName}`;
         const { error: uploadErr } = await supabase.storage
           .from("payment-proofs")
           .upload(fileName, paymentProof);
@@ -114,78 +125,60 @@ const CheckoutPage: React.FC = () => {
         paymentProofUrl = fileName;
       }
 
-      // Create parent order
-      const { data: newOrder, error: orderErr } = await supabase
-        .from("orders")
-        .insert([{
-          buyer_id: user.id,
-          total_amount: totalAmount,
-          shipping_address: shipping,
-          status: "pending",
-          payment_status: "pending",
-          payment_reference: utr,
-          payment_proof_url: paymentProofUrl,
-          buyer_gstin: isB2B ? buyerGstin : null,
-          buyer_company_name: isB2B ? buyerCompanyName : null,
-          buyer_email: buyerEmail,
-          buyer_phone: buyerPhone,
-          is_multi_seller: isMultiSeller,
-        }])
-        .select()
-        .single();
+      // The database prices, validates stock and splits the order by seller.
+      // Only product IDs and quantities are sent from the browser.
+      const { data, error: rpcErr } = await supabase.rpc("place_order", {
+        p_items: cart.map((item) => ({ product_id: item.productId, quantity: item.quantity })),
+        p_shipping: shipping,
+        p_buyer: {
+          email: buyerEmail,
+          phone: buyerPhone,
+          gstin: isB2B ? buyerGstin : null,
+          company_name: isB2B ? buyerCompanyName : null,
+        },
+        p_payment_method: paymentMethod,
+        p_payment_reference: paymentMethod === "bank_transfer" ? utr.trim() : null,
+        p_payment_proof_url: paymentProofUrl,
+      });
+      if (rpcErr) throw new Error(rpcErr.message || "Could not save your order.");
 
-      if (orderErr) throw new Error("Could not save your order.");
+      const result = data as { order_id: string; total_amount: number; seller_count: number };
+      clearCart();
 
-      // Create seller sub-orders and order items
-      for (const group of groupedBySeller) {
-        // Create seller order
-        const { data: sellerOrder, error: sellerOrderErr } = await supabase
-          .from("seller_orders")
-          .insert([{
-            order_id: newOrder.id,
-            seller_id: group.sellerId,
-            status: "pending",
-            subtotal: group.subtotal,
-            tax_amount: 0, // Will be calculated by seller
-            shipping_amount: 0,
-            total_amount: group.subtotal,
-          }])
-          .select()
-          .single();
-
-        if (sellerOrderErr) {
-          console.error("Error creating seller order:", sellerOrderErr);
-          throw new Error("Could not create seller sub-order.");
+      if (paymentMethod === "razorpay") {
+        let outcome: "paid" | "dismissed" = "dismissed";
+        try {
+          outcome = await payOrderWithRazorpay(result.order_id);
+        } catch (payErr) {
+          toast({
+            title: "Payment not completed",
+            description: `${(payErr as Error).message}. Your order is saved; you can pay from My Orders.`,
+            variant: "destructive",
+          });
+          navigate(`/orders`);
+          return;
         }
-
-        // Create order items linked to seller order
-        const itemsToInsert = group.items.map(item => ({
-          order_id: newOrder.id,
-          seller_order_id: sellerOrder.id,
-          product_id: item.productId,
-          quantity: item.quantity,
-          unit_price: item.price,
-          total_price: item.price * item.quantity
-        }));
-
-        const { error: itemsErr } = await supabase.from("order_items").insert(itemsToInsert);
-        if (itemsErr) {
-          console.error("Error creating order items:", itemsErr);
-          throw new Error("Could not save order items.");
+        if (outcome === "dismissed") {
+          toast({
+            title: "Order saved, payment pending",
+            description: "You can complete payment any time from My Orders.",
+          });
+          navigate(`/orders`);
+          return;
         }
+        navigate(`/order-success?orderId=${result.order_id}&paid=1`);
+        return;
       }
 
-      clearCart();
-      toast({ 
-        title: "Order submitted!", 
-        description: isMultiSeller 
-          ? `Your order has been split across ${sellerCount} sellers. Each seller will process their portion.`
-          : "Your order is being processed." 
+      toast({
+        title: "Order submitted!",
+        description: result.seller_count > 1
+          ? `Your order has been split across ${result.seller_count} sellers. We'll confirm once your transfer is verified.`
+          : "We'll confirm once your transfer is verified.",
       });
-      navigate(`/order-success?orderId=${newOrder.id}`);
-    } catch (err: any) {
-      console.error("Checkout error:", err);
-      setError(err.message || "An error occurred during checkout.");
+      navigate(`/order-success?orderId=${result.order_id}`);
+    } catch (err) {
+      setError((err as Error).message || "An error occurred during checkout.");
     } finally {
       setSaving(false);
     }
@@ -368,56 +361,95 @@ const CheckoutPage: React.FC = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
                 <CreditCard className="h-5 w-5" />
-                Bank Transfer Details
+                Payment Method
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="bg-muted rounded-lg p-4">
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <span className="text-muted-foreground">Bank Name:</span>
-                  <span className="font-medium">{BANK_ACCOUNT.bankName}</span>
-                  <span className="text-muted-foreground">Account Holder:</span>
-                  <span className="font-medium">{BANK_ACCOUNT.accountName}</span>
-                  <span className="text-muted-foreground">Account Number:</span>
-                  <span className="font-mono font-medium">{BANK_ACCOUNT.accountNumber}</span>
-                  <span className="text-muted-foreground">IFSC Code:</span>
-                  <span className="font-mono font-medium">{BANK_ACCOUNT.ifsc}</span>
-                </div>
-              </div>
-              
-              <div className="bg-primary/5 rounded-lg p-4 text-sm">
-                <p className="mb-2">
-                  <strong>Amount to transfer:</strong>{" "}
-                  <span className="text-lg font-bold">₹{totalAmount.toLocaleString('en-IN')}</span>
-                </p>
-                <p className="text-muted-foreground">
-                  Complete payment via NEFT/IMPS/RTGS and enter your UTR/reference number below.
-                </p>
-              </div>
+              <RadioGroup
+                value={paymentMethod}
+                onValueChange={(v) => setPaymentMethod(v as PaymentMethod)}
+                className="grid gap-3"
+              >
+                {ONLINE_PAYMENTS_ENABLED && (
+                  <Label
+                    htmlFor="pm-online"
+                    className="flex items-start gap-3 rounded-lg border p-4 cursor-pointer has-[:checked]:border-primary has-[:checked]:bg-primary/5"
+                  >
+                    <RadioGroupItem id="pm-online" value="razorpay" className="mt-1" />
+                    <span>
+                      <span className="block font-medium">Pay online: UPI, cards, netbanking</span>
+                      <span className="block text-sm text-muted-foreground font-normal">
+                        Instant confirmation via Razorpay. Funds are held in escrow until your order ships.
+                      </span>
+                    </span>
+                  </Label>
+                )}
+                {BANK_TRANSFER_ENABLED && (
+                  <Label
+                    htmlFor="pm-bank"
+                    className="flex items-start gap-3 rounded-lg border p-4 cursor-pointer has-[:checked]:border-primary has-[:checked]:bg-primary/5"
+                  >
+                    <RadioGroupItem id="pm-bank" value="bank_transfer" className="mt-1" />
+                    <span>
+                      <span className="block font-medium">Bank transfer: NEFT / RTGS / IMPS</span>
+                      <span className="block text-sm text-muted-foreground font-normal">
+                        For large orders. Confirmed once our team verifies your UTR (usually within 4 working hours).
+                      </span>
+                    </span>
+                  </Label>
+                )}
+              </RadioGroup>
 
-              <div>
-                <Label htmlFor="utr">UTR / Reference Number *</Label>
-                <Input 
-                  id="utr"
-                  placeholder="Enter payment reference" 
-                  value={utr} 
-                  onChange={e => setUtr(e.target.value)} 
-                />
-              </div>
+              {paymentMethod === "bank_transfer" && (
+                <>
+                  <div className="bg-muted rounded-lg p-4">
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <span className="text-muted-foreground">Bank Name:</span>
+                      <span className="font-medium">{BANK_ACCOUNT.bankName}</span>
+                      <span className="text-muted-foreground">Account Holder:</span>
+                      <span className="font-medium">{BANK_ACCOUNT.accountName}</span>
+                      <span className="text-muted-foreground">Account Number:</span>
+                      <span className="font-mono font-medium">{BANK_ACCOUNT.accountNumber}</span>
+                      <span className="text-muted-foreground">IFSC Code:</span>
+                      <span className="font-mono font-medium">{BANK_ACCOUNT.ifsc}</span>
+                    </div>
+                  </div>
 
-              <div>
-                <Label htmlFor="proof">Payment Proof (Optional)</Label>
-                <Input
-                  id="proof"
-                  type="file"
-                  accept="image/*,.pdf"
-                  onChange={e => setPaymentProof(e.target.files?.[0] ?? null)}
-                  className="mt-1"
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Upload a screenshot or PDF of your payment confirmation
-                </p>
-              </div>
+                  <div className="bg-primary/5 rounded-lg p-4 text-sm">
+                    <p className="mb-2">
+                      <strong>Amount to transfer:</strong>{" "}
+                      <span className="text-lg font-bold">₹{totalAmount.toLocaleString('en-IN')}</span>
+                    </p>
+                    <p className="text-muted-foreground">
+                      Complete payment via NEFT/IMPS/RTGS and enter your UTR/reference number below.
+                    </p>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="utr">UTR / Reference Number *</Label>
+                    <Input
+                      id="utr"
+                      placeholder="Enter payment reference"
+                      value={utr}
+                      onChange={e => setUtr(e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="proof">Payment Proof (Optional)</Label>
+                    <Input
+                      id="proof"
+                      type="file"
+                      accept="image/*,.pdf"
+                      onChange={e => setPaymentProof(e.target.files?.[0] ?? null)}
+                      className="mt-1"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Upload a screenshot or PDF of your payment confirmation
+                    </p>
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
 
@@ -464,8 +496,12 @@ const CheckoutPage: React.FC = () => {
                   </div>
                 )}
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Payment Reference:</span>
-                  <span className="font-mono">{utr}</span>
+                  <span className="text-muted-foreground">Payment:</span>
+                  <span>
+                    {paymentMethod === "razorpay"
+                      ? "Online (Razorpay)"
+                      : <>Bank transfer · <span className="font-mono">{utr}</span></>}
+                  </span>
                 </div>
                 {paymentProof && (
                   <div className="flex justify-between text-sm">
@@ -507,7 +543,11 @@ const CheckoutPage: React.FC = () => {
               className="flex-1" 
               size="lg"
             >
-              {saving ? "Placing Order..." : "Place Order"}
+              {saving
+                ? "Placing Order..."
+                : paymentMethod === "razorpay"
+                  ? `Place Order & Pay ₹${totalAmount.toLocaleString('en-IN')}`
+                  : "Place Order"}
             </Button>
           </div>
         </div>

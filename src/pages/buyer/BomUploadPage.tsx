@@ -14,6 +14,7 @@
  import { useRfqService } from '@/hooks/useRfqService';
  import { ParsedBomRow } from '@/types/rfq';
  import { useToast } from '@/hooks/use-toast';
+ import InstantQuotePanel from '@/components/buyer/InstantQuotePanel';
  
  const BomUploadPage = () => {
    const navigate = useNavigate();
@@ -227,6 +228,8 @@
          )}
  
          {step === 'saved' && bomId && (
+           <div className="space-y-6">
+           <InstantQuotePanel bomId={bomId} />
            <Card>
              <CardContent className="py-12 text-center">
                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -247,6 +250,7 @@
                </div>
              </CardContent>
            </Card>
+           </div>
          )}
  
          {/* Disclaimer */}

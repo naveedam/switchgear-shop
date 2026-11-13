@@ -1,3 +1,4 @@
+import { errorResponse, requireUser } from "../_shared/guard.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4';
 
 const corsHeaders = {
@@ -219,6 +220,13 @@ Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // --- access guard ---
+  try {
+    await requireUser(req, ["admin"]);
+  } catch (e) {
+    return errorResponse(e);
   }
 
   try {

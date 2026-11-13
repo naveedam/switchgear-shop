@@ -1,29 +1,37 @@
 project_id = "hdoefblcoavpzvfiiglm"
 
-# This file configures the Supabase project.
+# verify_jwt only proves the caller holds *a* valid JWT — the public anon key
+# passes. Every function also resolves the real user via _shared/guard.ts.
+# Webhooks are the only exception: they authenticate by signature instead.
 
 [functions.process-pricelist]
-# Verifies the JWT to ensure only authenticated users can call this function.
-# Further permission checks are done inside the function logic.
 verify_jwt = true
 
 [functions.calculate-gst]
-verify_jwt = false
+verify_jwt = true
 
 [functions.generate-invoice-pdf]
-verify_jwt = false
+verify_jwt = true
 
 [functions.generate-gstr1-export]
-verify_jwt = false
+verify_jwt = true
 
 [functions.ai-assistant]
-verify_jwt = false
+# Guests may use the assistant (anon key); rate-limited per IP inside.
+verify_jwt = true
 
 [functions.parse-bom-document]
-verify_jwt = false
+verify_jwt = true
 
 [functions.extract-pdf-text]
-verify_jwt = false
+verify_jwt = true
 
 [functions.route-rfq-sellers]
+verify_jwt = true
+
+[functions.razorpay-webhook]
 verify_jwt = false
+
+[functions.whatsapp-dispatch]
+# Invoked by pg_cron with the service role key; checked inside.
+verify_jwt = true

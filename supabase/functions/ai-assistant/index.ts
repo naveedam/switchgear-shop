@@ -1,3 +1,4 @@
+import { adminClient, clientIp, errorResponse, HttpError, optionalUser, rateLimit, requireUser } from "../_shared/guard.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
@@ -128,6 +129,15 @@ ACTIONS:
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // --- access guard ---
+  try {
+    const caller = await optionalUser(req);
+    const key = caller ? `ai-assistant:u:${caller.user.id}` : `ai-assistant:ip:${clientIp(req)}`;
+    await rateLimit(key, caller ? 60 : 15, 3600);
+  } catch (e) {
+    return errorResponse(e);
   }
 
   try {

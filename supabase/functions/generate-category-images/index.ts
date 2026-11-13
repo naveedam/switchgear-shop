@@ -1,3 +1,4 @@
+import { errorResponse, requireUser } from "../_shared/guard.ts";
 
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -36,6 +37,13 @@ const categoryPrompts: Record<string, string> = {
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // --- access guard ---
+  try {
+    await requireUser(req, ["admin"]);
+  } catch (e) {
+    return errorResponse(e);
   }
 
   try {

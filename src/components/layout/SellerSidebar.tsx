@@ -11,7 +11,8 @@ import {
   MessageSquare,
   BarChart, 
   Settings, 
-  HelpCircle
+  HelpCircle,
+  BadgePercent
 } from 'lucide-react';
 
 const menuItems = [
@@ -30,6 +31,12 @@ const menuItems = [
     name: 'My Products',
     href: '/seller/products',
     icon: Package,
+  },
+  {
+    name: 'Pricing & Trust',
+    href: '/seller/pricing',
+    icon: BadgePercent,
+    badge: 'New',
   },
   {
     name: 'Orders',

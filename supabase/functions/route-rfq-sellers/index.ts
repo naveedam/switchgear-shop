@@ -1,3 +1,4 @@
+import { adminClient, clientIp, errorResponse, HttpError, optionalUser, rateLimit, requireUser } from "../_shared/guard.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
 const corsHeaders = {
@@ -19,6 +20,20 @@ interface SellerCandidate {
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // --- access guard ---
+  try {
+    const caller = await requireUser(req);
+    await rateLimit(`route-rfq:${caller.user.id}`, 60, 3600);
+    if (caller.role !== "admin") {
+      const { rfqId: guardRfqId } = await req.clone().json().catch(() => ({}));
+      const { data: ownRfq } = await adminClient()
+        .from("rfqs").select("id").eq("id", guardRfqId ?? "").eq("buyer_id", caller.user.id).maybeSingle();
+      if (!ownRfq) throw new HttpError(403, "Not allowed");
+    }
+  } catch (e) {
+    return errorResponse(e);
   }
 
   try {

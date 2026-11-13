@@ -1,4 +1,5 @@
 
+import WhatsAppSettings from '@/components/trust/WhatsAppSettings';
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -80,6 +81,12 @@ const ProfilePage: React.FC = () => {
             </div>
           </CardContent>
         </Card>
+
+        {user.role !== 'admin' && (
+          <div className="mt-6">
+            <WhatsAppSettings audience={user.role === 'seller' ? 'seller' : 'buyer'} />
+          </div>
+        )}
       </div>
     </div>
   );

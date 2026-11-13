@@ -19,7 +19,8 @@ import {
   FileQuestion,
   Upload,
   MessageSquare,
-  HardHat
+  HardHat,
+  ShieldCheck
 } from 'lucide-react';
 
 const menuItems = [
@@ -67,6 +68,11 @@ const menuItems = [
     name: 'Escrow & Settlements',
     href: '/admin/escrow',
     icon: Wallet,
+  },
+  {
+    name: 'Seller Trust',
+    href: '/admin/trust',
+    icon: ShieldCheck,
   },
   {
     name: 'Carts',

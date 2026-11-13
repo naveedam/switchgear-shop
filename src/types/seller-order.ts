@@ -65,6 +65,8 @@ export interface CartItemWithSeller {
   productId: string;
   name: string;
   price: number;
+  /** Catalogue price before quantity breaks / account discount. */
+  listPrice?: number;
   quantity: number;
   featuredImage: string;
   sellerId: string;

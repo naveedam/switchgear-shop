@@ -1,3 +1,4 @@
+import { adminClient, clientIp, errorResponse, HttpError, optionalUser, rateLimit, requireUser } from "../_shared/guard.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
@@ -15,6 +16,14 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // --- access guard ---
+  try {
+    const caller = await requireUser(req);
+    await rateLimit(`extract-pdf:${caller.user.id}`, 30, 3600);
+  } catch (e) {
+    return errorResponse(e);
   }
 
   try {

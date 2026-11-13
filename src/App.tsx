@@ -67,6 +67,8 @@ import ServicesPage from './pages/services/ServicesPage';
 import ServiceRequestPage from './pages/services/ServiceRequestPage';
 import ServiceJoinPage from './pages/services/ServiceJoinPage';
 import AdminServices from './pages/admin/AdminServices';
+import AdminTrust from './pages/admin/AdminTrust';
+import SellerPricingTrust from './pages/seller/SellerPricingTrust';
 
 
 
@@ -87,8 +89,6 @@ const ProtectedRoute = ({
 }) => {
   const { user, isAuthenticated, isLoading } = useAuth();
   
-  console.log("ProtectedRoute - isAuthenticated:", isAuthenticated, "user:", user, "requiredRole:", requiredRole);
-  
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -101,12 +101,10 @@ const ProtectedRoute = ({
   }
   
   if (!isAuthenticated) {
-    console.log("User not authenticated, redirecting to login");
     return <Navigate to="/login" replace />;
   }
   
   if (requiredRole && user?.role !== requiredRole) {
-    console.log("User role mismatch, redirecting to home");
     return <Navigate to="/" replace />;
   }
   
@@ -227,6 +225,7 @@ function App() {
             <Route path="services" element={<AdminServices />} />
             <Route path="rfqs/:rfqId" element={<RfqCompare />} />
             <Route path="escrow" element={<AdminEscrow />} />
+            <Route path="trust" element={<AdminTrust />} />
             <Route path="carts" element={<AdminCarts />} />
             <Route path="users" element={<AdminUsers />} />
             <Route path="users/:id" element={<EditUser />} />
@@ -259,6 +258,7 @@ function App() {
             <Route path="orders" element={<SellerOrders />} />
             <Route path="invoices" element={<SellerInvoices />} />
             <Route path="settlements" element={<SellerSettlements />} />
+            <Route path="pricing" element={<SellerPricingTrust />} />
             <Route path="rfqs" element={<SellerRfqsPage />} />
             <Route path="rfq/:rfqId/quote" element={<SellerQuotePage />} />
           </Route>

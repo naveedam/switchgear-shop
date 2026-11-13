@@ -14,6 +14,8 @@ export interface CartItem {
 interface CartContextType {
   cart: CartItem[];
   addToCart: (item: Omit<CartItem, "quantity">) => void;
+  /** Add several lines at once with explicit quantities (e.g. from a BOM quote). */
+  addManyToCart: (items: CartItem[]) => void;
   removeFromCart: (productId: string) => void;
   clearCart: () => void;
   isLoading: boolean;
@@ -128,6 +130,20 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const addManyToCart = (items: CartItem[]) => {
+    const byId = new Map(cart.map(i => [i.productId, { ...i }]));
+    for (const item of items) {
+      const existing = byId.get(item.productId);
+      if (existing) existing.quantity += item.quantity;
+      else byId.set(item.productId, { ...item });
+    }
+    const updatedCart = Array.from(byId.values());
+    setCart(updatedCart);
+    if (user) {
+      syncCartToSupabase(updatedCart);
+    }
+  };
+
   const removeFromCart = (productId: string) => {
     const updatedCart = cart.filter(i => i.productId !== productId);
     setCart(updatedCart);
@@ -144,7 +160,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <CartContext.Provider value={{ cart, addToCart, removeFromCart, clearCart, isLoading }}>
+    <CartContext.Provider value={{ cart, addToCart, addManyToCart, removeFromCart, clearCart, isLoading }}>
       {children}
     </CartContext.Provider>
   );

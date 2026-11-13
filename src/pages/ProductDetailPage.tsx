@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ShoppingCart, ArrowLeft } from 'lucide-react';
+import { ShoppingCart, ArrowLeft, Truck } from 'lucide-react';
+import SellerTrustBadges from '@/components/trust/SellerTrustBadges';
+import PriceTiers from '@/components/trust/PriceTiers';
+import { deliveryLabel } from '@/components/buyer/InstantQuotePanel';
 import { useCart } from '@/contexts/CartContext';
 import { usePageMeta } from '@/hooks/usePageMeta';
 
@@ -17,6 +20,7 @@ const ProductDetailPage: React.FC = () => {
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const { addToCart } = useCart();
+  const navigate = useNavigate();
   const productId = productSlug?.match(UUID_AT_END)?.[1] ?? productSlug;
 
   useEffect(() => {
@@ -134,10 +138,15 @@ const ProductDetailPage: React.FC = () => {
           )}
           <h1 className="text-2xl font-bold text-foreground">{product.name}</h1>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">{product.companies?.name || 'M N Associates'}</span>
+            <span className="text-sm text-muted-foreground">Sold by {product.companies?.name || 'M N Associates'}</span>
             <Badge variant="outline">{product.category?.replace(/_/g, ' ')}</Badge>
           </div>
-          <div className="text-3xl font-bold text-foreground">₹ {Number(product.price).toLocaleString()}</div>
+          <SellerTrustBadges sellerId={product.vendor_id} brandName={product.brands?.name} />
+          <div className="text-3xl font-bold text-foreground">
+            ₹ {Number(product.price).toLocaleString('en-IN')}
+            <span className="ml-2 text-sm font-normal text-muted-foreground">+ GST</span>
+          </div>
+          <PriceTiers productId={product.id} listPrice={Number(product.price)} />
           <div className="flex items-center gap-2">
             {product.stock_quantity > 0
               ? <Badge className="bg-green-100 text-green-800">{product.stock_quantity} In Stock</Badge>
@@ -145,11 +154,17 @@ const ProductDetailPage: React.FC = () => {
             }
             <span className="text-xs text-muted-foreground">Min order: {product.min_order_quantity || 1} unit</span>
           </div>
+          {(product.lead_time_days != null || product.dispatch_city) && (
+            <div className="flex items-center gap-2 text-sm">
+              <Truck className="h-4 w-4 text-muted-foreground" />
+              <span>{deliveryLabel(product.lead_time_days, product.dispatch_city, product.stock_quantity == null || product.stock_quantity > 0)}</span>
+            </div>
+          )}
           <div className="flex gap-3 pt-2">
             <Button onClick={handleAddToCart} className="flex-1 gap-2">
               <ShoppingCart className="h-4 w-4" /> Add to Cart
             </Button>
-            <Button variant="outline" className="flex-1">Request Quote</Button>
+            <Button variant="outline" className="flex-1" onClick={() => navigate('/buyer/bom/upload')}>Request Quote</Button>
           </div>
           {product.iec_standards_compliance?.length > 0 && (
             <div className="flex flex-wrap gap-1 pt-2">

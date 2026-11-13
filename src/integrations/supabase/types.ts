@@ -14,6 +14,174 @@ export type Database = {
   }
   public: {
     Tables: {
+      buyer_seller_rates: {
+        Row: {
+          id: string
+          seller_id: string
+          buyer_id: string
+          discount_pct: number
+          note: string | null
+          valid_until: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          seller_id: string
+          buyer_id: string
+          discount_pct: number
+          note?: string | null
+          valid_until?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          seller_id?: string
+          buyer_id?: string
+          discount_pct?: number
+          note?: string | null
+          valid_until?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "buyer_seller_rates_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buyer_seller_rates_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_outbox: {
+        Row: {
+          id: number
+          channel: string
+          recipient_id: string
+          template: string
+          params: Json
+          status: string
+          attempts: number
+          last_error: string | null
+          created_at: string
+          sent_at: string | null
+        }
+        Insert: {
+          id?: number
+          channel?: string
+          recipient_id: string
+          template: string
+          params?: Json
+          status?: string
+          attempts?: number
+          last_error?: string | null
+          created_at?: string
+          sent_at?: string | null
+        }
+        Update: {
+          id?: number
+          channel?: string
+          recipient_id?: string
+          template?: string
+          params?: Json
+          status?: string
+          attempts?: number
+          last_error?: string | null
+          created_at?: string
+          sent_at?: string | null
+        }
+        Relationships: [
+        ]
+      }
+      product_price_tiers: {
+        Row: {
+          id: string
+          product_id: string
+          min_qty: number
+          unit_price: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          product_id: string
+          min_qty: number
+          unit_price: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          product_id?: string
+          min_qty?: number
+          unit_price?: number
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_price_tiers_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seller_reviews: {
+        Row: {
+          id: string
+          seller_order_id: string
+          seller_id: string
+          buyer_id: string
+          rating: number
+          on_time: boolean | null
+          genuine_product: boolean | null
+          comment: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          seller_order_id: string
+          seller_id: string
+          buyer_id: string
+          rating: number
+          on_time?: boolean | null
+          genuine_product?: boolean | null
+          comment?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          seller_order_id?: string
+          seller_id?: string
+          buyer_id?: string
+          rating?: number
+          on_time?: boolean | null
+          genuine_product?: boolean | null
+          comment?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seller_reviews_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seller_reviews_seller_order_id_fkey"
+            columns: ["seller_order_id"]
+            isOneToOne: false
+            referencedRelation: "seller_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       accounts: {
         Row: {
           balance: number
@@ -551,6 +719,10 @@ export type Database = {
       }
       companies: {
         Row: {
+          gst_verified: boolean
+          gst_verified_at: string | null
+          whatsapp_number: string | null
+          whatsapp_opt_in: boolean
           address: string | null
           bank_account_holder_name: string | null
           bank_account_number: string | null
@@ -575,6 +747,10 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          gst_verified?: boolean
+          gst_verified_at?: string | null
+          whatsapp_number?: string | null
+          whatsapp_opt_in?: boolean
           address?: string | null
           bank_account_holder_name?: string | null
           bank_account_number?: string | null
@@ -599,6 +775,10 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          gst_verified?: boolean
+          gst_verified_at?: string | null
+          whatsapp_number?: string | null
+          whatsapp_opt_in?: boolean
           address?: string | null
           bank_account_holder_name?: string | null
           bank_account_number?: string | null
@@ -1091,6 +1271,9 @@ export type Database = {
       }
       orders: {
         Row: {
+          razorpay_order_id: string | null
+          razorpay_payment_id: string | null
+          payment_method: string | null
           buyer_company_name: string | null
           buyer_email: string | null
           buyer_gstin: string | null
@@ -1118,6 +1301,9 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          razorpay_order_id?: string | null
+          razorpay_payment_id?: string | null
+          payment_method?: string | null
           buyer_company_name?: string | null
           buyer_email?: string | null
           buyer_gstin?: string | null
@@ -1145,6 +1331,9 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          razorpay_order_id?: string | null
+          razorpay_payment_id?: string | null
+          payment_method?: string | null
           buyer_company_name?: string | null
           buyer_email?: string | null
           buyer_gstin?: string | null
@@ -1596,6 +1785,8 @@ export type Database = {
       }
       products: {
         Row: {
+          lead_time_days: number | null
+          dispatch_city: string | null
           accuracy: string | null
           adjustable_magnetic_setting: boolean | null
           adjustable_thermal_setting: boolean | null
@@ -1839,6 +2030,8 @@ export type Database = {
           working_length: string | null
         }
         Insert: {
+          lead_time_days?: number | null
+          dispatch_city?: string | null
           accuracy?: string | null
           adjustable_magnetic_setting?: boolean | null
           adjustable_thermal_setting?: boolean | null
@@ -2082,6 +2275,8 @@ export type Database = {
           working_length?: string | null
         }
         Update: {
+          lead_time_days?: number | null
+          dispatch_city?: string | null
           accuracy?: string | null
           adjustable_magnetic_setting?: boolean | null
           adjustable_thermal_setting?: boolean | null
@@ -2945,6 +3140,10 @@ export type Database = {
       }
       seller_brand_authorizations: {
         Row: {
+          document_url: string | null
+          verified_by: string | null
+          verified_at: string | null
+          review_note: string | null
           authorization_level: string
           brand_id: string
           certificate_number: string | null
@@ -2957,6 +3156,10 @@ export type Database = {
           valid_until: string | null
         }
         Insert: {
+          document_url?: string | null
+          verified_by?: string | null
+          verified_at?: string | null
+          review_note?: string | null
           authorization_level?: string
           brand_id: string
           certificate_number?: string | null
@@ -2969,6 +3172,10 @@ export type Database = {
           valid_until?: string | null
         }
         Update: {
+          document_url?: string | null
+          verified_by?: string | null
+          verified_at?: string | null
+          review_note?: string | null
           authorization_level?: string
           brand_id?: string
           certificate_number?: string | null
@@ -4067,9 +4274,68 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      seller_trust: {
+        Row: {
+          seller_id: string
+          gst_verified: boolean
+          bank_verified: boolean
+          avg_rating: number | null
+          review_count: number
+          on_time_pct: number | null
+          authorised_brands: string[]
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      accept_quote_items: {
+        Args: { p_rfq_id: string; p_quote_item_ids: string[] }
+        Returns: string
+      }
+      instant_bom_quote: {
+        Args: { p_bom_id: string }
+        Returns: {
+          bom_item_id: string
+          line_number: number
+          description: string
+          quantity: number
+          product_id: string | null
+          product_name: string | null
+          model_number: string | null
+          seller_id: string | null
+          seller_name: string | null
+          unit_price: number | null
+          line_total: number | null
+          in_stock: boolean | null
+          lead_time_days: number | null
+          dispatch_city: string | null
+          match_type: string
+          offers_count: number
+        }[]
+      }
+      place_order: {
+        Args: {
+          p_items: Json
+          p_shipping: Json
+          p_buyer: Json
+          p_payment_method?: string
+          p_payment_reference?: string | null
+          p_payment_proof_url?: string | null
+        }
+        Returns: Json
+      }
+      price_cart: {
+        Args: { p_items: Json }
+        Returns: { product_id: string; quantity: number; unit_price: number; list_price: number }[]
+      }
+      seller_past_buyers: {
+        Args: Record<PropertyKey, never>
+        Returns: { buyer_id: string; name: string | null; order_count: number }[]
+      }
+      unit_price_for: {
+        Args: { p_product_id: string; p_qty: number; p_buyer_id?: string }
+        Returns: number
+      }
       calculate_settlement_amounts: {
         Args: { p_seller_order_id: string }
         Returns: Json

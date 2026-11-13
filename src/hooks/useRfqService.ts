@@ -410,91 +410,15 @@
    ): Promise<string | null> => {
      setIsLoading(true);
      try {
-       // Group by seller
-       const sellerGroups = new Map<string, typeof selections>();
-       for (const sel of selections) {
-         const existing = sellerGroups.get(sel.sellerId) || [];
-         existing.push(sel);
-         sellerGroups.set(sel.sellerId, existing);
-       }
- 
-       // Calculate total order amount
-       let totalOrderAmount = 0;
+       // Prices, ownership and quote validity are checked in the database.
        const quoteItemIds = selections.map(s => s.quoteItemId);
-       
-       const { data: quoteItems } = await supabase
-         .from('seller_quote_items')
-         .select('*')
-         .in('id', quoteItemIds);
- 
-       if (!quoteItems) throw new Error('No quote items found');
- 
-       totalOrderAmount = quoteItems.reduce((sum, item) => sum + item.total_price, 0);
- 
-       // Create parent order
-       const { data: order, error: orderError } = await supabase
-         .from('orders')
-         .insert({
-           buyer_id: buyerId,
-           rfq_id: rfqId,
-           total_amount: totalOrderAmount,
-           status: 'pending',
-           is_multi_seller: sellerGroups.size > 1,
-         })
-         .select()
-         .single();
- 
-       if (orderError) throw orderError;
- 
-       // Create seller orders
-       for (const [sellerId, items] of sellerGroups) {
-         const sellerItems = quoteItems.filter(qi => items.some(i => i.quoteItemId === qi.id));
-         const sellerTotal = sellerItems.reduce((sum, item) => sum + item.total_price, 0);
-         const quoteId = items[0].quoteId;
- 
-         const { data: sellerOrder } = await supabase
-           .from('seller_orders')
-           .insert({
-             order_id: order.id,
-             seller_id: sellerId,
-             rfq_id: rfqId,
-             quote_id: quoteId,
-             total_amount: sellerTotal,
-             status: 'pending',
-           })
-           .select()
-           .single();
- 
-         if (sellerOrder) {
-           // Create order items
-           const orderItems = sellerItems.map(qi => ({
-             order_id: order.id,
-             seller_order_id: sellerOrder.id,
-             product_id: qi.product_id,
-             quantity: qi.quoted_quantity,
-             unit_price: qi.unit_price,
-             total_price: qi.total_price,
-           }));
- 
-           await supabase.from('order_items').insert(orderItems);
-         }
- 
-         // Update quote status
-         await supabase
-           .from('seller_quotes')
-           .update({ status: 'accepted' })
-           .eq('id', quoteId);
-       }
- 
-       // Update quote item statuses
-       await supabase
-         .from('seller_quote_items')
-         .update({ status: 'accepted' })
-         .in('id', quoteItemIds);
- 
-       // Update RFQ status
-       await supabase.from('rfqs').update({ status: 'converted' }).eq('id', rfqId);
- 
+       const { data: orderId, error: rpcError } = await supabase.rpc('accept_quote_items', {
+         p_rfq_id: rfqId,
+         p_quote_item_ids: quoteItemIds,
+       });
+       if (rpcError || !orderId) throw rpcError ?? new Error('No order created');
+       const order = { id: orderId as string };
+
        // Log audit
        await supabase.from('rfq_audit_log').insert({
          rfq_id: rfqId,
@@ -503,15 +427,19 @@
          actor_id: buyerId,
          actor_type: 'buyer',
          details: {
-         totalAmount: totalOrderAmount,
-           sellerCount: sellerGroups.size,
+           itemCount: quoteItemIds.length,
+           sellerCount: new Set(selections.map(s => s.sellerId)).size,
          },
        });
- 
+
        toast({ title: 'Success', description: 'Order created successfully' });
        return order.id;
      } catch (error) {
-       toast({ title: 'Error', description: 'Failed to create order', variant: 'destructive' });
+       toast({
+         title: 'Error',
+         description: (error as { message?: string })?.message || 'Failed to create order',
+         variant: 'destructive',
+       });
        return null;
      } finally {
        setIsLoading(false);

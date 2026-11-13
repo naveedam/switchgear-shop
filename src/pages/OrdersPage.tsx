@@ -19,6 +19,9 @@ import {
 } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
 import { Link } from 'react-router-dom';
+import { payOrderWithRazorpay } from '@/lib/razorpay';
+import RateSellerDialog from '@/components/trust/RateSellerDialog';
+import { toast } from '@/hooks/use-toast';
 
 interface SellerOrderData {
   id: string;
@@ -49,6 +52,7 @@ interface Order {
   id: string;
   status: string | null;
   payment_status: string | null;
+  payment_method: string | null;
   fulfillment_status: string | null;
   total_amount: number;
   created_at: string | null;
@@ -81,6 +85,7 @@ const paymentStatusColors: Record<string, string> = {
 
 const OrdersPage: React.FC = () => {
   const { user } = useAuth();
+  const [payingId, setPayingId] = useState<string | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -99,6 +104,7 @@ const OrdersPage: React.FC = () => {
             id,
             status,
             payment_status,
+            payment_method,
             fulfillment_status,
             total_amount,
             created_at,
@@ -269,6 +275,27 @@ const OrdersPage: React.FC = () => {
                           {order.payment_status}
                         </Badge>
                       )}
+                      {order.payment_status === 'pending' && order.payment_method === 'razorpay' && (
+                        <Button
+                          size="sm"
+                          disabled={payingId === order.id}
+                          onClick={async () => {
+                            setPayingId(order.id);
+                            try {
+                              const outcome = await payOrderWithRazorpay(order.id);
+                              if (outcome === 'paid') {
+                                toast({ title: 'Payment received', description: 'Confirmation will appear here in a few seconds.' });
+                              }
+                            } catch (e) {
+                              toast({ title: 'Payment failed', description: (e as Error).message, variant: 'destructive' });
+                            } finally {
+                              setPayingId(null);
+                            }
+                          }}
+                        >
+                          {payingId === order.id ? 'Opening…' : 'Pay now'}
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </CardHeader>
@@ -304,6 +331,13 @@ const OrdersPage: React.FC = () => {
                           </div>
                           
                           <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                            {sellerOrder.status === 'delivered' && (
+                              <RateSellerDialog
+                                sellerOrderId={sellerOrder.id}
+                                sellerId={sellerOrder.seller_id}
+                                sellerName={sellerOrder.seller?.name || 'seller'}
+                              />
+                            )}
                             {sellerOrder.tracking_number && (
                               <span className="flex items-center gap-1">
                                 <Truck className="h-3 w-3" />

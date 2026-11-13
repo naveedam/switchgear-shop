@@ -87,9 +87,9 @@ class AdminRoleService {
   }
 
   // Emergency admin access bypass for known admin emails
-  isEmergencyAdmin(email: string): boolean {
-    const emergencyAdmins = ['naveedahmedm@hotmail.com'];
-    return emergencyAdmins.includes(email.toLowerCase());
+  /** Removed: admin access is granted only via the database (companies.role / admin_users). */
+  isEmergencyAdmin(_email: string): boolean {
+    return false;
   }
 }
 

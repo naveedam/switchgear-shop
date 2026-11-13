@@ -1,3 +1,4 @@
+import { errorResponse, requireUser } from "../_shared/guard.ts";
 // Parse RFQ intake message / file into structured line items via OpenAI GPT-4o
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -27,6 +28,13 @@ Respond ONLY with valid JSON of shape:
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+
+  // --- access guard ---
+  try {
+    await requireUser(req, ["admin"]);
+  } catch (e) {
+    return errorResponse(e);
+  }
 
   try {
     if (!OPENAI_API_KEY) throw new Error('OPENAI_API_KEY not configured');

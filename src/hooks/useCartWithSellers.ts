@@ -50,14 +50,28 @@ export function useCartWithSellers() {
           });
         });
 
-        // Enrich cart items with seller info
+        // Ask the database what the buyer will actually pay (quantity breaks,
+        // account discounts). place_order() uses the same function, so the
+        // checkout total always matches the order that gets created.
+        const { data: priced } = await supabase.rpc('price_cart', {
+          p_items: cart.map(item => ({ product_id: item.productId, quantity: item.quantity })),
+        });
+        const priceMap = new Map<string, { unit: number; list: number }>();
+        (priced as { product_id: string; unit_price: number; list_price: number }[] | null)?.forEach(row => {
+          priceMap.set(row.product_id, { unit: Number(row.unit_price), list: Number(row.list_price) });
+        });
+
+        // Enrich cart items with seller info and server prices
         const enrichedCart: CartItemWithSeller[] = cart.map(item => {
           const sellerInfo = productSellerMap.get(item.productId) || {
             sellerId: 'unknown',
             sellerName: 'Unknown Seller'
           };
+          const serverPrice = priceMap.get(item.productId);
           return {
             ...item,
+            price: serverPrice?.unit ?? item.price,
+            listPrice: serverPrice?.list ?? item.price,
             sellerId: sellerInfo.sellerId,
             sellerName: sellerInfo.sellerName
           };

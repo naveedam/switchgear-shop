@@ -72,12 +72,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return 'admin';
     }
 
-    // Step 2: Emergency admin bypass
-    if (adminRoleService.isEmergencyAdmin(email)) {
-      logRoleAssignment(userId, email, 'admin', 'emergency-admin-bypass', { email });
-      return 'admin';
-    }
-
     // Step 3: Check company profile for role
     try {
       const { data: companyProfile, error } = await supabase
@@ -95,8 +89,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.warn('AuthContext: Failed to fetch company profile:', err);
     }
 
-    // Step 4: Use session metadata role
-    if (sessionRole) {
+    // Step 4: Use session metadata role. user_metadata is editable by the
+    // user themselves, so it can never grant admin.
+    if (sessionRole && sessionRole !== 'admin') {
       logRoleAssignment(userId, email, sessionRole, 'session-metadata', { sessionRole });
       return sessionRole;
     }
