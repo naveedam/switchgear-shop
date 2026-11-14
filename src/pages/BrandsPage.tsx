@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { brandPath } from '@/lib/slug';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -58,7 +59,7 @@ const BrandsPage: React.FC = () => {
         {brands.map((brand) => (
           <Link
             key={brand.id}
-            to={`/products?brandId=${brand.id}`}
+            to={brandPath(brand.name)}
             className="flex flex-col items-center justify-center p-6 bg-white border border-gray-200 rounded-xl hover:shadow-md hover:border-primary transition-all group"
           >
             <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-3 group-hover:bg-primary/20 transition-colors">

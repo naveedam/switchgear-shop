@@ -1,74 +1,76 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Outlet, Navigate } from 'react-router-dom';
 import MainLayout from './components/layout/MainLayout';
 import Index from './pages/Index';
 import NotFound from './pages/NotFound';
-import AdminDashboard from './pages/AdminDashboard';
-import AdminProducts from './pages/admin/AdminProducts';
-import AdminCategories from './pages/admin/AdminCategories';
-import AdminSubcategories from './pages/admin/AdminSubcategories';
-import AdminSellers from './pages/admin/AdminSellers';
-import AdminSettings from './pages/admin/AdminSettings';
-import AdminAIImages from './pages/admin/AdminAIImages';
-import AdminAIProducts from './pages/admin/AdminAIProducts';
-import AdminAIVendors from './pages/admin/AdminAIVendors';
-import CatalogIngestion from './pages/admin/CatalogIngestion';
-import AdminCarts from './pages/admin/AdminCarts';
-import AdminEscrow from './pages/admin/AdminEscrow';
-import EditProduct from './pages/admin/EditProduct';
-import EditCategory from './pages/admin/EditCategory';
-import EditSubcategory from './pages/admin/EditSubcategory';
-import EditUser from './pages/admin/EditUser';
-import EditSeller from './pages/admin/EditSeller';
-import SellerDashboard from './pages/SellerDashboard';
-import ProductListingPage from './pages/ProductListingPage';
-import ProductDetailPage from './pages/ProductDetailPage';
-import LoginPage from './pages/auth/LoginPage';
-import RegisterPage from './pages/auth/RegisterPage';
-import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
-import ResetPasswordPage from './pages/auth/ResetPasswordPage';
-import AllCategories from './pages/AllCategories';
-import BrandsPage from './pages/BrandsPage';
-import AdminOrders from './pages/admin/AdminOrders';
-import AdminRfqs from './pages/admin/AdminRfqs';
-import RfqIntake from './pages/admin/RfqIntake';
-import RfqCompare from './pages/admin/RfqCompare';
-import AdminBuyerOutreach from './pages/admin/AdminBuyerOutreach';
-import AdminUsers from './pages/admin/AdminUsers';
-import AdminAnalytics from './pages/admin/AdminAnalytics';
-import AdminPermissions from './pages/admin/AdminPermissions';
-import AdminReports from './pages/admin/AdminReports';
-import CheckoutPage from './pages/CheckoutPage';
-import SellerProducts from './pages/SellerProducts';
-import SellerOrders from './pages/SellerOrders';
-import SellerInvoices from './pages/SellerInvoices';
-import SellerSettlements from './pages/seller/SellerSettlements';
-import SellerInventory from './pages/seller/SellerInventory';
-import AdminProductRequests from './pages/admin/AdminProductRequests';
-import ProfilePage from './pages/ProfilePage';
-import OrdersPage from './pages/OrdersPage';
-import SellersPage from './pages/SellersPage';
-import OrderSuccessPage from './pages/OrderSuccessPage';
-import ContactPage from './pages/ContactPage';
-import PanelBuildingPage from './pages/applications/PanelBuildingPage';
-import PowerDistributionPage from './pages/applications/PowerDistributionPage';
-import MotorControlCentersPage from './pages/applications/MotorControlCentersPage';
-import EnergyManagementPage from './pages/applications/EnergyManagementPage';
-import IndustrialAutomationPage from './pages/applications/IndustrialAutomationPage';
-import AllApplicationsPage from './pages/applications/AllApplicationsPage';
-import BomUploadPage from './pages/buyer/BomUploadPage';
-import BuyerRfqsPage from './pages/buyer/BuyerRfqsPage';
-import RfqCreatePage from './pages/buyer/RfqCreatePage';
-import RfqDetailPage from './pages/buyer/RfqDetailPage';
-import ProjectsPage from './pages/buyer/ProjectsPage';
-import ProjectDetailPage from './pages/buyer/ProjectDetailPage';
-import SellerRfqsPage from './pages/seller/SellerRfqsPage';
-import SellerQuotePage from './pages/seller/SellerQuotePage';
-import ServicesPage from './pages/services/ServicesPage';
-import ServiceRequestPage from './pages/services/ServiceRequestPage';
-import ServiceJoinPage from './pages/services/ServiceJoinPage';
-import AdminServices from './pages/admin/AdminServices';
-import AdminTrust from './pages/admin/AdminTrust';
-import SellerPricingTrust from './pages/seller/SellerPricingTrust';
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const AdminProducts = lazy(() => import('./pages/admin/AdminProducts'));
+const AdminCategories = lazy(() => import('./pages/admin/AdminCategories'));
+const AdminSubcategories = lazy(() => import('./pages/admin/AdminSubcategories'));
+const AdminSellers = lazy(() => import('./pages/admin/AdminSellers'));
+const AdminSettings = lazy(() => import('./pages/admin/AdminSettings'));
+const AdminAIImages = lazy(() => import('./pages/admin/AdminAIImages'));
+const AdminAIProducts = lazy(() => import('./pages/admin/AdminAIProducts'));
+const AdminAIVendors = lazy(() => import('./pages/admin/AdminAIVendors'));
+const CatalogIngestion = lazy(() => import('./pages/admin/CatalogIngestion'));
+const AdminCarts = lazy(() => import('./pages/admin/AdminCarts'));
+const AdminEscrow = lazy(() => import('./pages/admin/AdminEscrow'));
+const EditProduct = lazy(() => import('./pages/admin/EditProduct'));
+const EditCategory = lazy(() => import('./pages/admin/EditCategory'));
+const EditSubcategory = lazy(() => import('./pages/admin/EditSubcategory'));
+const EditUser = lazy(() => import('./pages/admin/EditUser'));
+const EditSeller = lazy(() => import('./pages/admin/EditSeller'));
+const SellerDashboard = lazy(() => import('./pages/SellerDashboard'));
+const ProductListingPage = lazy(() => import('./pages/ProductListingPage'));
+const ProductDetailPage = lazy(() => import('./pages/ProductDetailPage'));
+const LoginPage = lazy(() => import('./pages/auth/LoginPage'));
+const RegisterPage = lazy(() => import('./pages/auth/RegisterPage'));
+const ForgotPasswordPage = lazy(() => import('./pages/auth/ForgotPasswordPage'));
+const ResetPasswordPage = lazy(() => import('./pages/auth/ResetPasswordPage'));
+const AllCategories = lazy(() => import('./pages/AllCategories'));
+const BrandsPage = lazy(() => import('./pages/BrandsPage'));
+const AdminOrders = lazy(() => import('./pages/admin/AdminOrders'));
+const AdminRfqs = lazy(() => import('./pages/admin/AdminRfqs'));
+const RfqIntake = lazy(() => import('./pages/admin/RfqIntake'));
+const RfqCompare = lazy(() => import('./pages/admin/RfqCompare'));
+const AdminBuyerOutreach = lazy(() => import('./pages/admin/AdminBuyerOutreach'));
+const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
+const AdminAnalytics = lazy(() => import('./pages/admin/AdminAnalytics'));
+const AdminPermissions = lazy(() => import('./pages/admin/AdminPermissions'));
+const AdminReports = lazy(() => import('./pages/admin/AdminReports'));
+const CheckoutPage = lazy(() => import('./pages/CheckoutPage'));
+const SellerProducts = lazy(() => import('./pages/SellerProducts'));
+const SellerOrders = lazy(() => import('./pages/SellerOrders'));
+const SellerInvoices = lazy(() => import('./pages/SellerInvoices'));
+const SellerSettlements = lazy(() => import('./pages/seller/SellerSettlements'));
+const SellerInventory = lazy(() => import('./pages/seller/SellerInventory'));
+const AdminProductRequests = lazy(() => import('./pages/admin/AdminProductRequests'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const OrdersPage = lazy(() => import('./pages/OrdersPage'));
+const SellersPage = lazy(() => import('./pages/SellersPage'));
+const OrderSuccessPage = lazy(() => import('./pages/OrderSuccessPage'));
+const ContactPage = lazy(() => import('./pages/ContactPage'));
+const PanelBuildingPage = lazy(() => import('./pages/applications/PanelBuildingPage'));
+const PowerDistributionPage = lazy(() => import('./pages/applications/PowerDistributionPage'));
+const MotorControlCentersPage = lazy(() => import('./pages/applications/MotorControlCentersPage'));
+const EnergyManagementPage = lazy(() => import('./pages/applications/EnergyManagementPage'));
+const IndustrialAutomationPage = lazy(() => import('./pages/applications/IndustrialAutomationPage'));
+const AllApplicationsPage = lazy(() => import('./pages/applications/AllApplicationsPage'));
+const BomUploadPage = lazy(() => import('./pages/buyer/BomUploadPage'));
+const BuyerRfqsPage = lazy(() => import('./pages/buyer/BuyerRfqsPage'));
+const RfqCreatePage = lazy(() => import('./pages/buyer/RfqCreatePage'));
+const RfqDetailPage = lazy(() => import('./pages/buyer/RfqDetailPage'));
+const ProjectsPage = lazy(() => import('./pages/buyer/ProjectsPage'));
+const ProjectDetailPage = lazy(() => import('./pages/buyer/ProjectDetailPage'));
+const SellerRfqsPage = lazy(() => import('./pages/seller/SellerRfqsPage'));
+const SellerQuotePage = lazy(() => import('./pages/seller/SellerQuotePage'));
+const ServicesPage = lazy(() => import('./pages/services/ServicesPage'));
+const ServiceRequestPage = lazy(() => import('./pages/services/ServiceRequestPage'));
+const ServiceJoinPage = lazy(() => import('./pages/services/ServiceJoinPage'));
+const AdminServices = lazy(() => import('./pages/admin/AdminServices'));
+const BrandDetailPage = lazy(() => import('./pages/BrandDetailPage'));
+const AdminTrust = lazy(() => import('./pages/admin/AdminTrust'));
+const SellerPricingTrust = lazy(() => import('./pages/seller/SellerPricingTrust'));
 
 
 
@@ -77,7 +79,13 @@ import { Toaster } from './components/ui/toaster';
 import './App.css';
 import { useAuth } from './contexts/AuthContext';
 import { CartProvider } from './contexts/CartContext';
-import CartPage from './pages/CartPage';
+const CartPage = lazy(() => import('./pages/CartPage'));
+
+const PageLoader = () => (
+  <div className="min-h-[50vh] flex items-center justify-center">
+    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary" aria-label="Loading" />
+  </div>
+);
 
 // Protected route component
 const ProtectedRoute = ({ 
@@ -115,9 +123,10 @@ function App() {
   return (
     <CartProvider>
       <Router>
+        <Suspense fallback={<PageLoader />}>
         <Routes>
           {/* Public routes */}
-          <Route path="/" element={<MainLayout><Outlet /></MainLayout>}>
+          <Route path="/" element={<MainLayout><Suspense fallback={<PageLoader />}><Outlet /></Suspense></MainLayout>}>
             <Route index element={<Index />} />
             <Route path="sellers" element={<SellersPage />} />
             <Route path="contact" element={<ContactPage />} />
@@ -128,6 +137,8 @@ function App() {
             <Route path="categories/:categorySlug" element={<ProductListingPage />} />
             <Route path="products" element={<ProductListingPage />} />
             <Route path="brands" element={<BrandsPage />} />
+            <Route path="brands/:brandSlug" element={<BrandDetailPage />} />
+            <Route path="brands/:brandSlug/:categorySlug" element={<BrandDetailPage />} />
             <Route path="products/:productSlug" element={<ProductDetailPage />} />
             
             {/* Application pages */}
@@ -208,7 +219,7 @@ function App() {
             path="admin" 
             element={
               <ProtectedRoute requiredRole="admin">
-                <MainLayout><Outlet /></MainLayout>
+                <MainLayout><Suspense fallback={<PageLoader />}><Outlet /></Suspense></MainLayout>
               </ProtectedRoute>
             }
           >
@@ -248,7 +259,7 @@ function App() {
             path="seller" 
             element={
               <ProtectedRoute requiredRole="seller">
-                <MainLayout><Outlet /></MainLayout>
+                <MainLayout><Suspense fallback={<PageLoader />}><Outlet /></Suspense></MainLayout>
               </ProtectedRoute>
             }
           >
@@ -266,6 +277,7 @@ function App() {
           {/* Catch all */}
           <Route path="*" element={<NotFound />} />
         </Routes>
+        </Suspense>
         <Toaster />
       </Router>
     </CartProvider>

@@ -15,6 +15,7 @@
  import { ParsedBomRow } from '@/types/rfq';
  import { useToast } from '@/hooks/use-toast';
  import InstantQuotePanel from '@/components/buyer/InstantQuotePanel';
+ import { track } from '@/lib/monitoring';
  
  const BomUploadPage = () => {
    const navigate = useNavigate();
@@ -74,6 +75,7 @@
      if (success) {
        setBomId(bom.id);
        setStep('saved');
+       track('bom_uploaded', { lines: parsedRows.length });
        toast({ title: 'BOM Saved', description: 'Your BOM has been saved. You can now create an RFQ.' });
      }
    };
