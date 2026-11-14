@@ -349,8 +349,8 @@
         .select('total_price, tax_amount')
         .eq('quote_id', quoteId);
 
-      const totalAmount = items?.reduce((sum, i) => sum + (i.total_price - i.tax_amount), 0) || 0;
-      const taxAmount = items?.reduce((sum, i) => sum + i.tax_amount, 0) || 0;
+      const totalAmount = items?.reduce((sum, i) => sum + (i.total_price - (i.tax_amount ?? 0)), 0) || 0;
+      const taxAmount = items?.reduce((sum, i) => sum + (i.tax_amount ?? 0), 0) || 0;
       const grandTotal = totalAmount + taxAmount;
 
       const { error } = await supabase

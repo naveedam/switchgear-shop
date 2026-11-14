@@ -1,73 +1,76 @@
-# Welcome to your Lovable project
+# SwitchgearShop.in
 
-## Project info
+India's B2B marketplace for low-voltage switchgear: MCBs, MCCBs, ACBs, contactors, relays, cables and panel accessories.
 
-**URL**: https://lovable.dev/projects/aa806386-c1d5-47e1-a441-50d5c75405f0
+**Live:** https://www.switchgearshop.in
 
-## How can I edit this code?
+## What it does
 
-There are several ways of editing your application.
+| For buyers | For sellers | For the platform |
+|---|---|---|
+| Upload a BOM (Excel/PDF) and get an **instant quote** priced across all sellers | List products, set **quantity breaks**, **account rates** and **dispatch times** | **Escrow**: buyer pays the platform, and sellers are settled after fulfilment |
+| Raise RFQs for anything not in stock; compare quotes side by side | Respond to RFQs routed to them by category | Admin verifies **GSTINs** and **OEM dealer certificates** |
+| Pay by **UPI / card / netbanking (Razorpay)** or bank transfer | GST invoices, **e-invoice (IRN) and e-way bill JSON** export | Commission invoicing, GSTR-1 export, settlement tracking |
+| See **Authorised dealer**, **GST verified** and rating badges | **WhatsApp alerts** for new orders and RFQs | AI catalogue ingestion from price lists |
 
-**Use Lovable**
+## Stack
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/aa806386-c1d5-47e1-a441-50d5c75405f0) and start prompting.
+- **Frontend:** React 18, TypeScript, Vite, Tailwind, shadcn/ui, React Router (routes code-split)
+- **Backend:** Supabase (Postgres + RLS, Auth, Storage, Edge Functions on Deno)
+- **Hosting:** Vercel. `api/seo.ts` server-renders product, category, brand and landing pages for search engines
+- **Payments:** Razorpay Orders API + signature-verified webhook
+- **Messaging:** WhatsApp Cloud API via a DB outbox
+- **Monitoring:** Sentry (errors) and PostHog (funnels), both optional and env-gated
 
-Changes made via Lovable will be committed automatically to this repo.
+## Architecture rules
 
-**Use your preferred IDE**
+1. **Money is computed in the database, never in the browser.** `unit_price_for()` is the only pricing function; `place_order()` and `accept_quote_items()` are the only ways to create orders. Browsers cannot insert into `orders`, `seller_orders` or `order_items`.
+2. **An order is paid only when Razorpay's signed webhook says so** (`mark_order_paid()`), and the amount must match to the paisa.
+3. **Roles come from the database** (`companies.role`, `admin_users`). Triggers stop users editing their own role, status, verification flags, payment or settlement fields.
+4. **Every edge function resolves the real caller** through `supabase/functions/_shared/guard.ts`. The gateway's `verify_jwt` accepts the public anon key, so it isn't enough on its own.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## Project layout
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```
+api/seo.ts                     Server-rendered SEO pages + sitemap (Vercel function)
+src/pages/                     Routes (lazy-loaded); buyer/, seller/, admin/ sub-areas
+src/components/                UI; trust/ (badges, ratings, WhatsApp), buyer/ (instant quote)
+src/lib/                       razorpay.ts, monitoring.ts, slug.ts, gst/einvoice.ts
+supabase/migrations/           Schema. 20261113* = security, pricing, trust
+supabase/functions/            Edge functions; _shared/guard.ts = auth + rate limits
+e2e/                           Playwright: public, SEO and security smoke tests
+docs/                          Deployment and operations guides
 ```
 
-**Edit a file directly in GitHub**
+## Local development
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```bash
+npm ci
+cp .env.example .env      # fill in values
+npm run dev               # http://localhost:8080
+```
 
-**Use GitHub Codespaces**
+| Command | What it does |
+|---|---|
+| `npm run typecheck` | TypeScript (strict mode, null checks still off) |
+| `npm test` | Unit tests (Vitest): GST e-invoice builder, URL slugs |
+| `npm run test:e2e` | Playwright against `E2E_BASE_URL` (default: production) |
+| `npm run build` | Production build |
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Configuration
 
-## What technologies are used for this project?
+**Vercel (browser):** see `.env.example`. Key ones: `VITE_RAZORPAY_ENABLED`, `VITE_ESCROW_*`, `VITE_SENTRY_DSN`, `VITE_POSTHOG_KEY`, `VITE_PLATFORM_GSTIN`.
 
-This project is built with:
+**Supabase secrets (server):** `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `ALLOWED_ORIGIN`.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## Deploying changes
 
-## How can I deploy this project?
+- **Frontend:** merge to `main` and Vercel deploys automatically.
+- **Database:** add a new file in `supabase/migrations/`, test on a staging project, then run it in the Supabase SQL editor (or `supabase db push`). **Run the database step before merging code that depends on it.**
+- **Edge functions:** deployed by Lovable on push, or `supabase functions deploy <name>`.
 
-Simply open [Lovable](https://lovable.dev/projects/aa806386-c1d5-47e1-a441-50d5c75405f0) and click on Share -> Publish.
+See [`docs/SECURITY_AND_PAYMENTS.md`](docs/SECURITY_AND_PAYMENTS.md) for Razorpay, WhatsApp and GST setup.
 
-## Can I connect a custom domain to my Lovable project?
+## CI
 
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+`.github/workflows/ci.yml` runs type check, unit tests and build on every pull request. After each push to `main` it waits for Vercel, then runs the Playwright smoke/SEO/security suite against production. Add the repository secret `SUPABASE_ANON_KEY` to enable the security checks.

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "@/hooks/use-toast";
+import { track } from "@/lib/monitoring";
 
 export interface InstantQuoteLine {
   bom_item_id: string;
@@ -49,7 +50,11 @@ export default function InstantQuotePanel({ bomId }: { bomId: string }) {
       const { data, error } = await supabase.rpc("instant_bom_quote", { p_bom_id: bomId });
       if (cancelled) return;
       if (error) setError(error.message);
-      else setLines((data ?? []) as InstantQuoteLine[]);
+      else {
+        const l = (data ?? []) as InstantQuoteLine[];
+        setLines(l);
+        track("instant_quote_shown", { lines: l.length, buyable: l.filter((x) => x.match_type === "exact" && x.in_stock).length });
+      }
     })();
     return () => {
       cancelled = true;
@@ -89,6 +94,7 @@ export default function InstantQuotePanel({ bomId }: { bomId: string }) {
         featuredImage: "",
       })),
     );
+    track("instant_quote_added_to_cart", { lines: buyable.length, value: Math.round(total) });
     toast({ title: `${buyable.length} items added to cart`, description: inr(total) });
     navigate("/cart");
   };

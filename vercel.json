@@ -1,8 +1,112 @@
 {
   "rewrites": [
-    { "source": "/sitemap.xml", "destination": "/api/seo?type=sitemap" },
-    { "source": "/products/:slug", "destination": "/api/seo?type=product&slug=:slug" },
-    { "source": "/categories/:slug", "destination": "/api/seo?type=category&slug=:slug" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    {
+      "source": "/sitemap.xml",
+      "destination": "/api/seo?type=sitemap"
+    },
+    {
+      "source": "/products/:slug",
+      "destination": "/api/seo?type=product&slug=:slug"
+    },
+    {
+      "source": "/categories/:slug",
+      "destination": "/api/seo?type=category&slug=:slug"
+    },
+    {
+      "source": "/brands/:slug/:cat",
+      "destination": "/api/seo?type=brand&slug=:slug&cat=:cat"
+    },
+    {
+      "source": "/brands/:slug",
+      "destination": "/api/seo?type=brand&slug=:slug"
+    },
+    {
+      "source": "/",
+      "destination": "/api/seo?type=static&path=/"
+    },
+    {
+      "source": "/categories",
+      "destination": "/api/seo?type=static&path=/categories"
+    },
+    {
+      "source": "/products",
+      "destination": "/api/seo?type=static&path=/products"
+    },
+    {
+      "source": "/brands",
+      "destination": "/api/seo?type=static&path=/brands"
+    },
+    {
+      "source": "/sellers",
+      "destination": "/api/seo?type=static&path=/sellers"
+    },
+    {
+      "source": "/services",
+      "destination": "/api/seo?type=static&path=/services"
+    },
+    {
+      "source": "/applications",
+      "destination": "/api/seo?type=static&path=/applications"
+    },
+    {
+      "source": "/applications/panel-building",
+      "destination": "/api/seo?type=static&path=/applications/panel-building"
+    },
+    {
+      "source": "/applications/power-distribution",
+      "destination": "/api/seo?type=static&path=/applications/power-distribution"
+    },
+    {
+      "source": "/applications/motor-control-centers",
+      "destination": "/api/seo?type=static&path=/applications/motor-control-centers"
+    },
+    {
+      "source": "/applications/energy-management",
+      "destination": "/api/seo?type=static&path=/applications/energy-management"
+    },
+    {
+      "source": "/applications/industrial-automation",
+      "destination": "/api/seo?type=static&path=/applications/industrial-automation"
+    },
+    {
+      "source": "/contact",
+      "destination": "/api/seo?type=static&path=/contact"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "SAMEORIGIN"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=()"
+        }
+      ]
+    }
   ]
 }

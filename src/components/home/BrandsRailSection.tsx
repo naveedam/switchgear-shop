@@ -1,4 +1,5 @@
 import React from 'react';
+import { brandPath } from '@/lib/slug';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 
@@ -34,7 +35,7 @@ const BrandsRailSection: React.FC<BrandsRailSectionProps> = ({ counts }) => (
       {BRANDS.map(brand => (
         <Link
           key={brand.id}
-          to={`/products?brandId=${brand.id}`}
+          to={brandPath(brand.name)}
           className="flex items-center gap-1.5 px-3 py-1.5 bg-card border border-border rounded-full text-xs text-muted-foreground hover:text-primary hover:border-primary/40 transition-colors"
         >
           {brand.name}

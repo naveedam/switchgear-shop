@@ -4,6 +4,9 @@ import App from './App.tsx'
 import './index.css'
 import { AuthProvider } from './contexts/AuthContext.tsx'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { initMonitoring } from './lib/monitoring'
+
+initMonitoring()
 
 // Create a client
 const queryClient = new QueryClient()

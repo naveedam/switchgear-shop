@@ -17,6 +17,7 @@ import { Store, CreditCard, MapPin, FileText, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { payOrderWithRazorpay } from "@/lib/razorpay";
+import { reportError, track } from "@/lib/monitoring";
 
 // Nodal / escrow account for NEFT/RTGS. Set these in Vercel env vars.
 const BANK_ACCOUNT = {
@@ -96,6 +97,7 @@ const CheckoutPage: React.FC = () => {
       return;
     }
     setError(null);
+    track("checkout_started", { value: Math.round(totalAmount) });
     setStep("payment");
   };
 
@@ -143,6 +145,7 @@ const CheckoutPage: React.FC = () => {
       if (rpcErr) throw new Error(rpcErr.message || "Could not save your order.");
 
       const result = data as { order_id: string; total_amount: number; seller_count: number };
+      track("order_placed", { method: paymentMethod, value: Math.round(result.total_amount), sellers: result.seller_count });
       clearCart();
 
       if (paymentMethod === "razorpay") {
@@ -150,6 +153,7 @@ const CheckoutPage: React.FC = () => {
         try {
           outcome = await payOrderWithRazorpay(result.order_id);
         } catch (payErr) {
+          track("payment_failed", { reason: (payErr as Error).message });
           toast({
             title: "Payment not completed",
             description: `${(payErr as Error).message}. Your order is saved; you can pay from My Orders.`,
@@ -166,6 +170,7 @@ const CheckoutPage: React.FC = () => {
           navigate(`/orders`);
           return;
         }
+        track("payment_succeeded", { value: Math.round(result.total_amount) });
         navigate(`/order-success?orderId=${result.order_id}&paid=1`);
         return;
       }
@@ -178,6 +183,7 @@ const CheckoutPage: React.FC = () => {
       });
       navigate(`/order-success?orderId=${result.order_id}`);
     } catch (err) {
+      reportError(err, { where: "checkout" });
       setError((err as Error).message || "An error occurred during checkout.");
     } finally {
       setSaving(false);

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import type { Database } from '@/integrations/supabase/types';
 import { supabase } from '@/integrations/supabase/client';
 import { Product } from '@/types/product';
 import { BRAND_MAP } from '@/services/productService';
@@ -70,7 +71,7 @@ const Home: React.FC = () => {
             .from('products')
             .select('*', { count: 'exact', head: true })
             .eq('status', 'active')
-            .eq('category', slug);
+            .eq('category', slug as Database['public']['Enums']['product_category']);
           catCounts[slug] = count || 0;
         })
       );

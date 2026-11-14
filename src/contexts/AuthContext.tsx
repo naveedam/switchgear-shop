@@ -1,3 +1,4 @@
+import { identify } from '@/lib/monitoring';
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { User, LoginData, RegisterData, UserRole } from '@/types/user';
 import { supabase } from '@/integrations/supabase/client';
@@ -142,6 +143,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       setUser(finalUser);
+      identify({ id: finalUser.id, role: finalUser.role });
       setError(null);
     } catch (err: any) {
       console.error('AuthContext: Failed to process authenticated user:', err);
@@ -172,6 +174,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } else {
           console.log('AuthContext: No session, clearing user state');
           setUser(null);
+          identify(null);
           setError(null);
           setIsLoading(false);
           

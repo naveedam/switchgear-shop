@@ -1,3 +1,4 @@
+import { productSlug } from '@/lib/slug';
 import { supabase } from '@/integrations/supabase/client';
 import { Product, ProductFilter } from '@/types/product';
 
@@ -167,7 +168,7 @@ export const fetchCategoryProducts = async (
       return {
         id: p.id,
         name: p.name,
-        slug: p.id,
+        slug: productSlug(p),
         description: p.description || '',
         shortDescription: p.description
           ? p.description.substring(0, 120)

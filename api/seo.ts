@@ -85,7 +85,9 @@ const notFound = async (req: any, res: any) =>
 
 // ---------- Product ----------
 const PRODUCT_SELECT = 'id,name,sku,model_number,description,price,Images,category,hsn_code,tax_rate,series_name,' +
-  'rated_current,pole_count,breaking_capacity,rated_voltage,rated_frequency,mounting_type,warranty_period,brands(name)';
+  'rated_current,pole_count,breaking_capacity,rated_voltage,rated_frequency,mounting_type,warranty_period,brands(name),' +
+  'stock_quantity,lead_time_days,dispatch_city,companies(name)';
+const PRODUCT_SELECT_FALLBACK = PRODUCT_SELECT.replace(',lead_time_days,dispatch_city', '');
 
 async function productPage(req: any, res: any, rawSlug: string) {
   const m = rawSlug.match(UUID_AT_END);
@@ -93,7 +95,9 @@ async function productPage(req: any, res: any, rawSlug: string) {
   const id = m[1].toLowerCase();
   let p: any;
   try {
-    const r = await rest('products', { select: PRODUCT_SELECT, id: `eq.${id}`, status: 'eq.active' }, { Accept: 'application/vnd.pgrst.object+json' });
+    const obj = { Accept: 'application/vnd.pgrst.object+json' };
+    const r = await rest('products', { select: PRODUCT_SELECT, id: `eq.${id}`, status: 'eq.active' }, obj)
+      .catch(() => rest('products', { select: PRODUCT_SELECT_FALLBACK, id: `eq.${id}`, status: 'eq.active' }, obj));
     p = await r.json();
   } catch { return notFound(req, res); }
   if (!p?.id) return notFound(req, res);
@@ -130,8 +134,23 @@ async function productPage(req: any, res: any, rawSlug: string) {
   const description = clip(`${descBase} Request a quote from verified sellers on SwitchgearShop.in, India's B2B switchgear marketplace.`, 158);
   const canonical = SITE + path;
 
+  const inStock = p.stock_quantity == null || Number(p.stock_quantity) > 0;
   const offers = price > 0 ? {
     '@type': 'Offer', url: canonical, priceCurrency: 'INR', price: price.toFixed(2), itemCondition: 'https://schema.org/NewCondition',
+    availability: inStock ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+    priceValidUntil: new Date(Date.now() + 30 * 864e5).toISOString().slice(0, 10),
+    ...(p.companies?.name ? { seller: { '@type': 'Organization', name: p.companies.name } } : {}),
+    ...(p.lead_time_days != null ? {
+      shippingDetails: {
+        '@type': 'OfferShippingDetails',
+        shippingDestination: { '@type': 'DefinedRegion', addressCountry: 'IN' },
+        deliveryTime: {
+          '@type': 'ShippingDeliveryTime',
+          handlingTime: { '@type': 'QuantitativeValue', minValue: 0, maxValue: Number(p.lead_time_days), unitCode: 'DAY' },
+          transitTime: { '@type': 'QuantitativeValue', minValue: 1, maxValue: 7, unitCode: 'DAY' },
+        },
+      },
+    } : {}),
   } : undefined;
   const jsonLd: object[] = [
     {
@@ -158,6 +177,7 @@ ${idBits ? `<p>${esc(idBits)}</p>` : ''}
 ${images[0] ? `<img src="${esc(images[0])}" alt="${esc(p.name)}" width="400" />` : ''}
 ${p.description ? `<p>${esc(p.description)}</p>` : ''}
 ${price > 0 ? `<p>Price: ₹${esc(price.toLocaleString('en-IN'))} (excl. GST)</p>` : '<p>Price on request.</p>'}
+${brand ? `<p><a href="/brands/${esc(slugify(brand))}">All ${esc(brand)} products</a>${catSlug ? ` · <a href="/brands/${esc(slugify(brand))}/${esc(catSlug)}">${esc(brand)} ${esc(catName)}</a>` : ''}</p>` : ''}
 ${specs.length ? `<h2>Specifications</h2><table>${specs.map(([k, v]) => `<tr><th align="left">${esc(k)}</th><td>${esc(v)}</td></tr>`).join('')}</table>` : ''}
 <p><a href="/products">Browse all switchgear</a> · <a href="/services">Skilled trades on demand</a></p>
 </main>`;
@@ -206,6 +226,114 @@ async function categoryPage(req: any, res: any, slug: string) {
   send(res, 200, render(await getTemplate(req), { title, description, canonical, jsonLd, body }));
 }
 
+// ---------- Brand & brand×category (long-tail landing pages) ----------
+async function findBrand(slug: string): Promise<any | null> {
+  const r = await rest('brands', { select: 'id,name,description,website' });
+  const all: any[] = await r.json();
+  return all.find(b => slugify(b.name) === slug) || null;
+}
+
+async function brandPage(req: any, res: any, brandSlug: string, catSlug?: string) {
+  const brand = await findBrand(brandSlug).catch(() => null);
+  if (!brand) return notFound(req, res);
+  const params: Record<string, string> = {
+    select: 'id,name,model_number,price,category,rated_current,pole_count', brand_id: `eq.${brand.id}`, status: 'eq.active',
+    order: 'name.asc', limit: '200',
+  };
+  if (catSlug) params.category = `eq.${catSlug.replace(/-/g, '_')}`;
+  let items: any[] = []; let total = 0;
+  try {
+    const r = await rest('products', params, { Prefer: 'count=exact' });
+    items = await r.json();
+    total = Number((r.headers.get('content-range') || '').split('/')[1]) || items.length;
+  } catch { return notFound(req, res); }
+  if (!items.length) return notFound(req, res);
+
+  const year = new Date().getFullYear();
+  const catName = catSlug ? titleCase(catSlug) : '';
+  const path = `/brands/${brandSlug}${catSlug ? '/' + catSlug : ''}`;
+  const canonical = SITE + path;
+  const prices = items.map(i => Number(i.price)).filter(n => n > 0);
+  const range = prices.length ? `₹${Math.min(...prices).toLocaleString('en-IN')} – ₹${Math.max(...prices).toLocaleString('en-IN')}` : '';
+  const baseT = catSlug ? `${brand.name} ${catName} Price List ${year}` : `${brand.name} Price List ${year} & Dealers`;
+  const title = baseT.length + 19 <= 70 ? `${baseT} | SwitchgearShop.in` : clip(baseT, 70);
+  const description = clip(`${total.toLocaleString('en-IN')} ${brand.name} ${catSlug ? catName.toLowerCase() : 'products'}` +
+    `${range ? `, ${range}` : ''}. Live prices from verified dealers, GST invoice, fast dispatch across India.`, 158);
+
+  const cats = catSlug ? [] : [...new Set(items.map(i => i.category).filter(Boolean))].map((c: string) => c.replace(/_/g, '-'));
+  const crumbs = [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: SITE + '/' },
+    { '@type': 'ListItem', position: 2, name: 'Brands', item: SITE + '/brands' },
+    { '@type': 'ListItem', position: 3, name: brand.name, item: `${SITE}/brands/${brandSlug}` },
+    ...(catSlug ? [{ '@type': 'ListItem', position: 4, name: catName, item: canonical }] : []),
+  ];
+  const jsonLd: object[] = [
+    {
+      '@context': 'https://schema.org', '@type': 'CollectionPage', name: title.replace(/ \| .*$/, ''), url: canonical,
+      about: { '@type': 'Brand', name: brand.name },
+      mainEntity: { '@type': 'ItemList', numberOfItems: total,
+        itemListElement: items.slice(0, 30).map((p, i) => ({ '@type': 'ListItem', position: i + 1, url: SITE + productPath(p), name: cleanName(p.name) })) },
+    },
+    { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: crumbs },
+  ];
+  const body = `<main style="font-family:system-ui,sans-serif;max-width:960px;margin:0 auto;padding:24px">
+<nav><a href="/">Home</a> › <a href="/brands">Brands</a> › ${catSlug ? `<a href="/brands/${esc(brandSlug)}">${esc(brand.name)}</a> › ${esc(catName)}` : esc(brand.name)}</nav>
+<h1>${esc(brand.name)} ${catSlug ? esc(catName) : 'switchgear'} price list ${year}</h1>
+<p>${esc(brand.description || `Genuine ${brand.name} products from verified dealers with GST invoice.`)}${range ? ` Prices ${esc(range)} (excl. GST).` : ''}</p>
+${cats.length ? `<h2>Categories</h2><ul>${cats.map(c => `<li><a href="/brands/${esc(brandSlug)}/${esc(c)}">${esc(brand.name)} ${esc(titleCase(c))}</a></li>`).join('')}</ul>` : ''}
+<table><tr><th align="left">Product</th><th align="left">Model</th><th align="right">Price</th></tr>
+${items.map(p => `<tr><td><a href="${esc(productPath(p))}">${esc(cleanName(p.name))}</a></td><td>${esc(p.model_number || '')}</td><td align="right">${Number(p.price) > 0 ? '₹' + esc(Number(p.price).toLocaleString('en-IN')) : 'On request'}</td></tr>`).join('')}
+</table>
+<p><a href="/buyer/bom/upload">Upload your BOM for an instant quote</a></p>
+</main>`;
+  send(res, 200, render(await getTemplate(req), { title, description, canonical, jsonLd, body }));
+}
+
+// ---------- Static pages ----------
+const STATIC_META: Record<string, { title: string; description: string; h1: string }> = {
+  '/': {
+    title: 'SwitchgearShop.in – B2B Switchgear Marketplace | MCB, MCCB, ACB Price List',
+    description: "India's B2B marketplace for low-voltage switchgear. Upload your BOM for an instant quote, compare verified dealers, pay securely with escrow.",
+    h1: 'B2B switchgear marketplace',
+  },
+  '/categories': { title: 'All Switchgear Categories | SwitchgearShop.in', description: 'Browse MCBs, MCCBs, ACBs, contactors, relays, cables and panel accessories from verified Indian dealers.', h1: 'All categories' },
+  '/products': { title: 'Buy Switchgear Online – Live Dealer Prices | SwitchgearShop.in', description: 'Search thousands of switchgear products with live prices from verified dealers. GST invoice and escrow-protected payment.', h1: 'All products' },
+  '/brands': { title: 'Switchgear Brands – Schneider, L&T, Siemens, ABB & more | SwitchgearShop.in', description: 'Price lists for every major switchgear brand in India, from authorised dealers.', h1: 'Brands' },
+  '/sellers': { title: 'Verified Switchgear Dealers in India | SwitchgearShop.in', description: 'GST-verified and OEM-authorised switchgear dealers. Compare ratings and dispatch times.', h1: 'Sellers' },
+  '/services': { title: 'Electricians, Panel Wiremen & Welders on Demand | SwitchgearShop.in', description: 'Book skilled trades for panel building, installation and maintenance.', h1: 'Services' },
+  '/applications': { title: 'Switchgear by Application | SwitchgearShop.in', description: 'Products for panel building, power distribution, MCCs, energy management and industrial automation.', h1: 'Applications' },
+  '/applications/panel-building': { title: 'Panel Building Components | SwitchgearShop.in', description: 'Busbars, enclosures, MCCBs, terminals and accessories for LT panel builders.', h1: 'Panel building' },
+  '/applications/power-distribution': { title: 'Power Distribution Switchgear | SwitchgearShop.in', description: 'ACBs, MCCBs, changeovers and distribution boards for power distribution.', h1: 'Power distribution' },
+  '/applications/motor-control-centers': { title: 'Motor Control Center (MCC) Components | SwitchgearShop.in', description: 'Contactors, overload relays, MPCBs and starters for MCC panels.', h1: 'Motor control centers' },
+  '/applications/energy-management': { title: 'Energy Meters & Power Quality | SwitchgearShop.in', description: 'Multifunction meters, APFC relays, capacitors and harmonic filters.', h1: 'Energy management' },
+  '/applications/industrial-automation': { title: 'Industrial Automation – PLC, VFD, HMI | SwitchgearShop.in', description: 'Drives, PLCs, HMIs and control gear for industrial automation.', h1: 'Industrial automation' },
+  '/contact': { title: 'Contact SwitchgearShop.in', description: 'Talk to our team about bulk orders, dealer onboarding or support.', h1: 'Contact us' },
+};
+
+async function staticPage(req: any, res: any, path: string) {
+  const meta = STATIC_META[path];
+  if (!meta) return send(res, 200, await getTemplate(req), 'public, s-maxage=300');
+  const canonical = SITE + (path === '/' ? '/' : path);
+  const jsonLd: object[] = path === '/' ? [
+    { '@context': 'https://schema.org', '@type': 'Organization', name: 'SwitchgearShop.in', url: SITE + '/', logo: `${SITE}/favicon.ico` },
+    { '@context': 'https://schema.org', '@type': 'WebSite', name: 'SwitchgearShop.in', url: SITE + '/',
+      potentialAction: { '@type': 'SearchAction', target: `${SITE}/products?search={search_term_string}`, 'query-input': 'required name=search_term_string' } },
+  ] : [];
+  let links = '';
+  if (path === '/brands' || path === '/') {
+    try {
+      const r = await rest('brands', { select: 'name', order: 'name.asc', limit: '200' });
+      const bs: any[] = await r.json();
+      links = `<ul>${bs.map(b => `<li><a href="/brands/${esc(slugify(b.name))}">${esc(b.name)}</a></li>`).join('')}</ul>`;
+    } catch { /* optional */ }
+  }
+  const body = `<main style="font-family:system-ui,sans-serif;max-width:960px;margin:0 auto;padding:24px">
+<h1>${esc(meta.h1)}</h1><p>${esc(meta.description)}</p>${links}
+<p><a href="/categories">Categories</a> · <a href="/brands">Brands</a> · <a href="/buyer/bom/upload">Instant BOM quote</a></p>
+</main>`;
+  send(res, 200, render(await getTemplate(req), { title: meta.title, description: meta.description, canonical, jsonLd, body }));
+}
+
 // ---------- Sitemap ----------
 const STATIC_PATHS = ['/', '/categories', '/products', '/brands', '/sellers', '/services', '/services/request', '/services/join',
   '/contact', '/applications', '/applications/panel-building', '/applications/power-distribution',
@@ -214,16 +342,27 @@ const STATIC_PATHS = ['/', '/categories', '/products', '/brands', '/sellers', '/
 async function sitemap(res: any) {
   const urls: { loc: string; lastmod?: string }[] = STATIC_PATHS.map(p => ({ loc: SITE + p }));
   const cats = new Set<string>();
+  const brandCats = new Map<string, number>();
   for (let offset = 0, page = 0; page < 45; page++, offset += 1000) {
-    const r = await rest('products', { select: 'id,name,category,updated_at', status: 'eq.active', order: 'id.asc', limit: '1000', offset: String(offset) });
+    const r = await rest('products', { select: 'id,name,category,updated_at,brands(name)', status: 'eq.active', order: 'id.asc', limit: '1000', offset: String(offset) });
     const rows: any[] = await r.json();
     for (const p of rows) {
       if (p.category) cats.add(String(p.category).replace(/_/g, '-'));
+      if (p.brands?.name) {
+        const b = slugify(p.brands.name);
+        brandCats.set(b, (brandCats.get(b) || 0) + 1);
+        if (p.category) {
+          const k = `${b}/${String(p.category).replace(/_/g, '-')}`;
+          brandCats.set(k, (brandCats.get(k) || 0) + 1);
+        }
+      }
       urls.push({ loc: SITE + productPath(p), lastmod: p.updated_at ? String(p.updated_at).slice(0, 10) : undefined });
     }
     if (rows.length < 1000) break;
   }
   for (const c of cats) urls.push({ loc: `${SITE}/categories/${c}` });
+  // Brand pages, and brand×category pages with enough products to be useful (thin pages hurt rankings).
+  for (const [k, n] of brandCats) if (!k.includes('/') || n >= 3) urls.push({ loc: `${SITE}/brands/${k}` });
   const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
     urls.map(u => `<url><loc>${esc(u.loc)}</loc>${u.lastmod ? `<lastmod>${u.lastmod}</lastmod>` : ''}</url>`).join('\n') + `\n</urlset>`;
   res.status(200).setHeader('Content-Type', 'application/xml; charset=utf-8')
@@ -237,6 +376,8 @@ export default async function handler(req: any, res: any) {
     if (type === 'sitemap') return await sitemap(res);
     if (type === 'product') return await productPage(req, res, slug);
     if (type === 'category') return await categoryPage(req, res, slug);
+    if (type === 'brand') return await brandPage(req, res, slug, req.query.cat ? String(req.query.cat) : undefined);
+    if (type === 'static') return await staticPage(req, res, String(req.query.path || '/'));
     return await notFound(req, res);
   } catch (e) {
     // Never break the site: fall back to the plain SPA shell.

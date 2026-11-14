@@ -33,12 +33,14 @@ import {
   FileText,
   Search,
   Download,
+  FileJson,
   Plus,
   Calendar,
   AlertCircle,
   Eye,
   Printer,
 } from 'lucide-react';
+import EInvoiceDialog from '@/components/seller/EInvoiceDialog';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import GenerateInvoiceDialog from '@/components/seller/GenerateInvoiceDialog';
@@ -73,6 +75,7 @@ const SellerInvoices: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [gstInvoiceId, setGstInvoiceId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedInvoice, setSelectedInvoice] = useState<string | null>(null);
   const [showGenerateDialog, setShowGenerateDialog] = useState(false);
@@ -347,6 +350,14 @@ const SellerInvoices: React.FC = () => {
                         >
                           <Printer className="h-4 w-4" />
                         </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          title="GST e-invoice / e-way bill"
+                          onClick={() => setGstInvoiceId(invoice.id)}
+                        >
+                          <FileJson className="h-4 w-4" />
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -356,6 +367,11 @@ const SellerInvoices: React.FC = () => {
           </CardContent>
         </Card>
       )}
+
+      <EInvoiceDialog
+        invoiceId={gstInvoiceId}
+        onOpenChange={(open) => { if (!open) setGstInvoiceId(null); }}
+      />
 
       {/* Generate Invoice Dialog */}
       <GenerateInvoiceDialog
