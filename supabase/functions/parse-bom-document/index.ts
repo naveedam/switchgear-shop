@@ -163,11 +163,12 @@ function extractSpecsFromDescription(item: Record<string, unknown>): Record<stri
   // Extract voltage if missing
   if (!item.rated_voltage) {
     // Transformer voltage: 415/230V
-    const txV = combined.match(/(\d+)\s*\/\s*(\d+)\s*V/i);
+    const txV = combined.match(/(\d+)\s*\/\s*(\d+)\s*V(?!A)\b/i);
     if (txV) {
       item.rated_voltage = `${txV[1]}/${txV[2]} V`;
     } else {
-      const vMatch = combined.match(/(\d+\.?\d*)\s*V\s*(AC|DC)?/i);
+      // "15VA" is a CT burden / power rating, "11kV" is not a panel voltage: skip both.
+      const vMatch = combined.match(/(?<![\dk.])(\d+\.?\d*)\s*V(?!A)\s*(AC|DC)?\b/i);
       if (vMatch) item.rated_voltage = `${vMatch[1]} V${vMatch[2] ? ` ${vMatch[2].toUpperCase()}` : ''}`;
     }
   }
@@ -263,7 +264,10 @@ const categoryMapping: Record<string, string> = {
   Reactor: 'capacitors-reactors',
   Cable: 'wires-cables',
   Wire: 'wires-cables',
-  Busbar: 'wires-cables',
+  // Panel builders buy busbar and enclosures from switchgear dealers, not cable sellers.
+  Busbar: 'low-voltage-switchgears',
+  Enclosure: 'low-voltage-switchgears',
+  Panel: 'low-voltage-switchgears',
 };
 
 function classifyComponent(componentType: string | null): string {
@@ -279,7 +283,8 @@ function classifyComponent(componentType: string | null): string {
   if (upper.includes('RELAY') || upper.includes('TIMER')) return 'relays';
   if (upper.includes('CT') || upper.includes('METER') || upper.includes('AMMETER')) return 'meters';
   if (upper.includes('VFD') || upper.includes('PLC') || upper.includes('HMI') || upper.includes('SMPS')) return 'industrial-automation';
-  if (upper.includes('CABLE') || upper.includes('WIRE') || upper.includes('BUSBAR')) return 'wires-cables';
+  if (upper.includes('BUSBAR') || upper.includes('BUS BAR') || upper.includes('ENCLOSURE')) return 'low-voltage-switchgears';
+  if (upper.includes('CABLE') || upper.includes('WIRE')) return 'wires-cables';
   if (upper.includes('CAPACITOR') || upper.includes('REACTOR')) return 'capacitors-reactors';
   return 'low-voltage-switchgears';
 }
@@ -411,6 +416,34 @@ serve(async (req) => {
         JSON.stringify({ success: false, items_found: 0, error_code: "NO_ITEMS_FOUND", message }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    if (fromFile) {
+      // Loads fed by the panel are not part of its BOM.
+      const LOAD = /^(motor|induction motor|pump|fan|blower|heater|transformer|power transformer|load|lighting|light fitting|db|distribution board)$/i;
+      const before = aiResult.length;
+      aiResult = aiResult.filter((it: any) => !LOAD.test(String(it?.component_type ?? "").trim()));
+      if (aiResult.length < before) console.log(`[parse-bom] dropped ${before - aiResult.length} load item(s)`);
+
+      // Fill the drawing's system voltage on power devices the AI left blank.
+      const POWER = /^(acb|mccb|mcb|rccb|rcbo|isolator|switch fuse unit|sfu|changeover|spd|busbar|meter|multifunction meter|energy meter|contactor)$/i;
+      const counts = new Map<string, number>();
+      for (const it of aiResult) {
+        const v = String(it?.rated_voltage ?? "").trim();
+        if (v && POWER.test(String(it?.component_type ?? "").trim()) && /^(380|400|415|420|440|690)\s*V/i.test(v)) {
+          counts.set(v, (counts.get(v) ?? 0) + 1);
+        }
+      }
+      const systemV = [...counts].sort((a, b) => b[1] - a[1])[0]?.[0];
+      if (systemV) {
+        for (const it of aiResult) {
+          if (!it.rated_voltage && POWER.test(String(it?.component_type ?? "").trim())) it.rated_voltage = systemV;
+        }
+      }
+      if (aiResult.length === 0) {
+        return json({ success: false, items_found: 0, error_code: "NO_ITEMS_FOUND",
+          message: "Only loads (motors, pumps) were found. No panel components to quote." });
+      }
     }
 
     console.log(`[parse-bom] AI returned ${aiResult.length} components`);
@@ -585,13 +618,13 @@ Recognize these quantity formats — extract as a NUMBER:
 
 ## CATEGORY CLASSIFICATION
 Map each component to one of these category_slug values:
-- MCCB, MCB, ACB, RCCB, RCBO, Isolator, Switch Fuse Unit, SPD → "low-voltage-switchgears"
+- MCCB, MCB, ACB, RCCB, RCBO, Isolator, Switch Fuse Unit, SPD, Busbar, Enclosure → "low-voltage-switchgears"
 - Contactor, Overload Relay, DOL Starter, Star Delta Starter, Push Button, Indicator Light, Selector Switch → "controlling-gear-signalling-devices"
 - Relay, Timer, Timer Relay → "relays"
 - CT, Meter, Energy Meter, Ammeter, Voltmeter → "meters"
 - VFD, Soft Starter, PLC, HMI, SMPS, Power Supply, Control Transformer → "industrial-automation"
 - Capacitor, Reactor → "capacitors-reactors"
-- Cable, Wire, Busbar → "wires-cables"
+- Cable, Wire → "wires-cables"
 
 ## OUTPUT FORMAT
 Each JSON object must have these fields:
@@ -669,7 +702,12 @@ Read it like a panel design engineer preparing a bill of materials:
 - Group identical components (same type and same ratings) into ONE line with the total quantity.
 - If the drawing contains its own BOM or component table, prefer it, but still add components visible in the diagram that the table misses.
 - In raw_text, note where you found the item (e.g. "Outgoing feeders F1-F6", "Incomer", "Legend").
-- Ignore the title block, revision table, drawing border, notes and dimensions.
+- SYSTEM VOLTAGE: drawings usually state it once (title or notes, e.g. "415V, 3 phase, 4 wire, 50 Hz"). Set rated_voltage to that system voltage for every power-circuit device (ACB, MCCB, MCB, RCCB, SFU, changeover, SPD, busbar, meter) unless the component states its own voltage.
+- Contactors: rated_voltage is the system voltage; put the coil voltage in the description (e.g. "230V AC coil").
+- "VA" is NOT volts. "15VA" on a CT or PT is its burden; "1kVA" is a power rating. Never put a VA value in rated_voltage. CTs and PTs have no rated_voltage unless one is written as volts.
+- Busbars and enclosures are panel parts: component_type "Busbar" / "Enclosure".
+- Do NOT list loads or equipment outside the panel: motors, pumps, fans, heaters, lighting fixtures, the upstream transformer, or the downstream DBs/panels a feeder goes "TO". Only list what is installed in this panel.
+- Ignore the title block, revision table, drawing border and dimensions. Use the notes only for specs that apply to components (e.g. enclosure IP rating).
 - If text is unreadable, give your best reading and leave unknown ratings as null rather than guessing.
 
 `;
