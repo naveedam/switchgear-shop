@@ -1,0 +1,35 @@
+name: Deploy Supabase functions
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "supabase/functions/**"
+      - "supabase/config.toml"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ sbp_fc062446862e4c8b948a3e4d5c21fd5a82f5932c}}
+      PROJECT_REF: hdoefblcoavpzvfiiglm
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the access token is set
+        run: |
+          if [ -z "$SUPABASE_ACCESS_TOKEN" ]; then
+            echo "::error::Add the SUPABASE_ACCESS_TOKEN secret in GitHub → Settings → Secrets and variables → Actions"
+            exit 1
+          fi
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Deploy all functions
+        run: supabase functions deploy --project-ref "$PROJECT_REF" --use-api
+
+      - name: List deployed functions
+        run: supabase functions list --project-ref "$PROJECT_REF"
