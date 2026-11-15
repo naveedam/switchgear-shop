@@ -19,8 +19,9 @@ serve(async (req) => {
   }
 
   // --- access guard ---
+  let caller: Awaited<ReturnType<typeof requireUser>>;
   try {
-    const caller = await requireUser(req);
+    caller = await requireUser(req);
     await rateLimit(`extract-pdf:${caller.user.id}`, 30, 3600);
   } catch (e) {
     return errorResponse(e);
@@ -36,6 +37,17 @@ serve(async (req) => {
       );
     }
 
+    // Only the project's owner (or an admin) may process its documents.
+    const { data: project } = await supabase.from("projects").select("buyer_id").eq("id", projectId).maybeSingle();
+    const { data: ownDoc } = await supabase.from("project_documents").select("project_id, file_url").eq("id", documentId).maybeSingle();
+    if (!project || !ownDoc || ownDoc.project_id !== projectId ||
+        (project.buyer_id !== caller.user.id && caller.role !== "admin")) {
+      return new Response(JSON.stringify({ error: "Document not found" }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    // Never fetch a caller-supplied URL: use the stored one.
+    const storedUrl: string = ownDoc.file_url;
+
     console.log(`[extract-pdf-text] Starting extraction for document ${documentId}, fileUrl: ${fileUrl}`);
 
     // Update status to extracting
@@ -47,7 +59,7 @@ serve(async (req) => {
     // Download the PDF from Supabase Storage using the service role client
     let pdfBytes: Uint8Array;
 
-    const storagePathMatch = fileUrl.match(/\/storage\/v1\/object\/public\/([^/]+)\/(.+)$/);
+    const storagePathMatch = storedUrl.match(/\/storage\/v1\/object\/public\/([^/]+)\/(.+)$/);
     
     if (storagePathMatch) {
       const bucketName = storagePathMatch[1];
@@ -65,7 +77,7 @@ serve(async (req) => {
       pdfBytes = new Uint8Array(await data.arrayBuffer());
     } else {
       console.log(`[extract-pdf-text] URL doesn't match storage pattern, trying direct fetch`);
-      const downloadResponse = await fetch(fileUrl);
+      const downloadResponse = await fetch(storedUrl);
       if (!downloadResponse.ok) {
         throw new Error(`Failed to download PDF: ${downloadResponse.status} ${downloadResponse.statusText}`);
       }

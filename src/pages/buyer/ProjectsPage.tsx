@@ -67,11 +67,12 @@ const ProjectsPage = () => {
   return (
     <Container className="py-8">
       <div className="max-w-5xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-wrap items-start justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Smart BOM Builder</h1>
-            <p className="text-muted-foreground mt-1">
-              Upload design documents, extract components with AI, and create RFQs
+            <h1 className="text-3xl font-bold text-foreground">Drawing to BOM</h1>
+            <p className="text-muted-foreground mt-1 max-w-2xl">
+              Upload a single-line diagram, panel drawing, DXF or a photo. AI lists the components, ratings and
+              quantities; you review them and send the BOM to sellers for quotes.
             </p>
             <Badge variant="outline" className="mt-2 text-xs">Beta</Badge>
           </div>

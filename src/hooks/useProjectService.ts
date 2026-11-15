@@ -233,6 +233,35 @@ export const useProjectService = () => {
     }
   };
 
+  // Read a design file (drawing PDF, photo, DXF) server-side with the vision model
+  const parseDesignFile = async (
+    projectId: string,
+    documentId: string
+  ): Promise<{ success: boolean; items_found: number; message?: string }> => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('parse-bom-document', {
+        body: { documentId, projectId, fromFile: true },
+      });
+      if (error) throw error;
+      if (!data?.success) {
+        const message = data?.message || 'No components could be read from this file.';
+        await supabase.from('project_documents').update({ processing_status: 'failed' }).eq('id', documentId);
+        return { success: false, items_found: 0, message };
+      }
+      return data;
+    } catch (err: unknown) {
+      const raw = err instanceof Error ? err.message : '';
+      const message = /timeout|FunctionsRelayError|FunctionsFetchError/i.test(raw)
+        ? 'Reading the drawing took too long. Upload fewer sheets at a time.'
+        : raw || 'Could not read this file.';
+      await supabase.from('project_documents').update({ processing_status: 'failed' }).eq('id', documentId);
+      return { success: false, items_found: 0, message };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Convert BOM to RFQ
   const convertToRfq = async (
     projectId: string,
@@ -277,7 +306,8 @@ export const useProjectService = () => {
         match_status: 'unmatched',
       }));
 
-      await supabase.from('bom_items').insert(bomItemsData);
+      const { error: bomItemsError } = await supabase.from('bom_items').insert(bomItemsData);
+      if (bomItemsError) throw bomItemsError;
 
       // Create RFQ
       const { data: rfq, error: rfqError } = await supabase
@@ -308,7 +338,12 @@ export const useProjectService = () => {
         rating_specs: item.rating_specs,
       }));
 
-      await supabase.from('rfq_items').insert(rfqItems);
+      const { error: rfqItemsError } = await supabase.from('rfq_items').insert(rfqItems);
+      if (rfqItemsError) {
+        // Don't leave an empty RFQ open for sellers.
+        await supabase.from('rfqs').update({ status: 'cancelled' }).eq('id', rfq.id);
+        throw rfqItemsError;
+      }
 
       // Update BOM status
       await supabase.from('bom_uploads').update({ status: 'converted' }).eq('id', bom.id);
@@ -395,7 +430,7 @@ export const useProjectService = () => {
     deleteBomItem,
     addBomItem,
     extractPdfText,
-    parseDocument,
+    parseDocument, parseDesignFile,
     convertToRfq,
   };
 };

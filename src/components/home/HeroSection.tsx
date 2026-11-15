@@ -60,7 +60,14 @@ const HeroSection: React.FC<HeroSectionProps> = ({ stats }) => {
             </Link>
           </div>
 
-          <ul className="mt-7 grid gap-2 text-sm text-muted-foreground sm:flex sm:flex-wrap sm:gap-x-6">
+          <p className="mt-4 text-sm text-muted-foreground">
+            Only have a drawing?{' '}
+            <Link to="/buyer/projects" className="font-medium text-primary underline underline-offset-2">
+              Turn your SLD or panel layout into a BOM
+            </Link>
+          </p>
+
+          <ul className="mt-6 grid gap-2 text-sm text-muted-foreground sm:flex sm:flex-wrap sm:gap-x-6">
             <li className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-verified shrink-0" />BIS / IEC certified stock</li>
             <li className="flex items-center gap-2"><FileText className="h-4 w-4 text-verified shrink-0" />GST tax invoice on every order</li>
             <li className="flex items-center gap-2"><Lock className="h-4 w-4 text-verified shrink-0" />Payment held in escrow until dispatch</li>

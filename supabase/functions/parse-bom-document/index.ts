@@ -1,3 +1,5 @@
+import { generateFromFile } from "../_shared/ai.ts";
+import { dxfToBomText, isBinaryDxf, summariseDxf } from "../_shared/dxf.ts";
 import { aiConfigured, chatCompletion } from "../_shared/ai.ts";
 import { adminClient, clientIp, errorResponse, HttpError, optionalUser, rateLimit, requireUser } from "../_shared/guard.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -338,26 +340,69 @@ serve(async (req) => {
   }
 
   // --- access guard ---
+  let caller: Awaited<ReturnType<typeof requireUser>>;
   try {
-    const caller = await requireUser(req);
+    caller = await requireUser(req);
     await rateLimit(`parse-bom:${caller.user.id}`, 30, 3600);
   } catch (e) {
     return errorResponse(e);
   }
 
   try {
-    const { documentId, projectId, rawText } = await req.json();
+    const { documentId, projectId, rawText, fromFile } = await req.json();
+    const json = (body: unknown, status = 200) =>
+      new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
-    if (!rawText || !projectId) {
-      return new Response(
-        JSON.stringify({ error: "Missing required fields", error_code: "MISSING_FIELDS" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    if (!projectId || (!rawText && !(fromFile && documentId))) {
+      return json({ error: "Missing required fields", error_code: "MISSING_FIELDS" }, 400);
     }
 
-    console.log(`[parse-bom] Starting AI parse for project ${projectId}, text length: ${rawText.length}`);
+    // The project must belong to the caller (admins may act on any project).
+    const { data: project } = await supabase.from("projects").select("id, buyer_id").eq("id", projectId).maybeSingle();
+    if (!project || (project.buyer_id !== caller.user.id && caller.role !== "admin")) {
+      return json({ error: "Project not found", error_code: "NOT_FOUND" }, 404);
+    }
 
-    const aiResult = await parseWithAI(rawText);
+    let aiResult: any[] = [];
+    let method = "ai_full_text";
+
+    if (fromFile) {
+      const { data: doc } = await supabase.from("project_documents")
+        .select("id, project_id, file_url, filename, file_size").eq("id", documentId).maybeSingle();
+      if (!doc || doc.project_id !== projectId) {
+        return json({ error: "Document not found", error_code: "NOT_FOUND" }, 404);
+      }
+      const mime = mimeFor(doc.filename ?? "");
+      if (!mime) {
+        return json({ success: false, items_found: 0, error_code: "UNSUPPORTED_FILE",
+          message: "This file type can't be read automatically. Upload a PDF, image (JPG/PNG) or DXF." });
+      }
+      await supabase.from("project_documents").update({ processing_status: "processing" }).eq("id", documentId);
+      const bytes = await downloadDocument(doc.file_url);
+      if (bytes.length > MAX_FILE_BYTES) {
+        return json({ success: false, items_found: 0, error_code: "FILE_TOO_LARGE",
+          message: "File is over 15 MB. Export only the relevant drawing sheets, or reduce image resolution." });
+      }
+
+      if (mime === "image/vnd.dxf") {
+        if (isBinaryDxf(bytes)) {
+          return json({ success: false, items_found: 0, error_code: "UNSUPPORTED_FILE",
+            message: "Binary DXF isn't supported. Save as ASCII DXF, or export the drawing to PDF." });
+        }
+        const text = dxfToBomText(summariseDxf(new TextDecoder("utf-8").decode(bytes)));
+        await supabase.from("project_documents").update({ raw_extracted_text: text }).eq("id", documentId);
+        console.log(`[parse-bom] DXF summarised to ${text.length} chars`);
+        aiResult = await parseWithAI(text);
+        method = "cad_dxf";
+      } else {
+        console.log(`[parse-bom] Reading design file ${doc.filename} (${mime}, ${bytes.length} bytes) with vision model`);
+        aiResult = await parseDesignFileWithAI(bytes, mime);
+        method = "ai_vision";
+      }
+    } else {
+      console.log(`[parse-bom] Starting AI parse for project ${projectId}, text length: ${rawText.length}`);
+      aiResult = await parseWithAI(rawText);
+    }
 
     if (aiResult.length === 0) {
       console.warn(`[parse-bom] AI returned 0 items from text of ${rawText.length} chars.`);
@@ -443,7 +488,7 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         items_found: bomItems.length,
-        method: "ai_full_text",
+        method,
         validation_summary: {
           complete: bomItems.filter((i: any) => i.validation_status === 'complete').length,
           missing_fields: bomItems.filter((i: any) => i.validation_status === 'missing_fields').length,
@@ -465,11 +510,11 @@ serve(async (req) => {
 // ============================================================
 // AI Prompt — domain-specific electrical BOM extraction
 // ============================================================
-async function parseWithAI(text: string): Promise<any[]> {
-  const prompt = `You are an expert electrical engineer specializing in control panel design, switchgear BOMs, and industrial electrical systems.
+const PROMPT_INTRO = `You are an expert electrical engineer specializing in control panel design, switchgear BOMs, and industrial electrical systems.
 
-Extract ALL electrical components from the following text and return a JSON array. Each item represents one distinct component/line item.
+`;
 
+const EXTRACTION_GUIDE = `
 ## CRITICAL RULES
 - Return EVERY component you find. A typical panel BOM has 10-50 line items.
 - Each row in a table, each numbered item, or each bullet point is likely a separate component.
@@ -565,7 +610,11 @@ Each JSON object must have these fields:
 - category_slug (string): from the classification above
 - raw_text (string): the original text segment for this component
 
-Return ONLY a valid JSON array. No markdown, no explanation, no extra text.
+Return ONLY a valid JSON array. No markdown, no explanation, no extra text.`;
+
+async function parseWithAI(text: string): Promise<any[]> {
+  const prompt = `${PROMPT_INTRO}Extract ALL electrical components from the following text and return a JSON array. Each item represents one distinct component/line item.
+${EXTRACTION_GUIDE}
 
 Text to parse:
 ${text.substring(0, 12000)}`;
@@ -605,4 +654,61 @@ ${text.substring(0, 12000)}`;
     console.error("[parse-bom] AI parsing error:", err);
     return [];
   }
+}
+
+// ============================================================
+// Design files: drawings, photos and CAD
+// ============================================================
+const DRAWING_INSTRUCTIONS = `This file is an electrical design document. It may be a single-line diagram (SLD), a power or control schematic, a panel general-arrangement (GA) drawing, a feeder schedule, a scanned BOM, or a photo of any of these.
+
+Read it like a panel design engineer preparing a bill of materials:
+- Identify every switchgear and control component shown: incomers and outgoing feeders (ACB, MCCB, MCB, RCCB, SFU, changeover), contactors, overload relays, starters, VFDs, soft starters, meters, CTs, PTs, protection relays, indicating lamps, push buttons, selector switches, SPDs, capacitors, busbars and enclosures.
+- Take ratings from the symbol labels, feeder tables and legends (current, poles, breaking capacity, kW, coil voltage, CT ratio).
+- QUANTITY = how many times that exact component appears. Count repeated feeders and symbols carefully; if a feeder schedule gives quantities, use those.
+- Group identical components (same type and same ratings) into ONE line with the total quantity.
+- If the drawing contains its own BOM or component table, prefer it, but still add components visible in the diagram that the table misses.
+- In raw_text, note where you found the item (e.g. "Outgoing feeders F1-F6", "Incomer", "Legend").
+- Ignore the title block, revision table, drawing border, notes and dimensions.
+- If text is unreadable, give your best reading and leave unknown ratings as null rather than guessing.
+
+`;
+
+async function parseDesignFileWithAI(bytes: Uint8Array, mimeType: string): Promise<any[]> {
+  const prompt = `${PROMPT_INTRO}${DRAWING_INSTRUCTIONS}${EXTRACTION_GUIDE}`;
+  try {
+    const content = await generateFromFile(bytes, mimeType, prompt, { json: true });
+    const jsonMatch = content.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) {
+      console.error("[parse-bom] drawing: no JSON array in response");
+      return [];
+    }
+    const parsed = JSON.parse(jsonMatch[0]);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (err) {
+    console.error("[parse-bom] drawing parse error:", err);
+    return [];
+  }
+}
+
+const MAX_FILE_BYTES = 15 * 1024 * 1024;
+
+function mimeFor(filename: string): string | null {
+  const ext = filename.toLowerCase().split(".").pop() ?? "";
+  return ({
+    pdf: "application/pdf",
+    png: "image/png",
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    webp: "image/webp",
+    dxf: "image/vnd.dxf",
+  } as Record<string, string>)[ext] ?? null;
+}
+
+/** Download a project document from storage (bucket path parsed from its public URL). */
+async function downloadDocument(fileUrl: string): Promise<Uint8Array> {
+  const m = fileUrl.match(/\/storage\/v1\/object\/(?:public|sign|authenticated)\/([^/]+)\/([^?]+)/);
+  if (!m) throw new Error("Unrecognised file location");
+  const { data, error } = await supabase.storage.from(m[1]).download(decodeURIComponent(m[2]));
+  if (error || !data) throw new Error(`Could not download file: ${error?.message ?? "no data"}`);
+  return new Uint8Array(await data.arrayBuffer());
 }

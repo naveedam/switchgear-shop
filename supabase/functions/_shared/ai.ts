@@ -19,3 +19,48 @@ export function chatCompletion(body: Record<string, unknown>): Promise<Response>
     body: JSON.stringify({ model: AI_MODEL, ...body }),
   });
 }
+
+/**
+ * Send a file (drawing PDF, photo) to Gemini's native API with a prompt and get
+ * text back. Inline upload: keep files under ~15 MB (request limit is 20 MB).
+ */
+export async function generateFromFile(
+  bytes: Uint8Array,
+  mimeType: string,
+  prompt: string,
+  opts: { json?: boolean; temperature?: number } = {},
+): Promise<string> {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${AI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [{
+        role: "user",
+        parts: [
+          { inline_data: { mime_type: mimeType, data: toBase64(bytes) } },
+          { text: prompt },
+        ],
+      }],
+      generationConfig: {
+        temperature: opts.temperature ?? 0.1,
+        ...(opts.json ? { responseMimeType: "application/json" } : {}),
+      },
+    }),
+  });
+  if (!res.ok) {
+    const detail = (await res.text()).slice(0, 300);
+    throw new Error(`Gemini ${res.status}: ${detail}`);
+  }
+  const data = await res.json();
+  return data?.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text ?? "").join("") ?? "";
+}
+
+function toBase64(bytes: Uint8Array): string {
+  let s = "";
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    s += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  }
+  return btoa(s);
+}

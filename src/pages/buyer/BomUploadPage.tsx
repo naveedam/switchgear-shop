@@ -1,5 +1,5 @@
  import React, { useState, useCallback } from 'react';
- import { useNavigate } from 'react-router-dom';
+ import { Link, useNavigate } from 'react-router-dom';
  import { Upload, FileSpreadsheet, Check, AlertCircle, X, ArrowRight } from 'lucide-react';
  import { Button } from '@/components/ui/button';
  import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -102,7 +102,9 @@
                  Upload Your BOM
                </CardTitle>
                <CardDescription>
-                 Supported formats: Excel (.xlsx, .xls) and CSV. Required columns: Item Description, Quantity.
+                 Supported formats: Excel (.xlsx, .xls) and CSV. Required columns: Item Description, Quantity.{' '}
+                 Only have a drawing (SLD, panel layout, DXF or a photo)?{' '}
+                 <Link to="/buyer/projects" className="text-primary underline underline-offset-2">Generate a BOM from your drawing</Link>.
                </CardDescription>
              </CardHeader>
              <CardContent className="space-y-6">

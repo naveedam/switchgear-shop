@@ -64,6 +64,24 @@ const validationBadge = (status: string, missingFields?: string[]) => {
   );
 };
 
+// Read by the vision model on the server (drawings, photos, CAD exports).
+const DESIGN_EXTS = ['pdf', 'png', 'jpg', 'jpeg', 'webp', 'dxf'];
+// Read in the browser and parsed as text.
+const SHEET_EXTS = ['xlsx', 'xls', 'csv', 'txt'];
+const MAX_UPLOAD_BYTES = 15 * 1024 * 1024;
+
+async function fileToText(file: File, ext: string): Promise<string> {
+  if (ext === 'xlsx' || ext === 'xls') {
+    const XLSX = await import('xlsx');
+    const wb = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+    return wb.SheetNames
+      .map(name => `Sheet: ${name}\n${XLSX.utils.sheet_to_csv(wb.Sheets[name], { blankrows: false })}`)
+      .join('\n\n')
+      .slice(0, 60000);
+  }
+  return (await file.text()).slice(0, 60000);
+}
+
 const ProjectDetailPage = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
@@ -71,7 +89,7 @@ const ProjectDetailPage = () => {
   const { toast } = useToast();
   const {
     getProject, getDocuments, getBomItems, uploadDocument,
-    extractPdfText, parseDocument, updateBomItem, deleteBomItem, addBomItem,
+    parseDocument, parseDesignFile, updateBomItem, deleteBomItem, addBomItem,
     convertToRfq, isLoading,
   } = useProjectService();
 
@@ -89,6 +107,7 @@ const ProjectDetailPage = () => {
   const [textInput, setTextInput] = useState('');
   const [textDialogOpen, setTextDialogOpen] = useState(false);
   const [pipelineStatus, setPipelineStatus] = useState<string | null>(null);
+  const [pipelineError, setPipelineError] = useState<string | null>(null);
   const [duplicates, setDuplicates] = useState<DuplicateGroup[]>([]);
 
   // Run validation and duplicate detection on bomItems changes
@@ -118,97 +137,85 @@ const ProjectDetailPage = () => {
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  /** After a successful parse: refresh the BOM and move the project forward. */
+  const afterParsed = async (itemsFound: number, source: string) => {
+    toast({ title: 'BOM generated', description: `Found ${itemsFound} components in ${source}. Review them in the BOM tab.` });
+    const items = await getBomItems(projectId!);
+    setBomItems(items);
+    setProject(prev => prev ? { ...prev, status: 'bom_generated' } : prev);
+  };
+
+  /** Drawing / photo / DXF → read by the vision model on the server. */
+  const runDesignParse = async (doc: ProjectDocument) => {
+    if (!projectId) return;
+    setPipelineStatus('reading');
+    setDocuments(prev => prev.map(d => d.id === doc.id ? { ...d, processing_status: 'processing' } : d));
+    const result = await parseDesignFile(projectId, doc.id);
+    if (result.success) {
+      setDocuments(prev => prev.map(d => d.id === doc.id ? { ...d, processing_status: 'completed' } : d));
+      await afterParsed(result.items_found, doc.filename);
+      setPipelineStatus(null);
+    } else {
+      setDocuments(prev => prev.map(d => d.id === doc.id ? { ...d, processing_status: 'failed' } : d));
+      setPipelineError(result.message || 'No components could be read from this file.');
+      setPipelineStatus('failed');
+    }
+  };
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = ''; // allow re-selecting the same file
     if (!file || !user?.id || !projectId) return;
 
-    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
-    const isTextFile = file.type === 'text/csv' || file.name.endsWith('.csv') || file.name.endsWith('.txt');
+    const ext = file.name.toLowerCase().split('.').pop() || '';
+    if (ext === 'dwg') {
+      toast({
+        title: 'Save the drawing as DXF or PDF',
+        description: 'DWG files can\'t be read directly. In AutoCAD use Save As → DXF, or Plot → PDF, then upload that file.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (!DESIGN_EXTS.includes(ext) && !SHEET_EXTS.includes(ext)) {
+      toast({
+        title: 'File type not supported',
+        description: 'Upload a PDF, JPG/PNG, DXF, Excel or CSV file. For Word documents, save as PDF first.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (file.size > MAX_UPLOAD_BYTES) {
+      toast({ title: 'File too large', description: 'Keep files under 15 MB. Upload only the relevant drawing sheets.', variant: 'destructive' });
+      return;
+    }
 
+    setPipelineError(null);
     setPipelineStatus('uploading');
     const doc = await uploadDocument(projectId, user.id, file);
     if (!doc) {
       setPipelineStatus(null);
       return;
     }
-
     setDocuments(prev => [doc, ...prev]);
-    toast({ title: 'File Uploaded', description: `${file.name} uploaded successfully` });
 
-    if (isPdf) {
-      setPipelineStatus('extracting');
-      const extractResult = await extractPdfText(doc.id, projectId, doc.file_url);
-
-      if (extractResult.success && extractResult.extractedText) {
-        setDocuments(prev =>
-          prev.map(d => d.id === doc.id ? { ...d, processing_status: 'extracted', raw_extracted_text: extractResult.extractedText } : d)
-        );
-        setPipelineStatus('generating');
-        const result = await parseDocument(projectId, doc.id, extractResult.extractedText);
-        if (result.success) {
-          toast({
-            title: 'BOM Generated',
-            description: `Found ${result.items_found} components from PDF. Please review.`,
-          });
-          const items = await getBomItems(projectId);
-          setBomItems(items);
-          setProject(prev => prev ? { ...prev, status: 'bom_generated' } : prev);
-        } else {
-          toast({
-            title: 'Parsing Issue',
-            description: result.items_found === 0
-              ? 'AI could not extract components. Try pasting text manually.'
-              : 'Parsing completed with issues.',
-            variant: 'destructive',
-          });
-        }
-        setPipelineStatus(null);
-      } else {
-        setPipelineStatus('extraction_failed');
-        setDocuments(prev =>
-          prev.map(d => d.id === doc.id ? { ...d, processing_status: 'extraction_failed' } : d)
-        );
-        toast({
-          title: 'PDF Text Extraction Failed',
-          description: 'Could not extract text from PDF. Please paste text manually.',
-          variant: 'destructive',
-        });
-      }
-    } else if (isTextFile) {
+    if (SHEET_EXTS.includes(ext)) {
       setPipelineStatus('generating');
-      const text = await file.text();
+      const text = await fileToText(file, ext);
       await handleParse(doc.id, text);
       setPipelineStatus(null);
     } else {
-      setPipelineStatus(null);
+      await runDesignParse(doc);
     }
   };
 
   const handleRetryExtraction = async (doc: ProjectDocument) => {
-    if (!projectId) return;
-    setPipelineStatus('extracting');
-    setDocuments(prev =>
-      prev.map(d => d.id === doc.id ? { ...d, processing_status: 'extracting' } : d)
-    );
-    const extractResult = await extractPdfText(doc.id, projectId, doc.file_url);
-    if (extractResult.success && extractResult.extractedText) {
-      setDocuments(prev =>
-        prev.map(d => d.id === doc.id ? { ...d, processing_status: 'extracted', raw_extracted_text: extractResult.extractedText } : d)
-      );
-      setPipelineStatus('generating');
-      const result = await parseDocument(projectId, doc.id, extractResult.extractedText);
-      if (result.success) {
-        const items = await getBomItems(projectId);
-        setBomItems(items);
-        toast({ title: 'Retry Successful', description: `Found ${result.items_found} components.` });
-      }
-      setPipelineStatus(null);
+    const ext = (doc.filename || '').toLowerCase().split('.').pop() || '';
+    if (DESIGN_EXTS.includes(ext)) {
+      await runDesignParse(doc);
+    } else if (doc.raw_extracted_text) {
+      await handleParse(doc.id, doc.raw_extracted_text);
     } else {
-      setPipelineStatus('extraction_failed');
-      setDocuments(prev =>
-        prev.map(d => d.id === doc.id ? { ...d, processing_status: 'extraction_failed' } : d)
-      );
-      toast({ title: 'Retry Failed', description: 'Still could not extract text. Try pasting manually.', variant: 'destructive' });
+      toast({ title: 'Upload the file again', description: 'This document has no readable text saved.', variant: 'destructive' });
     }
   };
 
@@ -380,18 +387,19 @@ const ProjectDetailPage = () => {
                   <Upload className="h-5 w-5" /> Upload Documents
                 </CardTitle>
                 <CardDescription>
-                  Upload design PDFs, Excel BOMs, or paste text. AI will extract electrical components.
+                  Upload a single-line diagram, panel drawing or schematic (PDF, JPG/PNG or DXF), an Excel BOM, or paste text.
+                  AI reads the components, ratings and quantities into a BOM you can review and send for quotes.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex gap-3 flex-wrap">
                   <Button variant="outline" onClick={() => document.getElementById('doc-upload')?.click()}>
-                    <Upload className="h-4 w-4 mr-2" /> Upload File
+                    <Upload className="h-4 w-4 mr-2" /> Upload drawing or BOM
                   </Button>
                   <input
                     id="doc-upload"
                     type="file"
-                    accept=".pdf,.doc,.docx,.xlsx,.xls,.csv,.txt,.png,.jpg,.jpeg"
+                    accept=".pdf,.png,.jpg,.jpeg,.webp,.dxf,.dwg,.xlsx,.xls,.csv,.txt"
                     className="hidden"
                     onChange={handleFileUpload}
                   />
@@ -483,12 +491,14 @@ const ProjectDetailPage = () => {
                 {(parsing || pipelineStatus) && (
                   <div className="flex items-center justify-center p-8 bg-muted/50 rounded-lg">
                     <div className="text-center w-full max-w-md">
-                      {pipelineStatus === 'extraction_failed' ? (
+                      {pipelineStatus === 'failed' || pipelineStatus === 'extraction_failed' ? (
                         <>
                           <AlertTriangle className="h-8 w-8 text-destructive mx-auto mb-3" />
-                          <p className="text-sm font-medium text-destructive">PDF text could not be reliably extracted.</p>
-                          <p className="text-xs text-muted-foreground mt-1">Paste text manually using the "Paste Text" button above, or click "Retry" on the document.</p>
-                          <Button variant="outline" size="sm" className="mt-3" onClick={() => setPipelineStatus(null)}>
+                          <p className="text-sm font-medium text-destructive">{pipelineError || 'No components could be read from this file.'}</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Try a clearer scan or a PDF export of the drawing, click Retry on the document, or paste the component list as text.
+                          </p>
+                          <Button variant="outline" size="sm" className="mt-3" onClick={() => { setPipelineStatus(null); setPipelineError(null); }}>
                             Dismiss
                           </Button>
                         </>
@@ -498,14 +508,17 @@ const ProjectDetailPage = () => {
                           <p className="text-sm font-medium">
                             {pipelineStatus === 'uploading' && 'Uploading document...'}
                             {pipelineStatus === 'extracting' && 'Extracting text from PDF...'}
+                            {pipelineStatus === 'reading' && 'Reading your drawing and counting components...'}
                             {pipelineStatus === 'generating' && 'AI is generating BOM...'}
                             {!pipelineStatus && parsing && 'AI is extracting components...'}
                           </p>
-                          <p className="text-xs text-muted-foreground mt-1">This may take a few seconds</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {pipelineStatus === 'reading' ? 'Large drawings can take up to a minute.' : 'This may take a few seconds'}
+                          </p>
                           <Progress value={
                             pipelineStatus === 'uploading' ? 20 :
                             pipelineStatus === 'extracting' ? 50 :
-                            pipelineStatus === 'generating' ? 80 : 60
+                            pipelineStatus === 'generating' || pipelineStatus === 'reading' ? 70 : 60
                           } className="mt-3 h-2" />
                         </>
                       )}
