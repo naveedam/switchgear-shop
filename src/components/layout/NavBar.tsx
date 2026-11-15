@@ -48,7 +48,14 @@ const NavBar: React.FC = () => {
             </div>
 
             {/* Search Bar - Desktop */}
-            <div className="hidden md:flex items-center flex-1 max-w-lg mx-8">
+            <Link
+              to="/products"
+              aria-label="Search products"
+              className="hidden lg:flex xl:hidden ml-auto mr-2 h-10 w-10 items-center justify-center rounded-md hover:bg-secondary"
+            >
+              <Search className="h-5 w-5" />
+            </Link>
+            <div className="hidden md:flex lg:hidden xl:flex items-center flex-1 max-w-lg mx-4 xl:mx-8">
               <div className="relative w-full">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -71,15 +78,15 @@ const NavBar: React.FC = () => {
             </div>
 
             {/* Mobile Menu */}
-            <div className="flex md:hidden items-center space-x-2">
-              <NavCartButton />
+            <div className="flex lg:hidden items-center space-x-2 md:ml-2">
+              <div className="md:hidden"><NavCartButton /></div>
               <Sheet>
                 <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon">
+                  <Button variant="ghost" size="icon" aria-label="Open menu">
                     <MenuIcon className="h-6 w-6" />
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="right" className="w-80 p-0">
+                <SheetContent side="right" className="w-[85vw] max-w-sm p-0">
                   <div className="flex flex-col h-full">
                     <div className="p-4 border-b border-border">
                       <div className="relative">

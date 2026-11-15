@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, ShoppingCart, Zap } from 'lucide-react';
+import { ShoppingCart, Zap } from 'lucide-react';
 import { Product } from '@/types/product';
 import { Currency } from '@/components/ui/currency';
 import { useCart } from '@/contexts/CartContext';
@@ -15,14 +15,15 @@ const FeaturedProductsSection: React.FC<FeaturedProductsSectionProps> = ({ produ
   if (products.length === 0) return null;
 
   return (
-    <section className="border-b border-border bg-background px-6 py-8 max-w-6xl mx-auto">
-      <div className="flex items-baseline justify-between mb-5">
+    <section className="border-b border-border">
+      <div className="container-wide py-10 sm:py-12">
+      <div className="flex items-end justify-between gap-4 mb-5">
         <div>
-          <h2 className="text-base font-semibold text-foreground">In-stock products</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">Ready to ship — no lead time</p>
+          <h2 className="text-2xl sm:text-3xl">Ready to ship</h2>
+          <p className="text-sm text-muted-foreground mt-1">In stock with sellers now.</p>
         </div>
-        <Link to="/products?inStock=true" className="text-xs text-primary flex items-center gap-1 hover:underline">
-          View all in-stock <ArrowRight className="h-3 w-3" />
+        <Link to="/products?inStock=true" className="text-sm font-medium text-primary hover:underline shrink-0">
+          All in-stock
         </Link>
       </div>
 
@@ -39,7 +40,7 @@ const FeaturedProductsSection: React.FC<FeaturedProductsSectionProps> = ({ produ
               </div>
               <div className="flex-1 min-w-0">
                 <Link to={`/products/${product.slug}`}>
-                  <p className="text-xs font-medium text-foreground truncate hover:text-primary transition-colors">
+                  <p className="text-sm font-medium text-foreground truncate hover:text-primary transition-colors">
                     {product.name}
                   </p>
                 </Link>
@@ -68,6 +69,7 @@ const FeaturedProductsSection: React.FC<FeaturedProductsSectionProps> = ({ produ
             </div>
           );
         })}
+      </div>
       </div>
     </section>
   );

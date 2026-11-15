@@ -1,7 +1,6 @@
 import React from 'react';
 import { brandPath } from '@/lib/slug';
 import { Link } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
 
 const BRANDS = [
   { id: '4b442eb3-87ca-4e3f-bb4b-99550c0775cb', name: 'ABB' },
@@ -24,26 +23,28 @@ interface BrandsRailSectionProps {
 }
 
 const BrandsRailSection: React.FC<BrandsRailSectionProps> = ({ counts }) => (
-  <section className="border-b border-border bg-secondary/30 px-6 py-6 max-w-6xl mx-auto">
-    <div className="flex items-baseline justify-between mb-4">
-      <h2 className="text-base font-semibold text-foreground">Browse by brand</h2>
-      <Link to="/brands" className="text-xs text-primary flex items-center gap-1 hover:underline">
-        All 58 brands <ArrowRight className="h-3 w-3" />
-      </Link>
-    </div>
-    <div className="flex flex-wrap gap-2">
-      {BRANDS.map(brand => (
-        <Link
-          key={brand.id}
-          to={brandPath(brand.name)}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-card border border-border rounded-full text-xs text-muted-foreground hover:text-primary hover:border-primary/40 transition-colors"
-        >
-          {brand.name}
-          {counts[brand.id] !== undefined && (
-            <span className="text-muted-foreground/60">{counts[brand.id].toLocaleString()}</span>
-          )}
+  <section className="border-b border-border bg-secondary">
+    <div className="container-wide py-10 sm:py-12">
+      <div className="flex items-end justify-between gap-4 mb-5">
+        <h2 className="text-2xl sm:text-3xl">Shop by brand</h2>
+        <Link to="/brands" className="text-sm font-medium text-primary hover:underline shrink-0">
+          All brands
         </Link>
-      ))}
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {BRANDS.map(brand => (
+          <Link
+            key={brand.id}
+            to={brandPath(brand.name)}
+            className="inline-flex items-center gap-2 h-10 px-4 bg-background border border-border rounded-md text-sm font-medium text-foreground hover:border-primary transition-colors"
+          >
+            {brand.name}
+            {counts[brand.id] > 0 && (
+              <span className="text-xs font-normal text-muted-foreground tabular">{counts[brand.id].toLocaleString('en-IN')}</span>
+            )}
+          </Link>
+        ))}
+      </div>
     </div>
   </section>
 );

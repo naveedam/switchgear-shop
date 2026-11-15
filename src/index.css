@@ -13,14 +13,14 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
 
-    --primary: 222 47% 20%;
+    --primary: 222 42% 16%;
     --primary-foreground: 210 40% 98%;
 
-    --secondary: 220 14% 96%;
+    --secondary: 216 25% 96%;
     --secondary-foreground: 222 47% 11%;
 
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 9% 46%;
+    --muted: 216 25% 96%;
+    --muted-foreground: 218 12% 40%;
 
     --accent: 220 14% 96%;
     --accent-foreground: 222 47% 11%;
@@ -28,11 +28,11 @@
     --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 222 47% 20%;
+    --border: 216 18% 88%;
+    --input: 216 18% 84%;
+    --ring: 39 82% 50%;
 
-    --radius: 0.75rem;
+    --radius: 0.5rem;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 222 47% 11%;
@@ -50,6 +50,8 @@
     --slate: 220 9% 46%;
     --success: 142 76% 36%;
     --warning: 38 92% 50%;
+    --signal: 39 82% 50%;      /* nameplate amber: logo mark, focus, highlights only */
+    --verified: 152 62% 31%;   /* trust / in-stock green */
   }
 
   .dark {
@@ -97,12 +99,66 @@
     @apply border-border;
   }
 
-  body {
-    @apply bg-background text-foreground antialiased;
+  html {
+    -webkit-text-size-adjust: 100%;
   }
 
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-semibold tracking-tight;
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "tnum" 0;
+    /* Safety net: no stray element may cause sideways scrolling on phones. */
+    overflow-x: clip;
+  }
+
+  h1, h2, h3 {
+    @apply font-display font-semibold tracking-tight;
+    text-wrap: balance;
+  }
+
+  h4, h5, h6 {
+    @apply font-semibold;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  img, video, svg, canvas {
+    max-width: 100%;
+  }
+  img, video {
+    height: auto;
+  }
+
+  /* Prices, quantities, part numbers line up in columns. */
+  table, .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Wide tables scroll inside their box instead of stretching the page. */
+  table {
+    max-width: 100%;
+  }
+
+  :focus-visible {
+    outline: 2px solid hsl(var(--signal));
+    outline-offset: 2px;
+  }
+
+  /* 16px inputs stop iOS Safari zooming in on focus. */
+  @media (max-width: 640px) {
+    input:not([type="checkbox"]):not([type="radio"]), select, textarea {
+      font-size: 16px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
 

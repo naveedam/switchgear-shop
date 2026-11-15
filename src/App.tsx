@@ -76,7 +76,6 @@ const SellerPricingTrust = lazy(() => import('./pages/seller/SellerPricingTrust'
 
 
 import { Toaster } from './components/ui/toaster';
-import './App.css';
 import { useAuth } from './contexts/AuthContext';
 import { CartProvider } from './contexts/CartContext';
 const CartPage = lazy(() => import('./pages/CartPage'));

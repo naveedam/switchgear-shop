@@ -17,7 +17,9 @@ import { Product, ProductFilter as FilterType } from '@/types/product';
 import { usePageMeta } from '@/hooks/usePageMeta';
 import { fetchSubcategories, getCategoryDisplayName } from '@/services/subcategoryService';
 import { Subcategory } from '@/types/category';
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink } from '@/components/ui/breadcrumb';
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { SlidersHorizontal } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { fetchCategoryProducts } from '@/services/productService';
 
@@ -113,22 +115,31 @@ const ProductListingPage = () => {
       {/* Breadcrumbs */}
       <div className="mb-3">
         <Breadcrumb>
-          <BreadcrumbItem>
-            <BreadcrumbLink href="/">Home</BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbItem>
-            <BreadcrumbLink href="/categories">Categories</BreadcrumbLink>
-          </BreadcrumbItem>
-          {categoryName && (
+          <BreadcrumbList>
             <BreadcrumbItem>
-              <BreadcrumbLink href={`/categories/${categorySlug}`}>{categoryName}</BreadcrumbLink>
+              <BreadcrumbLink href="/">Home</BreadcrumbLink>
             </BreadcrumbItem>
-          )}
-          {subcategoryName && (
+            <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbLink>{subcategoryName}</BreadcrumbLink>
+              <BreadcrumbLink href="/categories">Categories</BreadcrumbLink>
             </BreadcrumbItem>
-          )}
+            {categoryName && (
+              <>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbLink href={`/categories/${categorySlug}`}>{categoryName}</BreadcrumbLink>
+                </BreadcrumbItem>
+              </>
+            )}
+            {subcategoryName && (
+              <>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>{subcategoryName}</BreadcrumbPage>
+                </BreadcrumbItem>
+              </>
+            )}
+          </BreadcrumbList>
         </Breadcrumb>
       </div>
 
@@ -146,20 +157,38 @@ const ProductListingPage = () => {
         {/* Main */}
         <div className="flex-1 min-w-0">
           {/* Header Row */}
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <Package className="h-5 w-5 text-primary" />
-              <h1 className="text-lg font-bold text-foreground">
-                {subcategoryName || categoryName || 'All Products'}
+          <div className="flex flex-wrap items-end justify-between gap-3 mb-4">
+            <div className="min-w-0">
+              <h1 className="text-2xl sm:text-3xl text-foreground flex items-center gap-2">
+                <Package className="h-5 w-5 text-primary shrink-0" aria-hidden="true" />
+                {subcategoryName || categoryName || 'All products'}
               </h1>
-              <span className="text-xs text-muted-foreground">
-                ({totalCount} results{search ? ` for "${search}"` : ''})
-              </span>
+              <p className="text-sm text-muted-foreground mt-0.5 tabular">
+                {totalCount.toLocaleString('en-IN')} results{search ? ` for "${search}"` : ''}
+              </p>
             </div>
 
             <div className="flex items-center gap-2">
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="sm" className="lg:hidden h-9">
+                    <SlidersHorizontal className="h-4 w-4 mr-1.5" /> Filters
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-[85vw] max-w-sm overflow-y-auto">
+                  <SheetHeader><SheetTitle>Filters</SheetTitle></SheetHeader>
+                  <div className="mt-4">
+                    <ProductFilter
+                      initialFilters={{ subcategoryId, brandId, minPrice, maxPrice, inStock, search, sortBy }}
+                      onFilterChange={handleFilterChange}
+                      subcategories={subcategories}
+                      minMaxPrice={{ min: 0, max: 100000 }}
+                    />
+                  </div>
+                </SheetContent>
+              </Sheet>
               <Select value={sortBy} onValueChange={handleSortChange}>
-                <SelectTrigger className="w-[150px] h-8 text-xs">
+                <SelectTrigger className="w-[150px] h-9 text-sm" aria-label="Sort by">
                   <SelectValue placeholder="Sort by" />
                 </SelectTrigger>
                 <SelectContent>
