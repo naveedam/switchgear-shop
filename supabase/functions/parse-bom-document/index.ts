@@ -405,9 +405,10 @@ serve(async (req) => {
     }
 
     if (aiResult.length === 0) {
-      console.warn(`[parse-bom] AI returned 0 items from text of ${rawText.length} chars.`);
+      console.warn(`[parse-bom] AI returned 0 items (${method}). ${lastDrawingError}`);
+      const message = (fromFile && lastDrawingError) || "AI could not extract any components. Check document format.";
       return new Response(
-        JSON.stringify({ success: false, items_found: 0, error_code: "NO_ITEMS_FOUND", message: "AI could not extract any components. Check document format." }),
+        JSON.stringify({ success: false, items_found: 0, error_code: "NO_ITEMS_FOUND", message }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -673,19 +674,43 @@ Read it like a panel design engineer preparing a bill of materials:
 
 `;
 
+// Why the last drawing read returned nothing (shown to the buyer).
+let lastDrawingError = "";
+
 async function parseDesignFileWithAI(bytes: Uint8Array, mimeType: string): Promise<any[]> {
   const prompt = `${PROMPT_INTRO}${DRAWING_INSTRUCTIONS}${EXTRACTION_GUIDE}`;
+  lastDrawingError = "";
   try {
     const content = await generateFromFile(bytes, mimeType, prompt, { json: true });
-    const jsonMatch = content.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) {
-      console.error("[parse-bom] drawing: no JSON array in response");
+    // The model may return a bare array or an object wrapping one.
+    let parsed: unknown = null;
+    try {
+      parsed = JSON.parse(content);
+    } catch {
+      const m = content.match(/\[[\s\S]*\]/);
+      if (m) parsed = JSON.parse(m[0]);
+    }
+    if (parsed && !Array.isArray(parsed) && typeof parsed === "object") {
+      const firstArray = Object.values(parsed as Record<string, unknown>).find(Array.isArray);
+      if (firstArray) parsed = firstArray;
+    }
+    if (!Array.isArray(parsed)) {
+      console.error("[parse-bom] drawing: unexpected response:", content.slice(0, 500));
+      lastDrawingError = "The AI's reply wasn't a component list.";
       return [];
     }
-    const parsed = JSON.parse(jsonMatch[0]);
-    return Array.isArray(parsed) ? parsed : [];
+    if (parsed.length === 0) lastDrawingError = "The AI found no electrical components in this file.";
+    return parsed;
   } catch (err) {
     console.error("[parse-bom] drawing parse error:", err);
+    const msg = err instanceof Error ? err.message : String(err);
+    lastDrawingError = /API key|API_KEY|PERMISSION_DENIED|401|403/i.test(msg)
+      ? "The AI service rejected the API key. Check the GEMINI_API_KEY secret in Supabase."
+      : /429|RESOURCE_EXHAUSTED|quota/i.test(msg)
+        ? "The AI service's usage limit was reached. Try again in a few minutes."
+        : /404|not found/i.test(msg)
+          ? "The AI model name isn't available on this API key. Set the AI_MODEL secret to gemini-2.5-flash."
+          : `The AI service returned an error: ${msg.slice(0, 160)}`;
     return [];
   }
 }
