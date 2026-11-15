@@ -67,7 +67,7 @@ npm run dev               # http://localhost:8080
 
 - **Frontend:** merge to `main` and Vercel deploys automatically.
 - **Database:** add a new file in `supabase/migrations/`, test on a staging project, then run it in the Supabase SQL editor (or `supabase db push`). **Run the database step before merging code that depends on it.**
-- **Edge functions:** deployed by Lovable on push, or `supabase functions deploy <name>`.
+- **Edge functions:** `supabase functions deploy <name>` (or paste into Supabase dashboard → Edge Functions).
 
 See [`docs/SECURITY_AND_PAYMENTS.md`](docs/SECURITY_AND_PAYMENTS.md) for Razorpay, WhatsApp and GST setup.
 

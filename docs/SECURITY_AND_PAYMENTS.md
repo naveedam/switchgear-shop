@@ -35,7 +35,7 @@ supabase db dump -f backup-before-hardening.sql
 supabase db push        # applies the three 20261113* migrations
 ```
 These migrations were tested on PostgreSQL 16 against a reproduction of the relevant tables.
-The repo's migrations don't contain the full base schema (Lovable created it), so **apply on a staging copy first**.
+The repo's migrations don't contain the full base schema (the original tables were created outside this repo), so **apply on a staging copy first**.
 
 ### 2. Secrets for edge functions
 ```bash

@@ -1,3 +1,4 @@
+import Logo from '@/components/brand/Logo';
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -13,7 +14,7 @@ const Footer: React.FC = () => {
           {/* Brand */}
           <div className="col-span-2 lg:col-span-1">
             <Link to="/" className="inline-block mb-4">
-              <span className="text-2xl font-bold">SwitchgearShop</span>
+              <Logo inverted />
             </Link>
             <p className="text-primary-foreground/70 leading-relaxed max-w-xs">
               India's trusted B2B marketplace for industrial electrical equipment and low voltage switchgear products.

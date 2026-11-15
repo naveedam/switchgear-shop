@@ -315,7 +315,7 @@ async function staticPage(req: any, res: any, path: string) {
   if (!meta) return send(res, 200, await getTemplate(req), 'public, s-maxage=300');
   const canonical = SITE + (path === '/' ? '/' : path);
   const jsonLd: object[] = path === '/' ? [
-    { '@context': 'https://schema.org', '@type': 'Organization', name: 'SwitchgearShop.in', url: SITE + '/', logo: `${SITE}/favicon.ico` },
+    { '@context': 'https://schema.org', '@type': 'Organization', name: 'SwitchgearShop.in', url: SITE + '/', logo: `${SITE}/icon-512.png` },
     { '@context': 'https://schema.org', '@type': 'WebSite', name: 'SwitchgearShop.in', url: SITE + '/',
       potentialAction: { '@type': 'SearchAction', target: `${SITE}/products?search={search_term_string}`, 'query-input': 'required name=search_term_string' } },
   ] : [];

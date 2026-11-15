@@ -1,3 +1,4 @@
+import Logo from '@/components/brand/Logo';
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -34,10 +35,8 @@ const NavBar: React.FC = () => {
           <nav className="flex items-center justify-between h-16 md:h-18">
             {/* Logo */}
             <div className="flex-shrink-0">
-              <Link to="/" className="flex items-center">
-                <span className="text-xl font-bold text-primary">
-                  SwitchgearShop
-                </span>
+              <Link to="/" className="flex items-center text-primary" aria-label="SwitchgearShop.in home">
+                <Logo />
               </Link>
             </div>
 
