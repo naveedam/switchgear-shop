@@ -243,7 +243,19 @@ export const useProjectService = () => {
       const { data, error } = await supabase.functions.invoke('parse-bom-document', {
         body: { documentId, projectId, fromFile: true },
       });
-      if (error) throw error;
+      if (error) {
+        // Surface the server's own message instead of "non-2xx status code".
+        let detail = '';
+        try {
+          const ctx = (error as { context?: Response }).context;
+          const body = ctx ? await ctx.json() : null;
+          detail = body?.message || body?.error || '';
+          if (body?.error_code === 'MISSING_FIELDS') {
+            detail = 'The drawing reader on the server is out of date. Redeploy the parse-bom-document function.';
+          }
+        } catch { /* body wasn't JSON */ }
+        throw new Error(detail || error.message);
+      }
       if (!data?.success) {
         const message = data?.message || 'No components could be read from this file.';
         await supabase.from('project_documents').update({ processing_status: 'failed' }).eq('id', documentId);
