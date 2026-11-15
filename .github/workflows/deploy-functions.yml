@@ -12,7 +12,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     env:
-      SUPABASE_ACCESS_TOKEN: ${{ sbp_fc062446862e4c8b948a3e4d5c21fd5a82f5932c}}
+            SUPABASE_ACCESS_TOKEN: ${{ sbp_v0_a222bccbd95666366d8487a9f5c57d599625a5c3 }}
       PROJECT_REF: hdoefblcoavpzvfiiglm
     steps:
       - uses: actions/checkout@v4
